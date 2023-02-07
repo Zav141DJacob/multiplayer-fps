@@ -1,11 +1,15 @@
-use std::{collections::HashMap, net::SocketAddr};
+use std::{
+    collections::HashMap,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+};
 
+use clap::Parser;
 use message_io::{
     network::{Endpoint, NetEvent, Transport},
     node,
 };
 
-use crate::common::{FromClientMessage, FromServerMessage};
+use common::{FromClientMessage, FromServerMessage};
 
 struct ClientInfo {
     count: usize,
@@ -64,4 +68,22 @@ pub fn server(transport: Transport, addr: SocketAddr) {
             );
         }
     });
+}
+
+const DEFAULT_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Port to host server on
+    #[arg(short, long, default_value_t = 1337)]
+    port: u16,
+
+    /// IP to host server on
+    #[arg(short, long, default_value_t = DEFAULT_IP)]
+    ip: IpAddr,
+}
+
+fn main() {
+    todo!()
 }

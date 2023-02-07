@@ -111,6 +111,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "client"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "clap",
+ "common",
+ "hecs",
+ "message-io",
+ "tokio",
+]
+
+[[package]]
+name = "common"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -418,18 +437,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "multiplayer-fps"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "clap",
- "hecs",
- "message-io",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "ntapi"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -632,6 +639,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "server"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "clap",
+ "common",
+ "message-io",
+ "tokio",
 ]
 
 [[package]]

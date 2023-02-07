@@ -1,8 +1,11 @@
-use super::common::{FromClientMessage, FromServerMessage};
+use common::{FromClientMessage, FromServerMessage};
 
+use clap::Parser;
+use hecs::World;
 use message_io::network::{NetEvent, RemoteAddr, Transport};
 use message_io::node::{self, NodeEvent};
 
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
 
 enum Signal {
@@ -59,4 +62,59 @@ pub fn client(transport: Transport, remote_addr: RemoteAddr) {
             }
         },
     });
+}
+
+#[derive(Debug, PartialEq)]
+enum Direction {
+    Forward,
+    Backward,
+    Left,
+    Right,
+}
+
+#[derive(Debug, PartialEq)]
+struct MoveEvent;
+
+const DEFAULT_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Port to connect to server on
+    #[arg(short, long, default_value_t = 1337)]
+    port: u16,
+
+    /// IP to connect to server on
+    #[arg(short, long, default_value_t = DEFAULT_IP)]
+    ip: IpAddr,
+}
+
+#[tokio::main]
+async fn main() {
+    let args = Args::parse();
+
+    let addr = SocketAddr::new(args.ip, args.port);
+    println!("Starting client");
+
+    tokio::spawn(async move {
+        client(
+            Transport::Udp,
+            message_io::network::RemoteAddr::Socket(addr),
+        );
+    });
+
+    println!("ECS system");
+    let mut world = World::new();
+    world.spawn((MoveEvent, Direction::Forward));
+
+    println!(
+        "{:?}",
+        *world
+            .query::<(&mut MoveEvent, &mut Direction)>()
+            .iter()
+            .next()
+            .unwrap()
+            .1
+             .0
+    );
 }
