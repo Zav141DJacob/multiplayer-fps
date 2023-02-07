@@ -1,7 +1,10 @@
 use std::{
     collections::HashMap,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
+    net::{IpAddr, SocketAddr},
 };
+
+use common::defaults::IP;
+use common::defaults::PORT;
 
 use clap::Parser;
 use message_io::{
@@ -70,20 +73,23 @@ pub fn server(transport: Transport, addr: SocketAddr) {
     });
 }
 
-const DEFAULT_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
-
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Port to host server on
-    #[arg(short, long, default_value_t = 1337)]
+    #[arg(short, long, default_value_t = PORT)]
     port: u16,
 
     /// IP to host server on
-    #[arg(short, long, default_value_t = DEFAULT_IP)]
+    #[arg(short, long, default_value_t = IP)]
     ip: IpAddr,
 }
 
-fn main() {
-    todo!()
+#[tokio::main]
+async fn main() {
+    let args = Args::parse();
+    let addr: SocketAddr = SocketAddr::new(args.ip, args.port);
+
+    println!("Starting server");
+    server(Transport::Udp, addr);
 }

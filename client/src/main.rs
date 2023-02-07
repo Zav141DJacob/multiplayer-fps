@@ -1,3 +1,4 @@
+use common::defaults::{PORT, IP};
 use common::{FromClientMessage, FromServerMessage};
 
 use clap::Parser;
@@ -5,7 +6,7 @@ use hecs::World;
 use message_io::network::{NetEvent, RemoteAddr, Transport};
 use message_io::node::{self, NodeEvent};
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 use std::time::Duration;
 
 enum Signal {
@@ -75,17 +76,15 @@ enum Direction {
 #[derive(Debug, PartialEq)]
 struct MoveEvent;
 
-const DEFAULT_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
-
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Port to connect to server on
-    #[arg(short, long, default_value_t = 1337)]
+    #[arg(short, long, default_value_t = PORT)]
     port: u16,
 
     /// IP to connect to server on
-    #[arg(short, long, default_value_t = DEFAULT_IP)]
+    #[arg(short, long, default_value_t = IP)]
     ip: IpAddr,
 }
 

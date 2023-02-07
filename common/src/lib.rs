@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+pub mod defaults;
 #[derive(Serialize, Deserialize)]
 pub enum FromClientMessage {
     Ping,
