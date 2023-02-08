@@ -1,9 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 pub mod defaults;
+pub mod map;
 #[derive(Serialize, Deserialize)]
 pub enum FromClientMessage {
     Ping,
+    GetMap,
 }
 
 #[derive(Serialize, Deserialize)]

@@ -2505,6 +2505,7 @@ dependencies = [
  "clap",
  "common",
  "message-io",
+ "serde",
  "tokio",
 ]
 

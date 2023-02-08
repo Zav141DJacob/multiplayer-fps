@@ -1,3 +1,5 @@
+// mod map;
+
 use std::{
     collections::HashMap,
     net::{IpAddr, SocketAddr},
@@ -5,8 +7,11 @@ use std::{
 
 use common::defaults::IP;
 use common::defaults::PORT;
+use common::map::Map;
+
 
 use clap::Parser;
+// use map::Map;
 use message_io::{
     network::{Endpoint, NetEvent, Transport},
     node,
@@ -19,6 +24,8 @@ struct ClientInfo {
 }
 
 pub fn server(transport: Transport, addr: SocketAddr) {
+    let map = Map::gen();
+
     let (handler, listener) = node::split::<()>();
 
     let mut clients: HashMap<Endpoint, ClientInfo> = HashMap::new();
@@ -57,6 +64,10 @@ pub fn server(transport: Transport, addr: SocketAddr) {
                         }
                     };
                     let output_data = bincode::serialize(&message).unwrap();
+                    handler.network().send(endpoint, &output_data);
+                },
+                FromClientMessage::GetMap => {
+                    let output_data = bincode::serialize(&map).unwrap();
                     handler.network().send(endpoint, &output_data);
                 }
             }
