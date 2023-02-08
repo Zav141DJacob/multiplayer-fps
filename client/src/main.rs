@@ -1,3 +1,47 @@
+use anyhow::anyhow;
+use client::program::Program;
+use notan::egui::EguiConfig;
+use notan::prelude::WindowConfig;
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::time;
+
+
+fn main() -> anyhow::Result<()> {
+    // Set up logging
+    // If you want to change how the logs are filtered, then change RUST_LOG according to this:
+    // https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html
+    let subscriber = tracing_subscriber::fmt()
+        .with_timer(time::Uptime::default())
+        .with_env_filter(EnvFilter::from_default_env())
+        .finish();
+    tracing::subscriber::set_global_default(subscriber)?;
+
+    let win = WindowConfig::new()
+        .vsync(true)
+        // .lazy_loop(true)
+        .high_dpi(true)
+        .resizable(false)
+        .size(1280, 720);
+
+    notan::init_with(Program::notan_setup)
+        .add_config(win)
+        .add_config(EguiConfig)
+        .add_config(DrawConfig)
+        .event(Program::notan_event)
+        .update(Program::notan_update)
+        .draw(Program::notan_draw)
+        .build()
+        .map_err(|str| anyhow!(str))
+}
+
+
+
+
+
+
+// Below is the client code that Andris wrote.
+// I'll just leave it here until the server-client connection protocol is stabilized.
+
 use common::defaults::{PORT, IP};
 use common::{FromClientMessage, FromServerMessage};
 
@@ -8,6 +52,7 @@ use message_io::node::{self, NodeEvent};
 
 use std::net::{IpAddr, SocketAddr};
 use std::time::Duration;
+use notan::draw::DrawConfig;
 
 enum Signal {
     Greet, // This is a self event called every second.
@@ -89,7 +134,7 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main_old() {
     let args = Args::parse();
 
     let addr = SocketAddr::new(args.ip, args.port);
