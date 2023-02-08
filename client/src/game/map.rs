@@ -1,3 +1,5 @@
+use notan::app::Color;
+
 #[derive(Debug, Clone)]
 pub struct Map {
     width: usize,
@@ -28,5 +30,5 @@ pub enum MapCell {
     Empty,
 
     /// Wall with color
-    Wall([f32; 3])
+    Wall(Color)
 }
