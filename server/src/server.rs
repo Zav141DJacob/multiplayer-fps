@@ -104,7 +104,7 @@ impl Server {
 
                     },
                     FromClientMessage::GetMap => {
-                        let output_data = bincode::serialize(&map).unwrap();
+                        let output_data = bincode::serialize(&FromServerMessage::SendMap(map)).unwrap();
                         self.handler.network().send(endpoint, &output_data);
                     }
                 }
