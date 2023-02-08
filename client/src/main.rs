@@ -1,4 +1,5 @@
 mod client;
+mod args;
 
 use ::client::program::Program;
 use anyhow::anyhow;
@@ -8,40 +9,13 @@ use notan::prelude::WindowConfig;
 use tracing_subscriber::fmt::time;
 use tracing_subscriber::EnvFilter;
 
-use common::defaults::{IP, PORT};
-
-use clap::Parser;
-
 use notan::draw::DrawConfig;
-use std::net::{IpAddr, SocketAddr};
-
+use std::net::SocketAddr;
 use crate::client::Client;
-
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    /// Port to connect to server on
-    #[arg(short, long, default_value_t = PORT)]
-    port: u16,
-
-    /// IP to connect to server on
-    #[arg(short, long, default_value_t = IP)]
-    ip: IpAddr,
-}
+use crate::args::ARGS;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let args = Args::parse();
-
-    let addr = RemoteAddr::Socket(SocketAddr::new(args.ip, args.port));
-    println!("Starting client");
-
-    // TODO: get channels from client
-    let mut client = Client::new(addr);
-    tokio::spawn(async move {
-        client.run()
-    });
-
     // Set up logging
     // If you want to change how the logs are filtered, then change RUST_LOG according to this:
     // https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html
@@ -51,6 +25,18 @@ async fn main() -> anyhow::Result<()> {
         .finish();
     tracing::subscriber::set_global_default(subscriber)?;
 
+    // Set up up networking
+    // This will be moved inside the game later, wouldn't want to connect automatically in the main menu after all
+    let addr = RemoteAddr::Socket(SocketAddr::new(ARGS.ip, ARGS.port));
+    println!("Starting client");
+
+    // TODO: get channels from client
+    let mut client = Client::new(addr);
+    tokio::spawn(async move {
+        client.run()
+    });
+
+    // Start up the windowing and game loop
     let win = WindowConfig::new()
         .vsync(true)
         // .lazy_loop(true)

@@ -1,4 +1,3 @@
-mod map;
 mod pixels;
 
 use std::fmt::{Display, Formatter};
@@ -6,7 +5,7 @@ use notan::app::{App, Color, Graphics, Plugins};
 use notan::draw::{CreateDraw, DrawImages, DrawTransform};
 use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
 use notan::prelude::{Assets, Texture};
-use crate::game::map::Map;
+use common::map::Map;
 use crate::game::pixels::Pixels;
 use crate::program::state::ProgramState;
 
