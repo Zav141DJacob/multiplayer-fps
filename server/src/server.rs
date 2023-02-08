@@ -68,16 +68,16 @@ impl Server {
 
     pub fn run(&mut self) {
         let listener = self.listener.take().unwrap();
-        let map = Map::gen();
-        
+
         listener.for_each(move |event| match event.network() {
             NetEvent::Message(endpoint, input_data) => {
                 let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
 
-                let name = ClientIdentificationInfo {
+                let id = ClientIdentificationInfo {
                     addr: endpoint.addr(),
                     endpoint,
-                }.get_id();
+                };
+                let name = id.get_id();
 
                 match message {
                     FromClientMessage::Ping => {
@@ -96,17 +96,10 @@ impl Server {
                         }
                     },
                     FromClientMessage::Join => {
-                        let id = ClientIdentificationInfo {
-                            addr: endpoint.addr(),
-                            endpoint,
-                        };
-                        self.register(id);
-
+                        if !self.is_registered(name) {
+                            self.register(id);
+                        }
                     },
-                    FromClientMessage::GetMap => {
-                        let output_data = bincode::serialize(&FromServerMessage::SendMap(map)).unwrap();
-                        self.handler.network().send(endpoint, &output_data);
-                    }
                 }
             }
             _ => {
@@ -124,14 +117,13 @@ impl Server {
         let name = info.get_id();
 
         if !self.is_registered(name) {
-            // Update the new participant with the whole participants information
-            let list = self.clients.keys().copied().collect();
-
-            let message = FromServerMessage::LobbyMembers(list);
+            // Sends player list to the newly joined player
+            let player_list = self.clients.keys().copied().collect();
+            let message = FromServerMessage::LobbyMembers(player_list);
             let output_data = bincode::serialize(&message).unwrap();
             self.handler.network().send(info.endpoint, &output_data);
 
-            // Notify other participants about this new participant
+            // Notify other players about this new player
             let message = FromServerMessage::Join(name);
             let output_data = bincode::serialize(&message).unwrap();
             for participant in &mut self.clients {
@@ -139,14 +131,21 @@ impl Server {
                     .network()
                     .send(participant.1.id.endpoint, &output_data);
             }
+            println!("Notifying players about new player");
 
-            // Register participant
+            // Add player to the server clients
             self.clients
                 .insert(name, ClientInfo::new(info.addr, info.endpoint));
             println!("Added participant '{}' with ip {}", name, info.addr);
+
+            // Sending initial map
+            let message = FromServerMessage::SendMap(Map::gen());
+            let output_data = bincode::serialize(&message).unwrap();
+            self.handler.network().send(info.endpoint, &output_data);
+            println!("Sending map to '{name}'")
         } else {
             println!(
-                "Participant with name '{name}' already exists, please registry with another name"
+                "Participant with name '{name}' already exists"
             );
         }
     }

@@ -6,7 +6,6 @@ pub mod map;
 #[derive(Serialize, Deserialize)]
 pub enum FromClientMessage {
     Ping,
-    GetMap,
     Move(Direction),
     Leave,
     Join,

@@ -2,6 +2,7 @@ mod client;
 
 use ::client::program::Program;
 use anyhow::anyhow;
+use message_io::network::RemoteAddr;
 use notan::egui::EguiConfig;
 use notan::prelude::WindowConfig;
 use tracing_subscriber::fmt::time;
@@ -13,6 +14,8 @@ use clap::Parser;
 
 use notan::draw::DrawConfig;
 use std::net::{IpAddr, SocketAddr};
+
+use crate::client::Client;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -30,11 +33,13 @@ struct Args {
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    let addr = SocketAddr::new(args.ip, args.port);
+    let addr = RemoteAddr::Socket(SocketAddr::new(args.ip, args.port));
     println!("Starting client");
 
+    // TODO: get channels from client
+    let mut client = Client::new(addr);
     tokio::spawn(async move {
-        client::run(message_io::network::RemoteAddr::Socket(addr));
+        client.run()
     });
 
     // Set up logging
