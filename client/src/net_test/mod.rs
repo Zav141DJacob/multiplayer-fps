@@ -52,7 +52,7 @@ impl Connection {
         let (receiver, sender) = client.start()?;
 
         Ok(Self {
-            sender_widget: SenderWidget::new(sender.clone()),
+            sender_widget: SenderWidget::new(sender),
             receiver,
         })
     }
