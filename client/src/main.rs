@@ -1,13 +1,13 @@
 use ::client::program::Program;
 use anyhow::anyhow;
-use message_io::network::RemoteAddr;
+
 use notan::egui::EguiConfig;
 use notan::prelude::WindowConfig;
 use tracing_subscriber::fmt::time;
 use tracing_subscriber::EnvFilter;
 
 use notan::draw::DrawConfig;
-use std::net::SocketAddr;
+
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

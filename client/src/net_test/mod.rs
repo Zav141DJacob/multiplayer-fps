@@ -1,13 +1,13 @@
-use std::cell::RefCell;
+
 use std::collections::VecDeque;
-use std::fmt::{Display, Formatter, Pointer};
+use std::fmt::{Display, Formatter};
 use std::net::{IpAddr, SocketAddr};
-use std::sync::Mutex;
+
 
 use itertools::Itertools;
 use message_io::network::RemoteAddr;
 use notan::app::{App, Graphics, Plugins};
-use notan::egui::{self, Align, Align2, Area, ComboBox, EguiPluginSugar, Grid, Layout, Response, ScrollArea, TextEdit, Ui};
+use notan::egui::{self, ComboBox, EguiPluginSugar, ScrollArea, TextEdit, Ui};
 use notan::prelude::{Assets, Color};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::mpsc::error::TryRecvError;
@@ -17,7 +17,7 @@ use common::{Direction, FromClientMessage, FromServerMessage};
 
 use crate::args::ARGS;
 use crate::client::Client;
-use crate::game::Game;
+
 use crate::program::state::ProgramState;
 
 pub struct NetworkTest {
@@ -51,10 +51,10 @@ struct Connection {
 }
 
 impl Connection {
-    fn new(ip: IpAddr, port: u16) -> anyhow::Result<Self> {
+    fn new(_ip: IpAddr, _port: u16) -> anyhow::Result<Self> {
         let addr = RemoteAddr::Socket(SocketAddr::new(ARGS.ip, ARGS.port));
         let mut client = Client::new(addr)?;
-        let (mut receiver, sender) = client.start()?;
+        let (receiver, sender) = client.start()?;
 
         Ok(Self {
             sender_widget: SenderWidget::new(sender.clone()),
@@ -65,7 +65,7 @@ impl Connection {
 }
 
 impl ProgramState for NetworkTest {
-    fn draw(&mut self, app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) {
+    fn draw(&mut self, _app: &mut App, _assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 let text = self.log.iter().rev().join("\n");
@@ -94,7 +94,7 @@ impl ProgramState for NetworkTest {
             }
 
             let Connection {
-                sender,
+                sender: _,
                 receiver,
                 sender_widget,
             } = self.connection.as_mut().unwrap();

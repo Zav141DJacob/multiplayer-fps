@@ -1,8 +1,8 @@
 use std::fmt::{Display, Formatter};
 use notan::app::{App, Graphics, Plugins};
-use notan::egui::{self, Align2, Area, EguiPluginSugar, Vec2};
+use notan::egui::{self, EguiPluginSugar};
 use notan::prelude::{Assets, Color};
-use tracing::error;
+
 use crate::game::Game;
 use crate::net_test::NetworkTest;
 use crate::program::state::ProgramState;
@@ -24,7 +24,7 @@ impl Display for Menu {
 }
 
 impl ProgramState for Menu {
-    fn draw(&mut self, app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) {
+    fn draw(&mut self, app: &mut App, _assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) {
         let mut output = plugins.egui(|ctx| {
 
             egui::CentralPanel::default().show(ctx, |ui| {
@@ -54,7 +54,7 @@ impl ProgramState for Menu {
         }
     }
 
-    fn change_state(&mut self, app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) -> Option<Box<dyn ProgramState>> {
+    fn change_state(&mut self, _app: &mut App, _assets: &mut Assets, gfx: &mut Graphics, _plugins: &mut Plugins) -> Option<Box<dyn ProgramState>> {
         match self.next_state.take()? {
             NextState::Game => {
                 Some(Game::new(gfx).into())

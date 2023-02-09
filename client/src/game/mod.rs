@@ -3,8 +3,8 @@ mod pixels;
 use std::fmt::{Display, Formatter};
 use notan::app::{App, Color, Graphics, Plugins};
 use notan::draw::{CreateDraw, DrawImages, DrawTransform};
-use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
-use notan::prelude::{Assets, Texture};
+use notan::egui::{EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
+use notan::prelude::{Assets};
 use common::map::Map;
 use crate::game::pixels::Pixels;
 use crate::program::state::ProgramState;
@@ -42,11 +42,11 @@ impl Display for Game {
 }
 
 impl ProgramState for Game {
-    fn update(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins) {
+    fn update(&mut self, _app: &mut App, _assets: &mut Assets, _plugins: &mut Plugins) {
         self.foo += 1;
     }
 
-    fn draw(&mut self, app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) {
+    fn draw(&mut self, _app: &mut App, _assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) {
         // Draw a red dot
         let (width, height) = self.pixels.dimensions();
         self.foo %= width * height;
@@ -91,7 +91,7 @@ impl Game {
             Slider::new(&mut y, 0..=height-1).ui(ui);
             ui.end_row();
 
-            self.foo = (y * width + x);
+            self.foo = y * width + x;
         });
     }
 }
