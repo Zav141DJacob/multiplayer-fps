@@ -46,7 +46,6 @@ impl NetworkTest {
 
 struct Connection {
     receiver: UnboundedReceiver<FromServerMessage>,
-    sender: UnboundedSender<FromClientMessage>,
     sender_widget: SenderWidget,
 }
 
@@ -59,7 +58,6 @@ impl Connection {
         Ok(Self {
             sender_widget: SenderWidget::new(sender.clone()),
             receiver,
-            sender,
         })
     }
 }
@@ -94,7 +92,6 @@ impl ProgramState for NetworkTest {
             }
 
             let Connection {
-                sender: _,
                 receiver,
                 sender_widget,
             } = self.connection.as_mut().unwrap();

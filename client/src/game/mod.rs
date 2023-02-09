@@ -9,6 +9,7 @@ use common::map::Map;
 use crate::game::pixels::Pixels;
 use crate::program::state::ProgramState;
 
+#[allow(dead_code)]
 pub struct Game {
     world: hecs::World,
     map: Map,
