@@ -5,10 +5,11 @@ use message_io::{
     network::{Endpoint, NetEvent, RemoteAddr, Transport},
     node::{self, NodeEvent, NodeHandler, NodeListener},
 };
+use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
 enum Signal {
-    Greet, // This is a self event called every second.
-           // Other signals here,
+    Greet, // TODO: remove greet in the future
+    Stop,
 }
 
 pub struct Client {
@@ -17,6 +18,12 @@ pub struct Client {
 
     server_id: Endpoint,
     local_addr: SocketAddr,
+}
+
+impl Drop for Client {
+    fn drop(&mut self) {
+        self.stop();
+    }
 }
 
 impl Client {
@@ -36,60 +43,92 @@ impl Client {
         }
     }
 
-    pub fn run(&mut self) {
-        // Sends join event
-        self.handler.network().send(
-            self.server_id,
-            &bincode::serialize(&FromClientMessage::Join).unwrap(),
-        );
+    pub fn stop(&mut self) {
+        self.handler.signals().send(Signal::Stop);
+    }
 
-        // TODO: send disconnect event somewhere
-        let listener = self.listener.take().unwrap();
-        listener.for_each(move |event| match event {
-            NodeEvent::Network(net_event) => match net_event {
-                NetEvent::Connected(_, established) => {
-                    if established {
-                        println!("Connected to server at {}", self.server_id.addr(),);
-                        println!(
-                            "Client identified by local port: {}",
-                            self.local_addr.port()
-                        );
-                        self.handler.signals().send(Signal::Greet);
-                    } else {
-                        println!("Cant connect to server")
-                    }
-                }
-                NetEvent::Accepted(_, _) => unreachable!(), // Only generated when a listener accepts
-                NetEvent::Message(_, input_data) => {
-                    let message: FromServerMessage = bincode::deserialize(input_data).unwrap();
-                    match message {
-                        FromServerMessage::Pong => println!("Pong from server"),
-                        FromServerMessage::Move(id, direction) => {
-                            println!("Player {id} moved to {direction:?}")
-                        }
-                        FromServerMessage::Join(id) => println!("Member {id} joined the lobby!"),
-                        FromServerMessage::Leave(id) => println!("Member {id} left the lobby!"),
-                        FromServerMessage::LobbyMembers(members) => {
-                            println!("current lobby members are: {members:?}")
-                        }
-                        FromServerMessage::SendMap(map) => println!("current map is: {map:?}"),
-                    }
-                }
-                NetEvent::Disconnected(_) => {
-                    println!("Server is disconnected");
-                    self.handler.stop();
-                }
-            },
-            NodeEvent::Signal(signal) => match signal {
-                Signal::Greet => {
-                    let message = FromClientMessage::Ping;
+    pub fn start(
+        &mut self,
+    ) -> (
+        UnboundedReceiver<FromServerMessage>,
+        UnboundedSender<FromClientMessage>,
+    ) {
+        // Messages recieved
+        let (from_server_sender, from_server_reciever) =
+            mpsc::unbounded_channel::<FromServerMessage>();
+        // Messages sent
+        let (from_client_sender, mut from_client_reciever) =
+            mpsc::unbounded_channel::<FromClientMessage>();
+
+        // Sends join event
+        from_client_sender
+            .send(FromClientMessage::Join)
+            .expect("Failed to send join event");
+
+        // Handles sent messages
+        let handler = self.handler.clone();
+        let server_id = self.server_id;
+
+        tokio::spawn(async move {
+            while let Some(message) = from_client_reciever.recv().await {
+                if let FromClientMessage::Leave = message {
+                    break;
+                } else {
                     let output_data = bincode::serialize(&message).unwrap();
-                    self.handler.network().send(self.server_id, &output_data);
-                    self.handler
-                        .signals()
-                        .send_with_timer(Signal::Greet, Duration::from_secs(1));
+                    handler.network().send(server_id, &output_data);
                 }
-            },
+            }
+
+            from_client_reciever.close();
         });
+
+        // Handles recieved messages
+        let listener = self.listener.take().unwrap();
+        let handler = self.handler.clone();
+        let local_addr = self.local_addr;
+
+        let from_client_sender2 = from_client_sender.clone();
+        tokio::spawn(async move {
+            listener.for_each(move |event| match event {
+                NodeEvent::Network(net_event) => match net_event {
+                    NetEvent::Connected(_, established) => {
+                        if established {
+                            println!("Connected to server at {}", server_id.addr(),);
+                            println!("Client identified by local port: {}", local_addr.port());
+                            handler.signals().send(Signal::Greet);
+                        } else {
+                            println!("Cant connect to server")
+                        }
+                    }
+                    NetEvent::Accepted(_, _) => unreachable!(), // Only generated when a listener accepts
+                    NetEvent::Message(_, input_data) => {
+                        from_server_sender
+                                .send(bincode::deserialize(input_data).unwrap()).expect("Failed to send message from server to client, this should never happen as messages shouldn't be sent here when listener has been closed")
+                    }
+                    NetEvent::Disconnected(_) => {
+                        // TODO: Im pretty sure this never gets called, please look into it
+                        println!("Server disconnected");
+                        handler.stop();
+                    }
+                },
+                NodeEvent::Signal(signal) => match signal {
+                    Signal::Greet => { // TODO: remove greet in the future
+                        let message = FromClientMessage::Ping;
+                        let output_data = bincode::serialize(&message).unwrap();
+                        handler.network().send(server_id, &output_data);
+                        handler
+                            .signals()
+                            .send_with_timer(Signal::Greet, Duration::from_secs(1));
+                    }
+                    Signal::Stop => {
+                        // Should never give an error but if it does it doesn't matter as its part of close process anyway
+                        let _ = from_client_sender2.send(FromClientMessage::Leave);
+                        handler.stop();
+                    }
+                },
+            });
+        });
+
+        (from_server_reciever, from_client_sender)
     }
 }

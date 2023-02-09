@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod defaults;
 pub mod map;
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum FromClientMessage {
     Ping,
     Move(Direction),
@@ -13,7 +13,7 @@ pub enum FromClientMessage {
 
 type UserID = u64;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum FromServerMessage {
     Move(UserID, Direction),
     Join(UserID),
@@ -22,7 +22,6 @@ pub enum FromServerMessage {
     SendMap(Map),
     Pong,
 }
-
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum Direction {

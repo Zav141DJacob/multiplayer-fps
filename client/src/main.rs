@@ -1,5 +1,5 @@
-mod client;
 mod args;
+mod client;
 
 use ::client::program::Program;
 use anyhow::anyhow;
@@ -9,10 +9,10 @@ use notan::prelude::WindowConfig;
 use tracing_subscriber::fmt::time;
 use tracing_subscriber::EnvFilter;
 
+use crate::args::ARGS;
+use crate::client::Client;
 use notan::draw::DrawConfig;
 use std::net::SocketAddr;
-use crate::client::Client;
-use crate::args::ARGS;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -30,11 +30,29 @@ async fn main() -> anyhow::Result<()> {
     let addr = RemoteAddr::Socket(SocketAddr::new(ARGS.ip, ARGS.port));
     println!("Starting client");
 
-    // TODO: get channels from client
     let mut client = Client::new(addr);
-    tokio::spawn(async move {
-        client.run()
-    });
+    let (mut reciever, sender) = client.start();
+
+    // Stop the client with this or just drop it
+    // client.stop();
+
+    // Examples behaviour for the current events
+    // while let Some(message) = reciever.recv().await {
+    //     match message {
+    //         FromServerMessage::Pong => println!("Pong from server"),
+    //         FromServerMessage::Move(id, direction) => {
+    //             println!("Player {id} moved to {direction:?}")
+    //         }
+    //         FromServerMessage::Join(id) => {
+    //             println!("Member {id} joined the lobby!")
+    //         }
+    //         FromServerMessage::Leave(id) => println!("Member {id} left the lobby!"),
+    //         FromServerMessage::LobbyMembers(members) => {
+    //             println!("current lobby members are: {members:?}")
+    //         }
+    //         FromServerMessage::SendMap(map) => println!("current map is: {map:?}"),
+    //     }
+    // }
 
     // Start up the windowing and game loop
     let win = WindowConfig::new()
