@@ -1,10 +1,11 @@
 mod pixels;
 
 use std::fmt::{Display, Formatter};
+use hecs::Entity;
 use notan::app::{App, Color, Graphics, Plugins};
 use notan::draw::{CreateDraw, DrawImages, DrawTransform};
 use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
-use notan::prelude::{Assets, Texture};
+use notan::prelude::{Assets, Texture, KeyCode};
 use common::map::Map;
 use crate::game::pixels::Pixels;
 use crate::program::state::ProgramState;
@@ -16,6 +17,13 @@ pub struct Game {
     pixels: Pixels,
 
     foo: usize,
+    player: Entity,
+}
+
+#[derive(Debug)]
+pub struct Player {
+    x: f32,
+    y: f32,
 }
 
 impl Game {
@@ -25,10 +33,14 @@ impl Game {
 
         let pixels = Pixels::new(width, height, gfx);
 
+        let mut world = hecs::World::new();
+        let player = world.spawn((Player{ x: 1.5, y: 1.5 },));
+
         Game {
-            world: hecs::World::new(),
+            world,
             map: Map::default(),
             foo: 0,
+            player,
 
             pixels,
         }
@@ -43,16 +55,34 @@ impl Display for Game {
 
 impl ProgramState for Game {
     fn update(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins) {
-        self.foo += 1;
+        let p = self.world.query_one_mut::<&mut Player>(self.player).unwrap();
+
+        if app.keyboard.is_down(KeyCode::W) && p.y > 0.0 {
+            p.y -= 0.2;
+        }
+
+        if app.keyboard.is_down(KeyCode::A) && p.x > 0.0 {
+            p.x -= 0.2;
+        }
+
+        if app.keyboard.is_down(KeyCode::S) && p.y < (self.pixels.dimensions().1 - 1) as f32 {
+            p.y += 0.2;
+        }
+
+        if app.keyboard.is_down(KeyCode::D) && p.x < (self.pixels.dimensions().0 - 1) as f32 {
+            p.x += 0.2;
+        }
     }
 
     fn draw(&mut self, app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) {
+        let p = self.world.query_one_mut::<&mut Player>(self.player).unwrap();
+
         // Draw a red dot
         let (width, height) = self.pixels.dimensions();
         self.foo %= width * height;
-        let x = self.foo % width;
-        let y = self.foo / width;
-        self.pixels.set_color(x, y, Color::RED);
+        let x = p.x;
+        let y = p.y;
+        self.pixels.set_color(x as usize, y as usize, Color::RED);
 
         // Render pixels
         self.pixels.flush(gfx);
@@ -79,19 +109,16 @@ impl ProgramState for Game {
 impl Game {
     fn debug_ui(&mut self, ui: &mut Ui) {
         Grid::new("debug_grid_1").show(ui, |ui| {
+            let p = self.world.query_one_mut::<&mut Player>(self.player).unwrap();
             let (width, height) = self.pixels.dimensions();
-            let mut x = self.foo % width;
-            let mut y = self.foo / width;
 
             ui.label("X");
-            Slider::new(&mut x, 0..=width-1).ui(ui);
+            Slider::new(&mut p.x, 0.0..=width as f32-1.0).ui(ui);
             ui.end_row();
 
             ui.label("Y");
-            Slider::new(&mut y, 0..=height-1).ui(ui);
+            Slider::new(&mut p.y, 0.0..=height as f32-1.0).ui(ui);
             ui.end_row();
-
-            self.foo = (y * width + x);
         });
     }
 }
