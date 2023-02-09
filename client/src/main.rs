@@ -1,13 +1,11 @@
-use ::client::program::Program;
 use anyhow::anyhow;
-
+use notan::draw::DrawConfig;
 use notan::egui::EguiConfig;
 use notan::prelude::WindowConfig;
-use tracing_subscriber::fmt::time;
 use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::time;
 
-use notan::draw::DrawConfig;
-
+use ::client::program::Program;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

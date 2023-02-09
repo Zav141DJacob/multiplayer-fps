@@ -1,14 +1,11 @@
-
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 use std::net::{IpAddr, SocketAddr};
 
-
 use itertools::Itertools;
 use message_io::network::RemoteAddr;
-use notan::app::{App, Graphics, Plugins};
 use notan::egui::{self, ComboBox, EguiPluginSugar, ScrollArea, TextEdit, Ui};
-use notan::prelude::{Assets, Color};
+use notan::prelude::{App, Assets, Color, Graphics, Plugins};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::mpsc::error::TryRecvError;
 use tracing::error;
@@ -17,7 +14,6 @@ use common::{Direction, FromClientMessage, FromServerMessage};
 
 use crate::args::ARGS;
 use crate::client::Client;
-
 use crate::program::state::ProgramState;
 
 pub struct NetworkTest {
@@ -50,8 +46,8 @@ struct Connection {
 }
 
 impl Connection {
-    fn new(_ip: IpAddr, _port: u16) -> anyhow::Result<Self> {
-        let addr = RemoteAddr::Socket(SocketAddr::new(ARGS.ip, ARGS.port));
+    fn new(ip: IpAddr, port: u16) -> anyhow::Result<Self> {
+        let addr = RemoteAddr::Socket(SocketAddr::new(ip, port));
         let mut client = Client::new(addr)?;
         let (receiver, sender) = client.start()?;
 

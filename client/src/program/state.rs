@@ -1,9 +1,7 @@
 use std::fmt::Display;
+
 use notan::Event;
 use notan::prelude::{App, Assets, Graphics, Plugins};
-
-
-
 
 pub trait ProgramState: Display {
     /// Return Some(ProgramState) to switch to that state

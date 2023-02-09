@@ -1,13 +1,16 @@
-mod pixels;
-
 use std::fmt::{Display, Formatter};
+
 use notan::app::{App, Color, Graphics, Plugins};
 use notan::draw::{CreateDraw, DrawImages, DrawTransform};
 use notan::egui::{EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
-use notan::prelude::{Assets};
+use notan::prelude::Assets;
+
 use common::map::Map;
+
 use crate::game::pixels::Pixels;
 use crate::program::state::ProgramState;
+
+mod pixels;
 
 #[allow(dead_code)]
 pub struct Game {
@@ -85,11 +88,11 @@ impl Game {
             let mut y = self.foo / width;
 
             ui.label("X");
-            Slider::new(&mut x, 0..=width-1).ui(ui);
+            Slider::new(&mut x, 0..=width - 1).ui(ui);
             ui.end_row();
 
             ui.label("Y");
-            Slider::new(&mut y, 0..=height-1).ui(ui);
+            Slider::new(&mut y, 0..=height - 1).ui(ui);
             ui.end_row();
 
             self.foo = y * width + x;

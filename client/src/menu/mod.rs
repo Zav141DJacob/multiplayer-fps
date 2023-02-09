@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+
 use notan::app::{App, Graphics, Plugins};
 use notan::egui::{self, EguiPluginSugar};
 use notan::prelude::{Assets, Color};
@@ -9,7 +10,7 @@ use crate::program::state::ProgramState;
 
 #[derive(Default)]
 pub struct Menu {
-    next_state: Option<NextState>
+    next_state: Option<NextState>,
 }
 
 enum NextState {
@@ -26,24 +27,23 @@ impl Display for Menu {
 impl ProgramState for Menu {
     fn draw(&mut self, app: &mut App, _assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) {
         let mut output = plugins.egui(|ctx| {
-
             egui::CentralPanel::default().show(ctx, |ui| {
-                    ui.vertical_centered(|ui| {
-                        ui.heading("Multiplayer FPS");
-                        ui.add_space(10.0);
+                ui.vertical_centered(|ui| {
+                    ui.heading("Multiplayer FPS");
+                    ui.add_space(10.0);
 
-                        if ui.button("Start").clicked() {
-                            self.next_state = Some(NextState::Game)
-                        }
+                    if ui.button("Start").clicked() {
+                        self.next_state = Some(NextState::Game)
+                    }
 
-                        if ui.button("Network Test").clicked() {
-                            self.next_state = Some(NextState::NetworkTest)
-                        }
+                    if ui.button("Network Test").clicked() {
+                        self.next_state = Some(NextState::NetworkTest)
+                    }
 
-                        if ui.button("Quit").clicked() {
-                            app.exit()
-                        }
-                    });
+                    if ui.button("Quit").clicked() {
+                        app.exit()
+                    }
+                });
             });
         });
 
