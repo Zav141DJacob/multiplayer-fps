@@ -1,7 +1,9 @@
 
-
+use rand::{thread_rng, Rng};
 use std::{str::FromStr};
 use serde::{Deserialize, Serialize};
+
+use crate::defaults::{MAP_WIDTH, MAP_HEIGHT};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Map {
@@ -12,11 +14,7 @@ pub struct Map {
 
 impl Default for Map {
     fn default() -> Self {
-        Self {
-            width: 10,
-            height: 10,
-            data: vec![MapCell::Empty; 100],
-        }
+        Map::new(MAP_WIDTH, MAP_HEIGHT)
     }
 }
 
@@ -26,10 +24,30 @@ impl Map {
         assert!(y < self.height);
         self.data[y * self.width + x]
     }
-    pub fn gen() -> Self {
-        // TODO:
-        //  Georgis algorithm code goes here
-        Self::default()
+
+    pub fn new(width: usize, height: usize) -> Self {
+        Self {
+            width,
+            height,
+            data: vec![MapCell::Empty; width * height]
+        }
+    }
+
+    pub fn gen(width: usize, height: usize) -> Self {
+        let mut map = Map::new(width, height);
+        map.data = vec![MapCell::Wall([0.0, 0.0, 0.0]); width * height];
+
+        for r in 1..map.height {
+			for c in 1..map.width {
+				if rand::random() {
+					map.data[r * map.width + c - 1] = MapCell::Empty
+				} else {
+                    map.data[(r - 1) * map.width + c] = MapCell::Empty
+				}
+			}
+		}
+        //print!("{:?}", map);
+        return map
     }
 }
 
