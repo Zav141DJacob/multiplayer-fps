@@ -4,11 +4,17 @@ use notan::egui::{self, Align2, Area, EguiPluginSugar, Vec2};
 use notan::prelude::{Assets, Color};
 use tracing::error;
 use crate::game::Game;
+use crate::net_test::NetworkTest;
 use crate::program::state::ProgramState;
 
 #[derive(Default)]
 pub struct Menu {
-    next_state: Option<Box<dyn ProgramState>>
+    next_state: Option<NextState>
+}
+
+enum NextState {
+    Game,
+    NetworkTest,
 }
 
 impl Display for Menu {
@@ -27,7 +33,11 @@ impl ProgramState for Menu {
                         ui.add_space(10.0);
 
                         if ui.button("Start").clicked() {
-                            self.next_state = Some(start_game(gfx).into())
+                            self.next_state = Some(NextState::Game)
+                        }
+
+                        if ui.button("Network Test").clicked() {
+                            self.next_state = Some(NextState::NetworkTest)
                         }
 
                         if ui.button("Quit").clicked() {
@@ -45,10 +55,13 @@ impl ProgramState for Menu {
     }
 
     fn change_state(&mut self, app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) -> Option<Box<dyn ProgramState>> {
-        self.next_state.take()
+        match self.next_state.take()? {
+            NextState::Game => {
+                Some(Game::new(gfx).into())
+            }
+            NextState::NetworkTest => {
+                Some(NetworkTest::new().into())
+            }
+        }
     }
-}
-
-fn start_game(gfx: &mut Graphics) -> Game {
-    Game::new(gfx)
 }

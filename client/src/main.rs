@@ -1,6 +1,3 @@
-mod args;
-mod client;
-
 use ::client::program::Program;
 use anyhow::anyhow;
 use message_io::network::RemoteAddr;
@@ -9,8 +6,6 @@ use notan::prelude::WindowConfig;
 use tracing_subscriber::fmt::time;
 use tracing_subscriber::EnvFilter;
 
-use crate::args::ARGS;
-use crate::client::Client;
 use notan::draw::DrawConfig;
 use std::net::SocketAddr;
 
@@ -27,11 +22,11 @@ async fn main() -> anyhow::Result<()> {
 
     // Set up up networking
     // This will be moved inside the game later, wouldn't want to connect automatically in the main menu after all
-    let addr = RemoteAddr::Socket(SocketAddr::new(ARGS.ip, ARGS.port));
-    println!("Starting client");
-
-    let mut client = Client::new(addr);
-    let (mut reciever, sender) = client.start();
+    // let addr = RemoteAddr::Socket(SocketAddr::new(ARGS.ip, ARGS.port));
+    // println!("Starting client");
+    //
+    // let mut client = Client::new(addr);
+    // let (mut reciever, sender) = client.start();
 
     // Stop the client with this or just drop it
     // client.stop();
