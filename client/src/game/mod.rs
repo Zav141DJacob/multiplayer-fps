@@ -1,12 +1,14 @@
 mod pixels;
+mod minimap;
 
 use std::fmt::{Display, Formatter};
 use notan::app::{App, Color, Graphics, Plugins};
 use notan::draw::{CreateDraw, DrawImages, DrawTransform};
-use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
+use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window, Vec2};
 use notan::prelude::{Assets, Texture};
 use common::map::Map;
 use crate::game::pixels::Pixels;
+use crate::game::minimap::Minimap;
 use crate::program::state::ProgramState;
 
 pub struct Game {
@@ -14,6 +16,7 @@ pub struct Game {
     map: Map,
 
     pixels: Pixels,
+    minimap: Minimap,
 
     foo: usize,
 }
@@ -22,15 +25,20 @@ impl Game {
     pub fn new(gfx: &mut Graphics) -> Self {
         let (width, height) = gfx.size();
         let (width, height) = (width as usize, height as usize);
+        
+        let  map = Map::default();
 
         let pixels = Pixels::new(width, height, gfx);
+        let mut minimap = Minimap::new(map.clone(), gfx);
+        minimap.render_map(gfx);
 
         Game {
             world: hecs::World::new(),
-            map: Map::default(),
+            map,
             foo: 0,
 
             pixels,
+            minimap,
         }
     }
 }
@@ -60,6 +68,11 @@ impl ProgramState for Game {
 
         let mut draw = gfx.create_draw();
         draw.image(self.pixels.texture()).scale(1.0, 1.0);
+
+
+        // Drawing minimap
+        self.minimap.draw(&mut draw, width, height);
+
         gfx.render(&draw);
 
         // Render egui

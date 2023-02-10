@@ -31,6 +31,12 @@ impl Map {
         //  Georgis algorithm code goes here
         Self::default()
     }
+    pub fn get_width(&self) -> usize {
+        self.width
+    }
+    pub fn get_height(&self) -> usize {
+        self.height
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
