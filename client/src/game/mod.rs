@@ -21,7 +21,6 @@ pub struct Game {
     pixels: Pixels,
     minimap: Minimap,
 
-    foo: usize,
     player: Entity,
 }
 
@@ -49,14 +48,9 @@ impl Game {
         let a = 90.0;
         let player = world.spawn((Player{ x: 1.5, dx: deg_to_rad(a).cos(), y: 1.5, dy: -deg_to_rad(a).sin(), a },));
 
-        let mut world = hecs::World::new();
-        let a = 90.0;
-        let player = world.spawn((Player{ x: 1.5, dx: deg_to_rad(a).cos(), y: 1.5, dy: -deg_to_rad(a).sin(), a },));
-
         Game {
             world,
             map,
-            foo: 0,
             player,
 
             pixels,
@@ -74,15 +68,15 @@ impl Display for Game {
 impl ProgramState for Game {
     fn update(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins) {
         let p = self.world.query_one_mut::<&mut Player>(self.player).unwrap();
-        let w = (self.pixels.dimensions().0) as f32;
-        let h = (self.pixels.dimensions().1) as f32;
+        let w = self.map.get_width() as f32;
+        let h = self.map.get_height() as f32;
 
         if app.keyboard.is_down(KeyCode::W) {
 
             if p.x + p.dx * 0.1 <= 0.0 {
                 p.x = 0.0;
             } else if p.x + p.dx * 0.1 >= w as f32 {
-                p.x = w - 1.0;
+                p.x = w;
             } else {
                 p.x += p.dx * 0.1;
             }
@@ -90,7 +84,7 @@ impl ProgramState for Game {
             if p.y + p.dy * 0.1 <= 0.0 {
                 p.y = 0.0;
             } else if p.y + p.dy * 0.1 >= h as f32 {
-                p.y = h - 1.0;
+                p.y = h;
             } else {
                 p.y += p.dy * 0.1;
             }
@@ -108,7 +102,7 @@ impl ProgramState for Game {
             if p.x - p.dx * 0.1 <= 0.0 {
                 p.x = 0.0;
             } else if p.x - p.dx * 0.1 >= w as f32 {
-                p.x = w - 1.0;
+                p.x = w;
             } else {
                 p.x -= p.dx * 0.1;
             }
@@ -116,7 +110,7 @@ impl ProgramState for Game {
             if p.y - p.dy * 0.1 <= 0.0 {
                 p.y = 0.0;
             } else if p.y - p.dy * 0.1 >= h as f32 {
-                p.y = h - 1.0;
+                p.y = h;
             } else {
                 p.y -= p.dy * 0.1;
             }
@@ -135,7 +129,6 @@ impl ProgramState for Game {
 
         // Draw a red dot
         let (width, height) = self.pixels.dimensions();
-        self.foo %= width * height;
         let x = p.x;
         let y = p.y;
         self.pixels.set_color(x as usize, y as usize, Color::RED);

@@ -12,7 +12,7 @@ pub struct Map {
 
 impl Default for Map {
     fn default() -> Self {
-        let w = MapCell::Wall([0.0, 0.0, 0.0]);
+        let w = MapCell::Wall([1.0, 1.0, 1.0]);
         let e = MapCell::Empty;
         let temp_map = vec![
             w, w, w, w, w, w, w, w, w, w,
