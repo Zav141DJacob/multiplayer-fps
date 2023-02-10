@@ -18,34 +18,6 @@ async fn main() -> anyhow::Result<()> {
         .finish();
     tracing::subscriber::set_global_default(subscriber)?;
 
-    // Set up up networking
-    // This will be moved inside the game later, wouldn't want to connect automatically in the main menu after all
-    // let addr = RemoteAddr::Socket(SocketAddr::new(ARGS.ip, ARGS.port));
-    // println!("Starting client");
-    //
-    // let mut client = Client::new(addr);
-    // let (mut reciever, sender) = client.start();
-
-    // Stop the client with this or just drop it
-    // client.stop();
-
-    // Examples behaviour for the current events
-    // while let Some(message) = reciever.recv().await {
-    //     match message {
-    //         FromServerMessage::Pong => println!("Pong from server"),
-    //         FromServerMessage::Move(id, direction) => {
-    //             println!("Player {id} moved to {direction:?}")
-    //         }
-    //         FromServerMessage::Join(id) => {
-    //             println!("Member {id} joined the lobby!")
-    //         }
-    //         FromServerMessage::Leave(id) => println!("Member {id} left the lobby!"),
-    //         FromServerMessage::LobbyMembers(members) => {
-    //             println!("current lobby members are: {members:?}")
-    //         }
-    //         FromServerMessage::SendMap(map) => println!("current map is: {map:?}"),
-    //     }
-    // }
 
     // Start up the windowing and game loop
     let win = WindowConfig::new()

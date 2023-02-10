@@ -41,6 +41,7 @@ impl NetworkTest {
 }
 
 struct Connection {
+    client: Client,
     receiver: UnboundedReceiver<FromServerMessage>,
     sender_widget: SenderWidget,
 }
@@ -52,6 +53,7 @@ impl Connection {
         let (receiver, sender) = client.start()?;
 
         Ok(Self {
+            client,
             sender_widget: SenderWidget::new(sender),
             receiver,
         })
@@ -70,9 +72,9 @@ impl ProgramState for NetworkTest {
                 })
             });
 
-            if self.connection.is_none() {
-                egui::Window::new("Connect").show(ctx, |ui| {
-                    ui.label(format!("IP: {}:{}", self.ip, self.port));
+            egui::Window::new("Connection").show(ctx, |ui| {
+                ui.label(format!("IP: {}:{}", self.ip, self.port));
+                if self.connection.is_none() {
                     if ui.button("CONNECT").clicked() {
                         let conn = match Connection::new(self.ip, self.port) {
                             Ok(v) => v,
@@ -83,13 +85,19 @@ impl ProgramState for NetworkTest {
                         };
                         self.connection = Some(conn);
                     }
-                });
-                return;
+                } else if ui.button("DISCONNECT").clicked() {
+                    self.connection = None;
+                }
+            });
+
+            if self.connection.is_none() {
+                return
             }
 
             let Connection {
                 receiver,
                 sender_widget,
+                ..
             } = self.connection.as_mut().unwrap();
 
             loop {
