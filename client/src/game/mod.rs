@@ -49,6 +49,10 @@ impl Game {
         let a = 90.0;
         let player = world.spawn((Player{ x: 1.5, dx: deg_to_rad(a).cos(), y: 1.5, dy: -deg_to_rad(a).sin(), a },));
 
+        let mut world = hecs::World::new();
+        let a = 90.0;
+        let player = world.spawn((Player{ x: 1.5, dx: deg_to_rad(a).cos(), y: 1.5, dy: -deg_to_rad(a).sin(), a },));
+
         Game {
             world,
             map,
@@ -142,8 +146,6 @@ impl ProgramState for Game {
 
         let mut draw = gfx.create_draw();
         draw.image(self.pixels.texture()).scale(1.0, 1.0);
-
-
 
         // Drawing minimap
         self.minimap.draw(&mut draw, width, height);
