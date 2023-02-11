@@ -100,7 +100,7 @@ impl ProgramState for Game {
         }
 
         if app.keyboard.is_down(KeyCode::A) {
-            p.a += 5.0;
+            p.a += 0.2;
             p.a = fix_angle(p.a);
             p.dx = deg_to_rad(p.a).cos();
             p.dy = -deg_to_rad(p.a).sin();
@@ -125,7 +125,7 @@ impl ProgramState for Game {
         }
 
         if app.keyboard.is_down(KeyCode::D) {
-            p.a -= 5.0;
+            p.a -= 0.2;
             p.a = fix_angle(p.a);
             p.dx = deg_to_rad(p.a).cos();
             p.dy = -deg_to_rad(p.a).sin();
@@ -156,23 +156,7 @@ impl ProgramState for Game {
         // init map
         //
         let map_w = m.get_width();
-        let map_h = m.get_width();
-        const MAP: &str = "0000222222220000\
-            1              0\
-            1      11111   0\
-            1     0        0\
-            0     0  1110000\
-            0     3        0\
-            0   10000      0\
-            0   0   11100  0\
-            0   0   0      0\
-            0   0   1  00000\
-            0       1      0\
-            2       1      0\
-            0       0      0\
-            0 0000000      0\
-            0              0\
-            0002222222200000";
+        let map_h = m.get_height();
 
         // Render pixels
         self.pixels.flush(gfx);
@@ -181,8 +165,8 @@ impl ProgramState for Game {
         let mut draw = gfx.create_draw();
         draw.image(self.pixels.texture()).scale(1.0, 1.0);
         // Render map
-        let rect_w = (width as f32 / (map_w * 2) as f32);
-        let rect_h = (height as f32 / map_h as f32);
+        let rect_w = (width / (10 * 2)) as f32;
+        let rect_h = (height / 10) as f32;
         for j in 0..map_h {
             // draw the map
             for i in 0..map_w {
@@ -190,15 +174,6 @@ impl ProgramState for Game {
                     common::map::MapCell::Empty => {}
                     common::map::MapCell::Wall(wall_color) => {
                         let mut color: Color = wall_color.into();
-
-                        if (i % map_w == 0
-                            || j % map_h == 0
-                            || i % map_w == map_w - 1
-                            || j % map_h == map_h - 1)
-                        {
-                            color = Color::BLACK
-                        }
-
                         let rect_x = (i as f32) * rect_w;
                         let rect_y = (j as f32) * rect_h;
                         draw.rect((rect_y, rect_x), (rect_w, rect_h));
@@ -207,14 +182,8 @@ impl ProgramState for Game {
             }
         }
 
-        // init player and draw them on canvas
-        // Coord
-        let player_x = 3.456; // player x position
-        let player_y = 2.345;
-        // Direction
-        let player_a: f32 = 1.523; // player view direction
         const FOV: f32 = PI / 3.;
-        draw.rect((p.x * rect_w, p.y * rect_h), (5., 5.));
+        draw.rect((p.x * rect_w - 5., p.y * rect_h - 5.), (5., 5.));
 
         // DRAW FOV RAYCAST
         for i in 0..width {
@@ -233,8 +202,8 @@ impl ProgramState for Game {
                         break
                     }
                     common::map::MapCell::Empty => {
-                        let pix_x = cx * rect_w;
-                        let pix_y = cy * rect_h;
+                        let pix_x = cx;
+                        let pix_y = cy;
 
                         m = pix_x;
                         n = pix_y;
