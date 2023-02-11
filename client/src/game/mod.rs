@@ -127,6 +127,7 @@ impl ProgramState for Game {
 
     fn draw(&mut self, app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) {
         let p = self.world.query_one_mut::<&mut Player>(self.player).unwrap();
+        let m = self.map.clone();
 
         // Draw a red dot
         let x = p.x;
@@ -137,8 +138,9 @@ impl ProgramState for Game {
         let (width, height) = self.pixels.dimensions();
 
         // init map
-        const MAP_W: usize = 16; // map width
-        const MAP_H: usize = 16; // map height
+        // 
+        let map_w = m.get_width();
+        let map_h = m.get_width();
         const MAP: &str = "0000222222220000\
             1              0\
             1      11111   0\
@@ -163,17 +165,30 @@ impl ProgramState for Game {
         let mut draw = gfx.create_draw();
         draw.image(self.pixels.texture()).scale(1.0, 1.0);
         // Render map
-        let rect_w = (width as f32 / (MAP_W*2) as f32);
-        let rect_h = (height as f32 / MAP_H as f32);
-        for j in 0..MAP_H {
+        let rect_w = (width as f32 / (map_w*2) as f32);
+        let rect_h = (height as f32 / map_h as f32);
+        for j in 0..map_h {
             // draw the map
-            for i in 0..MAP_W {
-                if MAP.as_bytes()[i + j * MAP_W] as char == ' ' {
-                    continue; // skip empty spaces
+            for i in 0..map_w {
+
+                match self.map.cell(j, i) {
+                    common::map::MapCell::Empty => {},
+                    common::map::MapCell::Wall(wall_color) => {
+                        let mut color:Color = wall_color.into();
+
+                        if (
+                            i % map_w == 0 || 
+                            j % map_h == 0 ||
+                            i % map_w == map_w -1 ||
+                            j % map_h == map_h -1
+                            
+                        ) {
+                            color = Color::BLACK
+                        }
+
+                        self.pixels.set_color(x as usize, y as usize, color);
+                    },
                 }
-                let rect_x = (i as f32) * rect_w;
-                let rect_y = (j as f32) * rect_h;
-                draw.rect((rect_x, rect_y), (rect_w, rect_h));
             }
         }
 
@@ -197,7 +212,7 @@ impl ProgramState for Game {
                 t = t + 0.05;
                 let cx = player_x + t * angle.cos();
                 let cy = player_y + t * angle.sin();
-                if (MAP.as_bytes()[(cx as usize + cy as usize * MAP_W) as usize] as char != ' ') {
+                if (MAP.as_bytes()[(cx as usize + cy as usize * map_w) as usize] as char != ' ') {
                     break;
                 };
 
