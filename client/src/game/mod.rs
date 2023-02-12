@@ -165,18 +165,17 @@ impl ProgramState for Game {
         let mut draw = gfx.create_draw();
         draw.image(self.pixels.texture()).scale(1.0, 1.0);
         // Render map
-        let rect_w = (width / (10 * 2)) as f32;
-        let rect_h = (height / 10) as f32;
+        let rect_w = (width / (map_w * 2)) as f32;
+        let rect_h = (height / map_h) as f32;
         for j in 0..map_h {
             // draw the map
             for i in 0..map_w {
-                match self.map.cell(j, i) {
+                match self.map.cell(i, j) {
                     common::map::MapCell::Empty => {}
                     common::map::MapCell::Wall(wall_color) => {
-                        let mut color: Color = wall_color.into();
                         let rect_x = (i as f32) * rect_w;
                         let rect_y = (j as f32) * rect_h;
-                        draw.rect((rect_y, rect_x), (rect_w, rect_h));
+                        draw.rect((rect_x, rect_y), (rect_w, rect_h));
                     }
                 }
             }
@@ -190,32 +189,26 @@ impl ProgramState for Game {
             let mut t = 0.;
             // draw the visibility cone
             let angle = p.a - FOV / 2. + FOV * i as f32 / width as f32;
+
             let mut m = 0.;
             let mut n = 0.;
             while t < 20. {
                 t = t + 0.05;
                 let cx = p.x + t * angle.cos();
                 let cy = p.y + t * angle.sin();
-
                 match self.map.cell(cx as usize, cy as usize) {
-                    common::map::MapCell::Wall(wall_color) => {
-                        break
-                    }
+                    common::map::MapCell::Wall(wall_color) => break,
                     common::map::MapCell::Empty => {
-                        let pix_x = cx;
-                        let pix_y = cy;
+                        let pix_x = cx * rect_w;
+                        let pix_y = cy * rect_h;
 
-                        m = pix_x;
-                        n = pix_y;
+                        self.pixels
+                            .set_color(pix_x as usize, pix_y as usize, Color::WHITE)
                     }
                 }
             }
-            draw.path()
-                .move_to(p.x * rect_w, p.y * rect_h)
-                .line_to(m, n)
-                .color(Color::RED)
-                .stroke(0.15);
         }
+
         // Render pixels
         self.pixels.flush(gfx);
         self.pixels.clear(Color::BLACK);
