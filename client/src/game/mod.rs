@@ -15,6 +15,9 @@ use notan::prelude::*;
 use std::f32::consts::PI;
 use std::fmt::{Display, Formatter};
 
+const PLAYER_SPEED: f32 = 0.1;
+const CAMERA_SENSITIVITY: f32 = 0.2;
+
 pub struct Game {
     world: hecs::World,
     map: Map,
@@ -82,50 +85,86 @@ impl ProgramState for Game {
         let h = self.map.get_height() as f32;
 
         if app.keyboard.is_down(KeyCode::W) {
-            if p.x + p.dx * 0.1 <= 0.0 {
+            if p.x + p.dx * PLAYER_SPEED <= 0.0 {
                 p.x = 0.0;
-            } else if p.x + p.dx * 0.1 >= w as f32 {
+            } else if p.x + p.dx * PLAYER_SPEED >= w as f32 {
                 p.x = w;
             } else {
-                p.x += p.dx * 0.1;
+                p.x += p.dx * PLAYER_SPEED;
             }
 
-            if p.y + p.dy * 0.1 <= 0.0 {
+            if p.y + p.dy * PLAYER_SPEED <= 0.0 {
                 p.y = 0.0;
-            } else if p.y + p.dy * 0.1 >= h as f32 {
+            } else if p.y + p.dy * PLAYER_SPEED >= h as f32 {
                 p.y = h;
             } else {
-                p.y += p.dy * 0.1;
+                p.y += p.dy * PLAYER_SPEED;
             }
         }
 
         if app.keyboard.is_down(KeyCode::A) {
-            p.a += 0.2;
+            if p.x + p.dy * PLAYER_SPEED <= 0.0 {
+                p.x = 0.0;
+            } else if p.x + p.dy * PLAYER_SPEED >= w as f32 {
+                p.x = w;
+            } else {
+                p.x += p.dy * PLAYER_SPEED;
+            }
+
+            if p.y - p.dx * PLAYER_SPEED <= 0.0 {
+                p.y = 0.0;
+            } else if p.y - p.dx * PLAYER_SPEED >= h as f32 {
+                p.y = h;
+            } else {
+                p.y -= p.dx * PLAYER_SPEED;
+            }
+        }
+
+        if app.keyboard.is_down(KeyCode::S) {
+            if p.x - p.dx * PLAYER_SPEED <= 0.0 {
+                p.x = 0.0;
+            } else if p.x - p.dx * PLAYER_SPEED >= w as f32 {
+                p.x = w;
+            } else {
+                p.x -= p.dx * PLAYER_SPEED;
+            }
+
+            if p.y - p.dy * PLAYER_SPEED <= 0.0 {
+                p.y = 0.0;
+            } else if p.y - p.dy * PLAYER_SPEED >= h as f32 {
+                p.y = h;
+            } else {
+                p.y -= p.dy * PLAYER_SPEED;
+            }
+        }
+
+        if app.keyboard.is_down(KeyCode::D) {
+            if p.x - p.dy * PLAYER_SPEED <= 0.0 {
+                p.x = 0.0;
+            } else if p.x - p.dy * PLAYER_SPEED >= w as f32 {
+                p.x = w;
+            } else {
+                p.x -= p.dy * PLAYER_SPEED;
+            }
+
+            if p.y + p.dx * PLAYER_SPEED <= 0.0 {
+                p.y = 0.0;
+            } else if p.y + p.dx * PLAYER_SPEED >= h as f32 {
+                p.y = h;
+            } else {
+                p.y += p.dx * PLAYER_SPEED;
+            }
+        }
+
+        if app.keyboard.is_down(KeyCode::Left) {
+            p.a += CAMERA_SENSITIVITY;
             p.a = fix_angle(p.a);
             p.dx = deg_to_rad(p.a).cos();
             p.dy = -deg_to_rad(p.a).sin();
         }
 
-        if app.keyboard.is_down(KeyCode::S) {
-            if p.x - p.dx * 0.1 <= 0.0 {
-                p.x = 0.0;
-            } else if p.x - p.dx * 0.1 >= w as f32 {
-                p.x = w;
-            } else {
-                p.x -= p.dx * 0.1;
-            }
-
-            if p.y - p.dy * 0.1 <= 0.0 {
-                p.y = 0.0;
-            } else if p.y - p.dy * 0.1 >= h as f32 {
-                p.y = h;
-            } else {
-                p.y -= p.dy * 0.1;
-            }
-        }
-
-        if app.keyboard.is_down(KeyCode::D) {
-            p.a -= 0.2;
+        if app.keyboard.is_down(KeyCode::Right) {
+            p.a -= CAMERA_SENSITIVITY;
             p.a = fix_angle(p.a);
             p.dx = deg_to_rad(p.a).cos();
             p.dy = -deg_to_rad(p.a).sin();
