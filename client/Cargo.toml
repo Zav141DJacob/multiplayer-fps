@@ -29,6 +29,7 @@ once_cell = "1.17.0"
 
 # Game logic
 hecs = { version = "0.9.1", features = ["macros"] }
+resources = "1.1.0"
 common = { path = "../common" }
 
 # Networking
