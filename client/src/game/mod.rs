@@ -206,28 +206,28 @@ impl ProgramState for Game {
         // Render map
         let rect_w = (width / (map_w * 2)) as f32;
         let rect_h = (height / map_h) as f32;
-        for j in 0..map_h {
-            // draw the map
-            for i in 0..map_w {
-                match self.map.cell(i, j) {
-                    common::map::MapCell::Empty => {}
-                    common::map::MapCell::Wall(wall_color) => {
-                        let rect_x = (i as f32) * rect_w;
-                        let rect_y = (j as f32) * rect_h;
-                        draw.rect((rect_x, rect_y), (rect_w, rect_h));
-                    }
-                }
-            }
-        }
+        // for j in 0..map_h {
+        //     // draw the map
+        //     for i in 0..map_w {
+        //         match self.map.cell(i, j) {
+        //             common::map::MapCell::Empty => {}
+        //             common::map::MapCell::Wall(wall_color) => {
+        //                 let rect_x = (i as f32) * rect_w;
+        //                 let rect_y = (j as f32) * rect_h;
+        //                 draw.rect((rect_x, rect_y), (rect_w, rect_h));
+        //             }
+        //         }
+        //     }
+        // }
 
+        //draw.rect((p.x * rect_w - 5., p.y * rect_h - 5.), (5., 5.));
         const FOV: f32 = PI / 3.;
-        draw.rect((p.x * rect_w - 5., p.y * rect_h - 5.), (5., 5.));
 
         // DRAW FOV RAYCAST
-        for i in 0..(width / 2) {
+        for i in 0..width {
             let mut t = 0.;
             // draw the visibility cone
-            let angle = p.a - FOV / 2. + FOV * i as f32 / (width as f32 / 2.);
+            let angle = p.a - FOV / 2. + FOV * i as f32 / width as f32;
 
             while t < 20. {
                 let cx = p.x + t * angle.cos();
@@ -235,15 +235,24 @@ impl ProgramState for Game {
                 match self.map.cell(cx as usize, cy as usize) {
                     common::map::MapCell::Wall(wall_color) => {
                         let column_height = height as f32 / (t * (angle - p.a).cos());
-                        draw.rect((width as f32 / 2.0 + i as f32, height as f32 / 2.0 - column_height / 2.0), (1.0, column_height)).fill_color(Color::new(1. -(t/10.), 1. -(t/10.), 1. -(t/10.), 1.));
-                        break
-                    },
+                        draw.rect(
+                            (i as f32, height as f32 / 2.0 - column_height / 2.0),
+                            (1.0, column_height),
+                        )
+                        .fill_color(Color::new(
+                            0.85 - (t / 10.),
+                            0. - (t / 10.),
+                            0. - (t / 10.),
+                            1.,
+                        ));
+                        break;
+                    }
                     common::map::MapCell::Empty => {
                         let pix_x = cx * rect_w;
                         let pix_y = cy * rect_h;
 
-                        self.pixels
-                            .set_color(pix_x as usize, pix_y as usize, Color::WHITE)
+                        //self.pixels
+                        //    .set_color(pix_x as usize, pix_y as usize, Color::WHITE)
                     }
                 }
                 t = t + 0.05;
