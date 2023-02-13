@@ -16,7 +16,7 @@ use std::f32::consts::PI;
 use std::fmt::{Display, Formatter};
 
 const PLAYER_SPEED: f32 = 0.1;
-const CAMERA_SENSITIVITY: f32 = 0.2;
+const CAMERA_SENSITIVITY: f32 = 0.5;
 
 pub struct Game {
     world: hecs::World,
@@ -224,19 +224,22 @@ impl ProgramState for Game {
         draw.rect((p.x * rect_w - 5., p.y * rect_h - 5.), (5., 5.));
 
         // DRAW FOV RAYCAST
-        for i in 0..width {
+        for i in 0..(width / 2) {
             let mut t = 0.;
             // draw the visibility cone
-            let angle = p.a - FOV / 2. + FOV * i as f32 / width as f32;
+            let angle = p.a - FOV / 2. + FOV * i as f32 / (width as f32 / 2.);
 
             let mut m = 0.;
             let mut n = 0.;
             while t < 20. {
-                t = t + 0.05;
                 let cx = p.x + t * angle.cos();
                 let cy = p.y + t * angle.sin();
                 match self.map.cell(cx as usize, cy as usize) {
-                    common::map::MapCell::Wall(wall_color) => break,
+                    common::map::MapCell::Wall(wall_color) => {
+                        let column_height = height as f32 / t;
+                        draw.rect((width as f32 / 2.0 + i as f32, 1.0), (1.0, column_height)).fill_color(Color::new(1. -(t/10.), 1. -(t/10.), 1. -(t/10.), 1.));;
+                        break
+                    },
                     common::map::MapCell::Empty => {
                         let pix_x = cx * rect_w;
                         let pix_y = cy * rect_h;
@@ -245,6 +248,7 @@ impl ProgramState for Game {
                             .set_color(pix_x as usize, pix_y as usize, Color::WHITE)
                     }
                 }
+                t = t + 0.05;
             }
         }
 
