@@ -234,8 +234,8 @@ impl ProgramState for Game {
                 let cy = p.y + t * angle.sin();
                 match self.map.cell(cx as usize, cy as usize) {
                     common::map::MapCell::Wall(wall_color) => {
-                        let column_height = height as f32 / t;
-                        draw.rect((width as f32 / 2.0 + i as f32, 1.0), (1.0, column_height + height as f32 / 2.0)).fill_color(Color::new(1. -(t/10.), 1. -(t/10.), 1. -(t/10.), 1.));
+                        let column_height = height as f32 / (t * (angle - p.a).cos());
+                        draw.rect((width as f32 / 2.0 + i as f32, 1.0+(height as f32 - column_height)/5.), (1.0, column_height + height as f32 / 2.0)).fill_color(Color::new(1. -(t/10.), 1. -(t/10.), 1. -(t/10.), 1.));
                         break
                     },
                     common::map::MapCell::Empty => {
