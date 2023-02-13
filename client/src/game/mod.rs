@@ -16,7 +16,7 @@ use std::f32::consts::PI;
 use std::fmt::{Display, Formatter};
 
 const PLAYER_SPEED: f32 = 0.1;
-const CAMERA_SENSITIVITY: f32 = 0.5;
+const CAMERA_SENSITIVITY: f32 = 0.1;
 
 pub struct Game {
     world: hecs::World,
@@ -229,8 +229,6 @@ impl ProgramState for Game {
             // draw the visibility cone
             let angle = p.a - FOV / 2. + FOV * i as f32 / (width as f32 / 2.);
 
-            let mut m = 0.;
-            let mut n = 0.;
             while t < 20. {
                 let cx = p.x + t * angle.cos();
                 let cy = p.y + t * angle.sin();
