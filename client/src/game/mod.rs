@@ -157,14 +157,14 @@ impl ProgramState for Game {
         }
 
         if app.keyboard.is_down(KeyCode::Left) {
-            p.a += CAMERA_SENSITIVITY;
+            p.a -= CAMERA_SENSITIVITY;
             p.a = fix_angle(p.a);
             p.dx = deg_to_rad(p.a).cos();
             p.dy = -deg_to_rad(p.a).sin();
         }
 
         if app.keyboard.is_down(KeyCode::Right) {
-            p.a -= CAMERA_SENSITIVITY;
+            p.a += CAMERA_SENSITIVITY;
             p.a = fix_angle(p.a);
             p.dx = deg_to_rad(p.a).cos();
             p.dy = -deg_to_rad(p.a).sin();
@@ -235,7 +235,7 @@ impl ProgramState for Game {
                 match self.map.cell(cx as usize, cy as usize) {
                     common::map::MapCell::Wall(wall_color) => {
                         let column_height = height as f32 / t;
-                        draw.rect((width as f32 / 2.0 + i as f32, 1.0), (1.0, column_height)).fill_color(Color::new(1. -(t/10.), 1. -(t/10.), 1. -(t/10.), 1.));;
+                        draw.rect((width as f32 / 2.0 + i as f32, 1.0), (1.0, column_height + height as f32 / 2.0)).fill_color(Color::new(1. -(t/10.), 1. -(t/10.), 1. -(t/10.), 1.));
                         break
                     },
                     common::map::MapCell::Empty => {
