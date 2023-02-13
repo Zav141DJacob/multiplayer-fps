@@ -241,8 +241,8 @@ impl ProgramState for Game {
                         )
                         .fill_color(Color::new(
                             0.85 - (t / 10.),
-                            0. - (t / 10.),
-                            0. - (t / 10.),
+                            0.85 - (t / 10.),
+                            0.85 - (t / 10.),
                             1.,
                         ));
                         break;
