@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 use hecs::Entity;
 use notan::app::{App, Color, Graphics, Plugins};
 use notan::draw::{CreateDraw, DrawImages, DrawTransform};
-use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
+use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window, Vec2};
 use notan::prelude::{Assets, Texture, KeyCode};
 use common::map::Map;
 use crate::game::utils::*;
@@ -142,6 +142,7 @@ impl ProgramState for Game {
 
         // Drawing minimap
         self.minimap.draw(&mut draw, width, height);
+        self.minimap.render_player_location(&mut draw, width,height, p, Color::RED);
 
         gfx.render(&draw);
 
