@@ -1,4 +1,5 @@
 use common::map::Map;
+use hecs::World;
 
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
@@ -30,6 +31,7 @@ impl ClientIdentificationInfo {
 }
 #[derive(Default)]
 struct ClientStateInfo {
+    position: [usize; 2],
     // Something like position and other player info
 }
 
@@ -44,6 +46,9 @@ impl ClientInfo {
             id: ClientIdentificationInfo { addr, endpoint },
             state: ClientStateInfo::default(),
         }
+    }
+    fn set_position(&mut self, coords: [usize; 2]) {
+        self.state.position = coords;
     }
 }
 pub struct Server {
@@ -69,6 +74,8 @@ impl Server {
     pub fn run(&mut self) {
         let listener = self.listener.take().unwrap();
 
+        let map: Map = Map::gen();
+        let mut world: World = World::new();
         listener.for_each(move |event| match event.network() {
             NetEvent::Message(endpoint, input_data) => {
                 let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
@@ -97,7 +104,20 @@ impl Server {
                     },
                     FromClientMessage::Join => {
                         if !self.is_registered(name) {
-                            self.register(id);
+                            match self.register(id, map.clone()) {
+                                Some(player_id) => {
+                                    match self.clients.get_mut(&player_id) {
+                                        Some(client) => {
+                                            let pos = map.spawn(&mut world, player_id);
+                                            client.set_position(pos);
+                                            let output_data = bincode::serialize(&FromServerMessage::Spawn(player_id, pos)).unwrap();
+                                            self.handler.network().send(endpoint, &output_data);
+                                        },
+                                        None => (),
+                                    }
+                                },
+                                None => (),
+                            }
                         }
                     },
                 }
@@ -113,7 +133,7 @@ impl Server {
         self.clients.contains_key(&name)
     }
 
-    fn register(&mut self, info: ClientIdentificationInfo) {
+    fn register(&mut self, info: ClientIdentificationInfo, map: Map) -> Option<u64> {
         let name = info.get_id();
 
         if !self.is_registered(name) {
@@ -139,14 +159,16 @@ impl Server {
             println!("Added participant '{}' with ip {}", name, info.addr);
 
             // Sending initial map
-            let message = FromServerMessage::SendMap(Map::gen());
+            let message = FromServerMessage::SendMap(map);
             let output_data = bincode::serialize(&message).unwrap();
             self.handler.network().send(info.endpoint, &output_data);
-            println!("Sending map to '{name}'")
+            println!("Sending map to '{name}'");
+            return Some(name)
         } else {
             println!(
                 "Participant with name '{name}' already exists"
             );
+            return None;
         }
     }
 

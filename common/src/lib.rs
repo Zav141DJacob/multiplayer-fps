@@ -21,6 +21,7 @@ pub enum FromServerMessage {
     LobbyMembers(Vec<UserID>),
     SendMap(Map),
     Pong,
+    Spawn(UserID, [usize; 2])
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
