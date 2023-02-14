@@ -1,10 +1,8 @@
 mod minimap;
 mod pixels;
-mod utils;
 
 use crate::game::minimap::Minimap;
 use crate::game::pixels::Pixels;
-use crate::game::utils::*;
 use crate::program::state::ProgramState;
 use common::map::Map;
 use hecs::Entity;
@@ -16,7 +14,7 @@ use std::f32::consts::PI;
 use std::fmt::{Display, Formatter};
 
 const PLAYER_SPEED: f32 = 0.1;
-const CAMERA_SENSITIVITY: f32 = 0.1;
+const CAMERA_SENSITIVITY: f32 = 3.0;
 
 pub struct Game {
     world: hecs::World,
@@ -49,12 +47,12 @@ impl Game {
         minimap.render_map(gfx);
 
         let mut world = hecs::World::new();
-        let a = 90.0;
+        let a: f32 = 90.0;
         let player = world.spawn((Player {
             x: 1.5,
-            dx: deg_to_rad(a).cos(),
+            dx: a.to_radians().cos(),
             y: 1.5,
-            dy: -deg_to_rad(a).sin(),
+            dy: -a.to_radians().sin(),
             a,
         },));
 
@@ -85,35 +83,35 @@ impl ProgramState for Game {
         let h = self.map.get_height() as f32;
 
         if app.keyboard.is_down(KeyCode::W) {
-            if p.x + p.dx * PLAYER_SPEED <= 0.0 {
+            if p.x + p.dx * PLAYER_SPEED < 0.0 {
                 p.x = 0.0;
-            } else if p.x + p.dx * PLAYER_SPEED >= w as f32 {
+            } else if p.x + p.dx * PLAYER_SPEED > w as f32 {
                 p.x = w;
             } else {
                 p.x += p.dx * PLAYER_SPEED;
             }
 
-            if p.y + p.dy * PLAYER_SPEED <= 0.0 {
+            if p.y - p.dy * PLAYER_SPEED < 0.0 {
                 p.y = 0.0;
-            } else if p.y + p.dy * PLAYER_SPEED >= h as f32 {
+            } else if p.y - p.dy * PLAYER_SPEED > h as f32 {
                 p.y = h;
             } else {
-                p.y += p.dy * PLAYER_SPEED;
+                p.y -= p.dy * PLAYER_SPEED;
             }
         }
 
         if app.keyboard.is_down(KeyCode::A) {
-            if p.x + p.dy * PLAYER_SPEED <= 0.0 {
+            if p.x - p.dy * PLAYER_SPEED < 0.0 {
                 p.x = 0.0;
-            } else if p.x + p.dy * PLAYER_SPEED >= w as f32 {
+            } else if p.x - p.dy * PLAYER_SPEED > w as f32 {
                 p.x = w;
             } else {
-                p.x += p.dy * PLAYER_SPEED;
+                p.x -= p.dy * PLAYER_SPEED;
             }
 
-            if p.y - p.dx * PLAYER_SPEED <= 0.0 {
+            if p.y - p.dx * PLAYER_SPEED < 0.0 {
                 p.y = 0.0;
-            } else if p.y - p.dx * PLAYER_SPEED >= h as f32 {
+            } else if p.y - p.dx * PLAYER_SPEED > h as f32 {
                 p.y = h;
             } else {
                 p.y -= p.dx * PLAYER_SPEED;
@@ -121,35 +119,35 @@ impl ProgramState for Game {
         }
 
         if app.keyboard.is_down(KeyCode::S) {
-            if p.x - p.dx * PLAYER_SPEED <= 0.0 {
+            if p.x - p.dx * PLAYER_SPEED < 0.0 {
                 p.x = 0.0;
-            } else if p.x - p.dx * PLAYER_SPEED >= w as f32 {
+            } else if p.x - p.dx * PLAYER_SPEED > w as f32 {
                 p.x = w;
             } else {
                 p.x -= p.dx * PLAYER_SPEED;
             }
 
-            if p.y - p.dy * PLAYER_SPEED <= 0.0 {
+            if p.y + p.dy * PLAYER_SPEED < 0.0 {
                 p.y = 0.0;
-            } else if p.y - p.dy * PLAYER_SPEED >= h as f32 {
+            } else if p.y + p.dy * PLAYER_SPEED > h as f32 {
                 p.y = h;
             } else {
-                p.y -= p.dy * PLAYER_SPEED;
+                p.y += p.dy * PLAYER_SPEED;
             }
         }
 
         if app.keyboard.is_down(KeyCode::D) {
-            if p.x - p.dy * PLAYER_SPEED <= 0.0 {
+            if p.x + p.dy * PLAYER_SPEED < 0.0 {
                 p.x = 0.0;
-            } else if p.x - p.dy * PLAYER_SPEED >= w as f32 {
+            } else if p.x + p.dy * PLAYER_SPEED > w as f32 {
                 p.x = w;
             } else {
-                p.x -= p.dy * PLAYER_SPEED;
+                p.x += p.dy * PLAYER_SPEED;
             }
 
-            if p.y + p.dx * PLAYER_SPEED <= 0.0 {
+            if p.y + p.dx * PLAYER_SPEED < 0.0 {
                 p.y = 0.0;
-            } else if p.y + p.dx * PLAYER_SPEED >= h as f32 {
+            } else if p.y + p.dx * PLAYER_SPEED > h as f32 {
                 p.y = h;
             } else {
                 p.y += p.dx * PLAYER_SPEED;
@@ -158,16 +156,16 @@ impl ProgramState for Game {
 
         if app.keyboard.is_down(KeyCode::Left) {
             p.a -= CAMERA_SENSITIVITY;
-            p.a = fix_angle(p.a);
-            p.dx = deg_to_rad(p.a).cos();
-            p.dy = -deg_to_rad(p.a).sin();
+            p.a = p.a.rem_euclid(360.0);
+            p.dx = p.a.to_radians().cos();
+            p.dy = -p.a.to_radians().sin();
         }
 
         if app.keyboard.is_down(KeyCode::Right) {
             p.a += CAMERA_SENSITIVITY;
-            p.a = fix_angle(p.a);
-            p.dx = deg_to_rad(p.a).cos();
-            p.dy = -deg_to_rad(p.a).sin();
+            p.a = p.a.rem_euclid(360.0);
+            p.dx = p.a.to_radians().cos();
+            p.dy = -p.a.to_radians().sin();
         }
     }
 
@@ -203,6 +201,7 @@ impl ProgramState for Game {
 
         let mut draw = gfx.create_draw();
         draw.image(self.pixels.texture()).scale(1.0, 1.0);
+
         // Render map
         let rect_w = (width / (map_w * 2)) as f32;
         let rect_h = (height / map_h) as f32;
@@ -227,14 +226,14 @@ impl ProgramState for Game {
         for i in 0..width {
             let mut t = 0.;
             // draw the visibility cone
-            let angle = p.a - FOV / 2. + FOV * i as f32 / width as f32;
+            let angle = p.a.to_radians() - FOV / 2. + FOV * i as f32 / width as f32;
 
             while t < 20. {
                 let cx = p.x + t * angle.cos();
                 let cy = p.y + t * angle.sin();
                 match self.map.cell(cx as usize, cy as usize) {
                     common::map::MapCell::Wall(wall_color) => {
-                        let column_height = height as f32 / (t * (angle - p.a).cos());
+                        let column_height = height as f32 / (t * (angle - p.a.to_radians()).cos());
                         draw.rect(
                             (i as f32, height as f32 / 2.0 - column_height / 2.0),
                             (1.0, column_height),
@@ -287,7 +286,8 @@ impl Game {
                 .world
                 .query_one_mut::<&mut Player>(self.player)
                 .unwrap();
-            let (width, height) = self.pixels.dimensions();
+            let height = self.map.get_height();
+            let width = self.map.get_width();
 
             ui.label("X");
             Slider::new(&mut p.x, 0.0..=width as f32 - 1.0).ui(ui);
