@@ -25,7 +25,7 @@ async fn main() -> anyhow::Result<()> {
         // .lazy_loop(true)
         .high_dpi(true)
         .resizable(false)
-        .size(1280, 720);
+        .size(720, 720);
 
     notan::init_with(Program::notan_setup)
         .add_config(win)
