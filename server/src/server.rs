@@ -1,4 +1,5 @@
 use common::map::Map;
+use common::defaults::{MAP_WIDTH, MAP_HEIGHT};
 
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
@@ -139,7 +140,7 @@ impl Server {
             println!("Added participant '{}' with ip {}", name, info.addr);
 
             // Sending initial map
-            let message = FromServerMessage::SendMap(Map::gen());
+            let message = FromServerMessage::SendMap(Map::gen(MAP_WIDTH, MAP_HEIGHT));
             let output_data = bincode::serialize(&message).unwrap();
             self.handler.network().send(info.endpoint, &output_data);
             println!("Sending map to '{name}'")
