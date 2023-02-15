@@ -3,7 +3,6 @@ use rand::{thread_rng, Rng};
 use std::{str::FromStr};
 use serde::{Deserialize, Serialize};
 use hecs::{Entity, World};
-use rand::Rng;
 
 use crate::{Player, UserID, Coordinates};
 
@@ -99,10 +98,7 @@ impl Map {
                 }
             }
         }
-        let rand_num = rand::thread_rng().gen_range(0..available_coords.len());
-        // let rand_float: f64 = rng.gen();
-        // let rand_num = (rand_float * 1000.0) as usize % available_coords.len();
-        // let rand_num = get_ran(0, available_coords.len());
+        let rand_num: usize = rand::random::<usize>() % available_coords.len();
         self.spawn_player_at(available_coords[rand_num], world, player) 
 
     }
