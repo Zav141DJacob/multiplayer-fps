@@ -7,11 +7,14 @@ use crate::program::state::ProgramState;
 use common::map::Map;
 use hecs::Entity;
 use notan::app::{App, Color, Graphics, Plugins};
+
 use notan::draw::{CreateDraw, DrawImages, DrawShapes, DrawTransform};
-use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
 use notan::prelude::*;
 use std::f32::consts::PI;
 use std::fmt::{Display, Formatter};
+
+use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window, Vec2};
+// use notan::prelude::{Assets, Texture, KeyCode};
 
 const PLAYER_SPEED: f32 = 0.1;
 const CAMERA_SENSITIVITY: f32 = 3.0;
@@ -264,6 +267,7 @@ impl ProgramState for Game {
 
         // Drawing minimap
         self.minimap.draw(&mut draw, width, height);
+        self.minimap.render_player_location(&mut draw, width,height, p, Color::RED);
 
         gfx.render(&draw);
 
