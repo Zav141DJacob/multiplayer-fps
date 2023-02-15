@@ -1,7 +1,7 @@
 use common::map::Map;
 use notan::{prelude::{Color, Graphics, Texture}, graphics::color, egui::Vec2, draw::DrawShapes};
 use notan::draw::{CreateDraw, DrawImages, DrawTransform};
-use super::pixels::Pixels;
+use super::{pixels::Pixels, Player};
 
 
 pub struct Minimap {
@@ -141,4 +141,47 @@ impl Minimap {
             .scale(self.minimap_scale.x, self.minimap_scale.y);
 
     }
+
+    pub fn render_vision(&self, draw: &mut notan::draw::Draw, width: usize, height: usize, player: &Player, vision_color: Color, rays: Vec<Vec2>) {// Render vision form given rays
+        let minimap_translate = Vec2::new(
+            (width as f32 - (self.get_width() as f32 * self.minimap_scale.x)) - (self.minimap_pos.x ),
+            self.minimap_pos.y
+        );
+
+        let ray_start = minimap_translate + self.conver_ray_to_minimap_size(Vec2::new(player.x, player.y));
+
+        for mut ray_end in rays {
+            ray_end = self.conver_ray_to_minimap_size(ray_end);
+
+
+            ray_end = minimap_translate + ray_end;
+            draw.line(ray_start.into(), ray_end.into()).color(vision_color);
+        }
+
+
+    }
+
+    pub fn render_player_location(&self, draw: &mut notan::draw::Draw, width: usize, height: usize, player: &Player, player_color: Color) { 
+        self.render_entity_location(draw, width, height, Vec2::new(player.x, player.y), player_color);
+
+    }
+
+    pub fn render_entity_location(&self, draw: &mut notan::draw::Draw, width: usize, height: usize, entity_location: Vec2, entity_color: Color) { // Render entities onto minimap
+        let minimap_translate = Vec2::new(
+            (width as f32 - (self.get_width() as f32 * self.minimap_scale.x)) - (self.minimap_pos.x ),
+            self.minimap_pos.y
+        );
+
+        let entity_size = Vec2::new(1.0, 1.0) * self.minimap_scale;
+        let entity_location = minimap_translate + self.conver_ray_to_minimap_size(entity_location);
+        let entity_location = entity_location - (entity_size / 2.0);
+
+        draw.rect(entity_location.into(), entity_size.into()).color(entity_color);
+    }
+
+    pub fn conver_ray_to_minimap_size(&self, ray:Vec2) -> Vec2 {
+        (ray * self.map_ratio as f32) * self.minimap_scale
+    }
+
+
 }
