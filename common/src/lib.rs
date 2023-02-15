@@ -24,7 +24,7 @@ pub enum FromServerMessage {
     Spawn(UserID, Coordinates)
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum Direction {
     Forward,
     Backward,

@@ -1,8 +1,8 @@
-use std::mem;
 use notan::{AppState, Event};
 use notan::log::info;
 use notan::prelude::{App, Assets, Graphics, Plugins};
 use tracing::debug_span;
+
 use crate::menu::Menu;
 use crate::program::state::ProgramState;
 
@@ -23,7 +23,7 @@ impl Default for Program {
 }
 
 impl Program {
-    pub fn notan_setup(app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) -> Self {
+    pub fn notan_setup(_app: &mut App, _assets: &mut Assets, _gfx: &mut Graphics, _plugins: &mut Plugins) -> Self {
         Self::default()
     }
 

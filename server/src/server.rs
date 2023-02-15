@@ -1,5 +1,6 @@
 use common::{map::Map, Coordinates};
 use hecs::World;
+use common::defaults::{MAP_WIDTH, MAP_HEIGHT};
 
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
@@ -74,7 +75,7 @@ impl Server {
     pub fn run(&mut self) {
         let listener = self.listener.take().unwrap();
 
-        let map: Map = Map::gen();
+        let map: Map = Map::gen(MAP_WIDTH, MAP_HEIGHT);
         let mut world: World = World::new();
         listener.for_each(move |event| match event.network() {
             NetEvent::Message(endpoint, input_data) => {
