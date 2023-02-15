@@ -23,7 +23,7 @@ pub enum FromServerMessage {
     Pong,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum Direction {
     Forward,
     Backward,

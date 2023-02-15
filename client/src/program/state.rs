@@ -1,10 +1,9 @@
 use std::fmt::Display;
+
 use notan::Event;
 use notan::prelude::{App, Assets, Graphics, Plugins};
 
-use crate::game::Game;
-use crate::menu::Menu;
-
+#[allow(unused_variables)]
 pub trait ProgramState: Display {
     /// Return Some(ProgramState) to switch to that state
     fn update(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins) {}

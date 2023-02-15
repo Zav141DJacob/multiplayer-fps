@@ -27,20 +27,19 @@ impl Drop for Client {
 }
 
 impl Client {
-    pub fn new(remote_addr: RemoteAddr) -> Self {
+    pub fn new(remote_addr: RemoteAddr) -> anyhow::Result<Self> {
         let (handler, listener) = node::split();
 
         let (server_id, local_addr) = handler
             .network()
-            .connect(Transport::Udp, remote_addr)
-            .unwrap();
+            .connect(Transport::Udp, remote_addr)?;
 
-        Client {
+        Ok(Client {
             handler,
             listener: Some(listener),
             server_id,
             local_addr,
-        }
+        })
     }
 
     pub fn stop(&mut self) {
@@ -49,10 +48,10 @@ impl Client {
 
     pub fn start(
         &mut self,
-    ) -> (
+    ) -> anyhow::Result<(
         UnboundedReceiver<FromServerMessage>,
         UnboundedSender<FromClientMessage>,
-    ) {
+    )> {
         // Messages recieved
         let (from_server_sender, from_server_reciever) =
             mpsc::unbounded_channel::<FromServerMessage>();
@@ -61,9 +60,7 @@ impl Client {
             mpsc::unbounded_channel::<FromClientMessage>();
 
         // Sends join event
-        from_client_sender
-            .send(FromClientMessage::Join)
-            .expect("Failed to send join event");
+        from_client_sender.send(FromClientMessage::Join)?;
 
         // Handles sent messages
         let handler = self.handler.clone();
@@ -129,6 +126,6 @@ impl Client {
             });
         });
 
-        (from_server_reciever, from_client_sender)
+        Ok((from_server_reciever, from_client_sender))
     }
 }

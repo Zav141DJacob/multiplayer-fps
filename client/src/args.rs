@@ -1,6 +1,8 @@
 use std::net::IpAddr;
+
 use clap::Parser;
 use once_cell::sync::Lazy;
+
 use common::defaults::{IP, PORT};
 
 #[derive(Parser, Debug)]

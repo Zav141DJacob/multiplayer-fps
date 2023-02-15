@@ -1,3 +1,4 @@
+
 mod minimap;
 mod pixels;
 
@@ -18,6 +19,7 @@ use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window, 
 
 const PLAYER_SPEED: f32 = 0.1;
 const CAMERA_SENSITIVITY: f32 = 3.0;
+
 
 pub struct Game {
     world: hecs::World,

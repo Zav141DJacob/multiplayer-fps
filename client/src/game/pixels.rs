@@ -4,7 +4,7 @@ pub struct Pixels {
     width: usize,
     height: usize,
     buffer: Vec<u8>,
-    texture: Texture
+    texture: Texture,
 }
 
 impl Pixels {
@@ -34,7 +34,7 @@ impl Pixels {
         debug_assert!(y < self.height, "y: {}, height: {}", y, self.height);
 
         let i = (y * self.width + x) * 4;
-        self.buffer[i..i+4].copy_from_slice(&color.rgba_u8())
+        self.buffer[i..i + 4].copy_from_slice(&color.rgba_u8())
     }
 
     /// Clears the pixel buffer with a single color
@@ -42,7 +42,7 @@ impl Pixels {
         let rgba = color.rgba_u8();
         let mut i = 0;
         while i <= self.buffer.len() - 4 {
-            self.buffer[i..i+4].copy_from_slice(&rgba);
+            self.buffer[i..i + 4].copy_from_slice(&rgba);
             i += 4;
         }
     }
