@@ -1,4 +1,4 @@
-use common::map::Map;
+use common::{map::Map, Coordinates};
 use hecs::World;
 
 use std::{
@@ -31,7 +31,7 @@ impl ClientIdentificationInfo {
 }
 #[derive(Default)]
 struct ClientStateInfo {
-    position: [usize; 2],
+    position: Coordinates,
     // Something like position and other player info
 }
 
@@ -47,7 +47,7 @@ impl ClientInfo {
             state: ClientStateInfo::default(),
         }
     }
-    fn set_position(&mut self, coords: [usize; 2]) {
+    fn set_position(&mut self, coords: Coordinates) {
         self.state.position = coords;
     }
 }
@@ -104,19 +104,16 @@ impl Server {
                     },
                     FromClientMessage::Join => {
                         if !self.is_registered(name) {
-                            match self.register(id, map.clone()) {
-                                Some(player_id) => {
-                                    match self.clients.get_mut(&player_id) {
-                                        Some(client) => {
-                                            let pos = map.spawn(&mut world, player_id);
-                                            client.set_position(pos);
-                                            let output_data = bincode::serialize(&FromServerMessage::Spawn(player_id, pos)).unwrap();
-                                            self.handler.network().send(endpoint, &output_data);
-                                        },
-                                        None => (),
-                                    }
-                                },
-                                None => (),
+                            //registers user
+                            if let Some(player_id) = self.register(id, map.clone()) {
+
+                                //spawns player
+                                if let Some(client) = self.clients.get_mut(&player_id) {
+                                    let coords = map.spawn_player(&mut world, player_id);
+                                    client.set_position(coords);
+                                    let output_data = bincode::serialize(&FromServerMessage::Spawn(player_id, coords)).unwrap();
+                                    self.handler.network().send(endpoint, &output_data);
+                                }
                             }
                         }
                     },

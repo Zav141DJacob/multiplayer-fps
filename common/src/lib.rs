@@ -21,7 +21,7 @@ pub enum FromServerMessage {
     LobbyMembers(Vec<UserID>),
     SendMap(Map),
     Pong,
-    Spawn(UserID, [usize; 2])
+    Spawn(UserID, Coordinates)
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -31,3 +31,15 @@ pub enum Direction {
     Left,
     Right,
 }
+
+pub struct Player;
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+pub struct Coordinates {
+    x: usize,
+    y: usize,
+}
+
+
+
+
