@@ -371,6 +371,7 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "hecs",
  "rand 0.7.3",
  "serde",
 ]
@@ -2567,6 +2568,7 @@ dependencies = [
  "bincode",
  "clap",
  "common",
+ "hecs",
  "message-io",
  "serde",
  "tokio",
