@@ -5,6 +5,8 @@ use std::num::NonZeroU64;
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
 
+use crate::{register_shared_components, bulk_attribute};
+
 /// Describes the instructions the server can give to the client ECS.
 /// The contained NonZeroU64 is the entity ID.
 #[derive(Debug, Clone, Serialize, Deserialize)]
