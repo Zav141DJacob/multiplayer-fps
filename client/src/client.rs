@@ -30,9 +30,7 @@ impl Client {
     pub fn new(remote_addr: RemoteAddr) -> anyhow::Result<Self> {
         let (handler, listener) = node::split();
 
-        let (server_id, local_addr) = handler
-            .network()
-            .connect(Transport::Udp, remote_addr)?;
+        let (server_id, local_addr) = handler.network().connect(Transport::Udp, remote_addr)?;
 
         Ok(Client {
             handler,

@@ -1,3 +1,3 @@
-mod macros; // Needs to be first
 pub mod components;
+mod macros;
 pub mod system;

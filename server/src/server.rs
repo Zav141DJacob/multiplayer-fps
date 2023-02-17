@@ -1,6 +1,6 @@
+use common::defaults::{MAP_HEIGHT, MAP_WIDTH};
 use common::{map::Map, Coordinates};
 use hecs::World;
-use common::defaults::{MAP_WIDTH, MAP_HEIGHT};
 
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
@@ -8,7 +8,6 @@ use std::{
     io,
     net::SocketAddr,
 };
-
 
 use common::{FromClientMessage, FromServerMessage};
 use message_io::{
@@ -97,27 +96,29 @@ impl Server {
                         if self.is_registered(name) {
                             todo!()
                         }
-                    },
+                    }
                     FromClientMessage::Leave => {
                         if self.is_registered(name) {
                             self.unregister(&name)
                         }
-                    },
+                    }
                     FromClientMessage::Join => {
                         if !self.is_registered(name) {
                             //registers user
                             if let Some(player_id) = self.register(id, map.clone()) {
-
                                 //spawns player
                                 if let Some(client) = self.clients.get_mut(&player_id) {
                                     let coords = map.spawn_player(&mut world, player_id);
                                     client.set_position(coords);
-                                    let output_data = bincode::serialize(&FromServerMessage::Spawn(player_id, coords)).unwrap();
+                                    let output_data = bincode::serialize(
+                                        &FromServerMessage::Spawn(player_id, coords),
+                                    )
+                                    .unwrap();
                                     self.handler.network().send(endpoint, &output_data);
                                 }
                             }
                         }
-                    },
+                    }
                 }
             }
             _ => {
@@ -161,12 +162,12 @@ impl Server {
             let output_data = bincode::serialize(&message).unwrap();
             self.handler.network().send(info.endpoint, &output_data);
             println!("Sending map to '{name}'");
-            return Some(name)
+
+            Some(name)
         } else {
-            println!(
-                "Participant with name '{name}' already exists"
-            );
-            return None;
+            println!("Participant with name '{name}' already exists");
+
+            None
         }
     }
 

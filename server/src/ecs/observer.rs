@@ -1,8 +1,10 @@
+use hecs::{Bundle, Component, ComponentError, DynamicBundle, Entity, NoSuchEntity, World};
 use std::ops::{Deref, DerefMut};
 use std::vec::Drain;
-use hecs::{Bundle, Component, ComponentError, DynamicBundle, Entity, NoSuchEntity, World};
 
-use common::ecs::components::{EcsProtocol, InsertComponent, InsertComponentTuple, RemoveComponentHelper, RemoveComponentTuple};
+use common::ecs::components::{
+    EcsProtocol, InsertComponent, InsertComponentTuple, RemoveComponentHelper, RemoveComponentTuple,
+};
 
 /// Used to observe changes to a given [World] and record those changes as [EcsProtocol] messages.
 #[derive(Debug, Default)]
@@ -22,8 +24,14 @@ impl Observer {
     }
 
     /// Wrap a component in a smart pointer that pushes changes to the observer once the component is dropped.
-    pub fn observe_component<'a, T>(&'a mut self, entity: Entity, component: &'a mut T) -> ObservedComponent<'a, T>
-    where T: Into<InsertComponent> + Clone {
+    pub fn observe_component<'a, T>(
+        &'a mut self,
+        entity: Entity,
+        component: &'a mut T,
+    ) -> ObservedComponent<'a, T>
+    where
+        T: Into<InsertComponent> + Clone,
+    {
         ObservedComponent {
             observer: self,
             component,
@@ -68,10 +76,15 @@ impl<'a> ObservedWorld<'a> {
     }
 
     /// Same usage as [World::spawn]
-    pub fn spawn(&mut self, components: impl DynamicBundle + InsertComponentTuple + Clone) -> Entity {
+    pub fn spawn(
+        &mut self,
+        components: impl DynamicBundle + InsertComponentTuple + Clone,
+    ) -> Entity {
         let entity = self.world.spawn(components.clone());
 
-        components.collect_insert().into_iter()
+        components
+            .collect_insert()
+            .into_iter()
             .for_each(|comp| self.push(EcsProtocol::Insert((entity.to_bits(), comp))));
 
         entity
@@ -85,7 +98,9 @@ impl<'a> ObservedWorld<'a> {
     ) -> Result<(), NoSuchEntity> {
         self.world.insert(entity, components.clone())?;
 
-        components.collect_insert().into_iter()
+        components
+            .collect_insert()
+            .into_iter()
             .for_each(|comp| self.push(EcsProtocol::Insert((entity.to_bits(), comp))));
 
         Ok(())
@@ -95,7 +110,7 @@ impl<'a> ObservedWorld<'a> {
     pub fn insert_one(
         &mut self,
         entity: Entity,
-        component: impl Component + Into<InsertComponent> + Clone
+        component: impl Component + Into<InsertComponent> + Clone,
     ) -> Result<(), NoSuchEntity> {
         self.world.insert_one(entity, component.clone())?;
 
@@ -107,11 +122,12 @@ impl<'a> ObservedWorld<'a> {
     /// Same usage as [World::remove]
     pub fn remove<T: Bundle + 'static + RemoveComponentTuple>(
         &mut self,
-        entity: Entity
+        entity: Entity,
     ) -> Result<T, ComponentError> {
         let res = self.world.remove::<T>(entity);
 
-        T::collect_remove().into_iter()
+        T::collect_remove()
+            .into_iter()
             .for_each(|comp| self.push(EcsProtocol::Remove((entity.to_bits(), comp))));
 
         res
@@ -120,7 +136,7 @@ impl<'a> ObservedWorld<'a> {
     /// Same usage as [World::remove_one]
     pub fn remove_one<T: Component + RemoveComponentHelper>(
         &mut self,
-        entity: Entity
+        entity: Entity,
     ) -> Result<T, ComponentError> {
         let res = self.world.remove_one::<T>(entity);
 
@@ -142,7 +158,9 @@ impl<'a> ObservedWorld<'a> {
 /// Wraps a given component and pushes an insert to the observer once this is dropped.
 /// Implements [Deref] and [DerefMut] for accessing the original component.
 pub struct ObservedComponent<'a, T>
-where T: Into<InsertComponent> + Clone {
+where
+    T: Into<InsertComponent> + Clone,
+{
     observer: &'a mut Observer,
     component: &'a mut T,
     entity: Entity,
@@ -150,7 +168,9 @@ where T: Into<InsertComponent> + Clone {
 }
 
 impl<'a, T> ObservedComponent<'a, T>
-where T: Into<InsertComponent> + Clone {
+where
+    T: Into<InsertComponent> + Clone,
+{
     /// Make any following calls add to the unreliable queue.
     /// Mostly intended for constantly updating things like movement.
     pub fn unreliable(mut self) -> Self {
@@ -160,7 +180,9 @@ where T: Into<InsertComponent> + Clone {
 }
 
 impl<'a, T> Deref for ObservedComponent<'a, T>
-where T: Into<InsertComponent> + Clone {
+where
+    T: Into<InsertComponent> + Clone,
+{
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -169,14 +191,18 @@ where T: Into<InsertComponent> + Clone {
 }
 
 impl<'a, T> DerefMut for ObservedComponent<'a, T>
-where T: Into<InsertComponent> + Clone {
+where
+    T: Into<InsertComponent> + Clone,
+{
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.component
     }
 }
 
 impl<'a, T> Drop for ObservedComponent<'a, T>
-where T: Into<InsertComponent> + Clone {
+where
+    T: Into<InsertComponent> + Clone,
+{
     fn drop(&mut self) {
         // Commit changes once the ObservedComponent is dropped
         let comp = self.component.clone().into();

@@ -6,8 +6,8 @@ use itertools::Itertools;
 use message_io::network::RemoteAddr;
 use notan::egui::{self, ComboBox, EguiPluginSugar, ScrollArea, TextEdit, Ui};
 use notan::prelude::{App, Assets, Color, Graphics, Plugins};
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::mpsc::error::TryRecvError;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tracing::error;
 
 use common::{Direction, FromClientMessage, FromServerMessage};
@@ -61,15 +61,24 @@ impl Connection {
 }
 
 impl ProgramState for NetworkTest {
-    fn draw(&mut self, _app: &mut App, _assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) {
+    fn draw(
+        &mut self,
+        _app: &mut App,
+        _assets: &mut Assets,
+        gfx: &mut Graphics,
+        plugins: &mut Plugins,
+    ) {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 let text = self.log.iter().rev().join("\n");
                 let mut text = text.as_str();
 
-                ScrollArea::vertical().stick_to_bottom(true).auto_shrink([false; 2]).show(ui, |ui| {
-                    TextEdit::multiline(&mut text).show(ui);
-                })
+                ScrollArea::vertical()
+                    .stick_to_bottom(true)
+                    .auto_shrink([false; 2])
+                    .show(ui, |ui| {
+                        TextEdit::multiline(&mut text).show(ui);
+                    })
             });
 
             egui::Window::new("Connection").show(ctx, |ui| {
@@ -91,7 +100,7 @@ impl ProgramState for NetworkTest {
             });
 
             if self.connection.is_none() {
-                return
+                return;
             }
 
             let Connection {
@@ -126,7 +135,6 @@ impl ProgramState for NetworkTest {
         gfx.render(&output);
     }
 }
-
 
 struct SenderWidget {
     sender: UnboundedSender<FromClientMessage>,

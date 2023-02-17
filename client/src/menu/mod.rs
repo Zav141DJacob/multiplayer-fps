@@ -25,7 +25,13 @@ impl Display for Menu {
 }
 
 impl ProgramState for Menu {
-    fn draw(&mut self, app: &mut App, _assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) {
+    fn draw(
+        &mut self,
+        app: &mut App,
+        _assets: &mut Assets,
+        gfx: &mut Graphics,
+        plugins: &mut Plugins,
+    ) {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
@@ -54,14 +60,16 @@ impl ProgramState for Menu {
         }
     }
 
-    fn change_state(&mut self, _app: &mut App, _assets: &mut Assets, gfx: &mut Graphics, _plugins: &mut Plugins) -> Option<Box<dyn ProgramState>> {
+    fn change_state(
+        &mut self,
+        _app: &mut App,
+        _assets: &mut Assets,
+        gfx: &mut Graphics,
+        _plugins: &mut Plugins,
+    ) -> Option<Box<dyn ProgramState>> {
         match self.next_state.take()? {
-            NextState::Game => {
-                Some(Game::new(gfx).into())
-            }
-            NextState::NetworkTest => {
-                Some(NetworkTest::new().into())
-            }
+            NextState::Game => Some(Game::new(gfx).into()),
+            NextState::NetworkTest => Some(NetworkTest::new().into()),
         }
     }
 }

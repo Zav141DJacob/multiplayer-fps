@@ -1,12 +1,12 @@
+use common::ecs::components::{EcsProtocol, InsertComponent};
 use hecs::World;
 use resources::Resources;
-use common::ecs::components::{EcsProtocol, InsertComponent};
 
 use crate::ecs::observer::{ObservedWorld, Observer};
 use crate::ecs::systems::ServerSystems;
 
-mod observer;
 mod components;
+mod observer;
 mod systems;
 
 #[derive(Default)]

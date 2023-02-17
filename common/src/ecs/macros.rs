@@ -1,4 +1,3 @@
-#![macro_use]
 // WARNING: Lots of macro fuckery ahead
 
 /// Creates two enums: InsertComponent and RemoveComponent.
@@ -23,8 +22,11 @@
 ///     // And so on...
 /// }
 /// ```
+#[macro_export]
 macro_rules! register_shared_components {
     ($($name:ident),+$(,)?) => {
+        use $crate::{insert_impls, remove_impls};
+
         // Create enums
         /// Represents inserting a single component into a world
         #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, derive_more::From)]
@@ -103,6 +105,7 @@ macro_rules! register_shared_components {
     };
 }
 
+#[macro_export]
 macro_rules! insert_impls {
     ( $( $name:ident )+ ) => {
         impl<$($name: Into<InsertComponent>),+> InsertComponentTuple for ($($name,)+)
@@ -130,7 +133,7 @@ macro_rules! insert_impls {
     };
 }
 
-
+#[macro_export]
 macro_rules! remove_impls {
     ( $( $name:ident )+ ) => {
         impl<$($name: RemoveComponentHelper),+> RemoveComponentTuple for ($($name,)+)
@@ -157,6 +160,7 @@ macro_rules! remove_impls {
     }
 }
 
+#[macro_export]
 macro_rules! bulk_attribute {
     ($derive:meta; $($item:item) +) => {
         $(

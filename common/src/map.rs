@@ -1,12 +1,8 @@
-
-use rand::{thread_rng, Rng};
 use std::{str::FromStr};
 use serde::{Deserialize, Serialize};
-use hecs::{Entity, World};
+use hecs::World;
 
 use crate::{Player, UserID, Coordinates};
-
-use crate::defaults::{MAP_WIDTH, MAP_HEIGHT};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Map {
@@ -70,7 +66,7 @@ impl Map {
 			}
 		}
         //print!("{:?}", map);
-        return map
+        map
     }
     pub fn get_width(&self) -> usize {
         self.width
@@ -81,7 +77,7 @@ impl Map {
     pub fn spawn_player_at(&self, coords: Coordinates, world: &mut World, player: u64) -> Coordinates {
         world.spawn((
             Player,
-            player as UserID, 
+            player as UserID,
             Coordinates {
                 x: coords.x,
                 y: coords.y,
