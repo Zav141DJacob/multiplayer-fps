@@ -48,6 +48,19 @@ macro_rules! register_shared_components {
                     )+
                 }
             }
+
+            pub fn query_all(world: &mut hecs::World) -> Vec<EcsProtocol> {
+                let mut vec = Vec::new();
+
+                $(vec.extend(
+                    world.query_mut::<&$name>().into_iter()
+                        .map(|(entity, component)| {
+                            EcsProtocol::Insert((entity.to_bits(), InsertComponent::from(component.clone())))
+                        })
+                );)+
+
+                vec
+            }
         }
 
         impl RemoveComponent {

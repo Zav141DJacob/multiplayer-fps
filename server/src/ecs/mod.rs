@@ -1,5 +1,6 @@
 use hecs::World;
 use resources::Resources;
+use common::ecs::components::{EcsProtocol, InsertComponent};
 
 use crate::ecs::observer::{ObservedWorld, Observer};
 use crate::ecs::systems::ServerSystems;
@@ -24,5 +25,10 @@ impl ServerEcs {
     /// Runs the ECS systems with a given time since last tick in seconds (i.e. delta time)
     pub fn tick(&mut self, dt: f32) {
         ServerSystems::run(self, dt);
+    }
+
+    /// Get a sequence of [EcsProtocol] messages that will initialize a new client up to the current state of the server ECS
+    pub fn init_client(&mut self) -> Vec<EcsProtocol> {
+        InsertComponent::query_all(&mut self.world)
     }
 }
