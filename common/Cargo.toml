@@ -5,6 +5,8 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
-
-hecs = { version = "0.9.1", features = ["macros"] }
-rand = "0.7.3"
+rand = "0.8.5"
+glam = { version = "0.22.0", features = ["serde"] }
+derive_more = "0.99.17"
+impl-trait-for-tuples = "0.2.2"
+hecs = "0.9.1"

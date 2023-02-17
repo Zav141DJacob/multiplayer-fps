@@ -1,6 +1,7 @@
 
 mod minimap;
 mod pixels;
+mod ecs;
 
 use crate::game::minimap::Minimap;
 use crate::game::pixels::Pixels;

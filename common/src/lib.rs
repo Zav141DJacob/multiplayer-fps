@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 pub mod defaults;
 pub mod map;
+pub mod ecs;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum FromClientMessage {
     Ping,
