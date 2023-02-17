@@ -2,8 +2,8 @@ use map::Map;
 use serde::{Deserialize, Serialize};
 
 pub mod defaults;
-pub mod map;
 pub mod ecs;
+pub mod map;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum FromClientMessage {
@@ -23,7 +23,7 @@ pub enum FromServerMessage {
     LobbyMembers(Vec<UserID>),
     SendMap(Map),
     Pong,
-    Spawn(UserID, Coordinates)
+    Spawn(UserID, Coordinates),
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
@@ -41,7 +41,3 @@ pub struct Coordinates {
     x: usize,
     y: usize,
 }
-
-
-
-

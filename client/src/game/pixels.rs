@@ -11,7 +11,8 @@ impl Pixels {
     pub fn new(width: usize, height: usize, gfx: &mut Graphics) -> Self {
         let buffer = vec![0; width * height * 4];
 
-        let texture = gfx.create_texture()
+        let texture = gfx
+            .create_texture()
             .from_bytes(&buffer, width as i32, height as i32)
             .build()
             .expect("couldn't create pixels texture");

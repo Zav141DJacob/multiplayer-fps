@@ -1,7 +1,6 @@
-
+mod ecs;
 mod minimap;
 mod pixels;
-mod ecs;
 
 use crate::game::minimap::Minimap;
 use crate::game::pixels::Pixels;
@@ -15,12 +14,11 @@ use notan::prelude::*;
 use std::f32::consts::PI;
 use std::fmt::{Display, Formatter};
 
-use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window, Vec2};
+use notan::egui::{EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
 // use notan::prelude::{Assets, Texture, KeyCode};
 
 const PLAYER_SPEED: f32 = 0.1;
 const CAMERA_SENSITIVITY: f32 = 3.0;
-
 
 pub struct Game {
     world: hecs::World,
@@ -91,7 +89,7 @@ impl ProgramState for Game {
         if app.keyboard.is_down(KeyCode::W) {
             if p.x + p.dx * PLAYER_SPEED < 0.0 {
                 p.x = 0.0;
-            } else if p.x + p.dx * PLAYER_SPEED > w as f32 {
+            } else if p.x + p.dx * PLAYER_SPEED > w {
                 p.x = w;
             } else {
                 p.x += p.dx * PLAYER_SPEED;
@@ -99,7 +97,7 @@ impl ProgramState for Game {
 
             if p.y - p.dy * PLAYER_SPEED < 0.0 {
                 p.y = 0.0;
-            } else if p.y - p.dy * PLAYER_SPEED > h as f32 {
+            } else if p.y - p.dy * PLAYER_SPEED > h {
                 p.y = h;
             } else {
                 p.y -= p.dy * PLAYER_SPEED;
@@ -109,7 +107,7 @@ impl ProgramState for Game {
         if app.keyboard.is_down(KeyCode::A) {
             if p.x - p.dy * PLAYER_SPEED < 0.0 {
                 p.x = 0.0;
-            } else if p.x - p.dy * PLAYER_SPEED > w as f32 {
+            } else if p.x - p.dy * PLAYER_SPEED > w {
                 p.x = w;
             } else {
                 p.x -= p.dy * PLAYER_SPEED;
@@ -117,7 +115,7 @@ impl ProgramState for Game {
 
             if p.y - p.dx * PLAYER_SPEED < 0.0 {
                 p.y = 0.0;
-            } else if p.y - p.dx * PLAYER_SPEED > h as f32 {
+            } else if p.y - p.dx * PLAYER_SPEED > h {
                 p.y = h;
             } else {
                 p.y -= p.dx * PLAYER_SPEED;
@@ -127,7 +125,7 @@ impl ProgramState for Game {
         if app.keyboard.is_down(KeyCode::S) {
             if p.x - p.dx * PLAYER_SPEED < 0.0 {
                 p.x = 0.0;
-            } else if p.x - p.dx * PLAYER_SPEED > w as f32 {
+            } else if p.x - p.dx * PLAYER_SPEED > w {
                 p.x = w;
             } else {
                 p.x -= p.dx * PLAYER_SPEED;
@@ -135,7 +133,7 @@ impl ProgramState for Game {
 
             if p.y + p.dy * PLAYER_SPEED < 0.0 {
                 p.y = 0.0;
-            } else if p.y + p.dy * PLAYER_SPEED > h as f32 {
+            } else if p.y + p.dy * PLAYER_SPEED > h {
                 p.y = h;
             } else {
                 p.y += p.dy * PLAYER_SPEED;
@@ -145,7 +143,7 @@ impl ProgramState for Game {
         if app.keyboard.is_down(KeyCode::D) {
             if p.x + p.dy * PLAYER_SPEED < 0.0 {
                 p.x = 0.0;
-            } else if p.x + p.dy * PLAYER_SPEED > w as f32 {
+            } else if p.x + p.dy * PLAYER_SPEED > w {
                 p.x = w;
             } else {
                 p.x += p.dy * PLAYER_SPEED;
@@ -153,7 +151,7 @@ impl ProgramState for Game {
 
             if p.y + p.dx * PLAYER_SPEED < 0.0 {
                 p.y = 0.0;
-            } else if p.y + p.dx * PLAYER_SPEED > h as f32 {
+            } else if p.y + p.dx * PLAYER_SPEED > h {
                 p.y = h;
             } else {
                 p.y += p.dx * PLAYER_SPEED;
@@ -270,7 +268,8 @@ impl ProgramState for Game {
 
         // Drawing minimap
         self.minimap.draw(&mut draw, width, height);
-        self.minimap.render_player_location(&mut draw, width,height, p, Color::RED);
+        self.minimap
+            .render_player_location(&mut draw, width, height, p, Color::RED);
 
         gfx.render(&draw);
 

@@ -2,8 +2,8 @@ use anyhow::anyhow;
 use notan::draw::DrawConfig;
 use notan::egui::EguiConfig;
 use notan::prelude::WindowConfig;
-use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::time;
+use tracing_subscriber::EnvFilter;
 
 use ::client::program::Program;
 
@@ -17,7 +17,6 @@ async fn main() -> anyhow::Result<()> {
         .with_env_filter(EnvFilter::from_default_env())
         .finish();
     tracing::subscriber::set_global_default(subscriber)?;
-
 
     // Start up the windowing and game loop
     let win = WindowConfig::new()

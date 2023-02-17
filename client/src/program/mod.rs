@@ -1,6 +1,6 @@
-use notan::{AppState, Event};
 use notan::log::info;
 use notan::prelude::{App, Assets, Graphics, Plugins};
+use notan::{AppState, Event};
 use tracing::debug_span;
 
 use crate::menu::Menu;
@@ -11,7 +11,6 @@ pub mod state;
 #[derive(AppState)]
 pub struct Program {
     state: Box<dyn ProgramState>,
-
 }
 
 impl Default for Program {
@@ -23,18 +22,34 @@ impl Default for Program {
 }
 
 impl Program {
-    pub fn notan_setup(_app: &mut App, _assets: &mut Assets, _gfx: &mut Graphics, _plugins: &mut Plugins) -> Self {
+    pub fn notan_setup(
+        _app: &mut App,
+        _assets: &mut Assets,
+        _gfx: &mut Graphics,
+        _plugins: &mut Plugins,
+    ) -> Self {
         Self::default()
     }
 
-    pub fn notan_update(app: &mut App, assets: &mut Assets, plugins: &mut Plugins, this: &mut Self) {
+    pub fn notan_update(
+        app: &mut App,
+        assets: &mut Assets,
+        plugins: &mut Plugins,
+        this: &mut Self,
+    ) {
         let span = debug_span!("update", state = %this.state);
         let _guard = span.enter();
 
         this.state.update(app, assets, plugins);
     }
 
-    pub fn notan_draw(app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins, this: &mut Self) {
+    pub fn notan_draw(
+        app: &mut App,
+        assets: &mut Assets,
+        gfx: &mut Graphics,
+        plugins: &mut Plugins,
+        this: &mut Self,
+    ) {
         let span = debug_span!("draw", state = %this.state);
         let _guard = span.enter();
 
@@ -47,7 +62,13 @@ impl Program {
         }
     }
 
-    pub fn notan_event(app: &mut App, assets: &mut Assets, plugins: &mut Plugins, this: &mut Self, event: Event) {
+    pub fn notan_event(
+        app: &mut App,
+        assets: &mut Assets,
+        plugins: &mut Plugins,
+        this: &mut Self,
+        event: Event,
+    ) {
         let span = debug_span!("event", state = %this.state);
         let _guard = span.enter();
 

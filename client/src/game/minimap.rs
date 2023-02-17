@@ -1,8 +1,11 @@
-use common::map::Map;
-use notan::{prelude::{Color, Graphics, Texture}, graphics::color, egui::Vec2, draw::DrawShapes};
-use notan::draw::{CreateDraw, DrawImages, DrawTransform};
 use super::{pixels::Pixels, Player};
-
+use common::map::Map;
+use notan::draw::{DrawImages, DrawTransform};
+use notan::{
+    draw::DrawShapes,
+    egui::Vec2,
+    prelude::{Color, Graphics, Texture},
+};
 
 pub struct Minimap {
     border_size: usize,
@@ -17,12 +20,10 @@ pub struct Minimap {
     player_pixels: Pixels,
 
     map: Map,
-
 }
 
 impl Minimap {
-    pub fn new(map: Map, gfx: &mut Graphics) -> Self{
-
+    pub fn new(map: Map, gfx: &mut Graphics) -> Self {
         let border_size = 2;
         let border_color = Color::GRAY;
 
@@ -32,9 +33,11 @@ impl Minimap {
         let minimap_scale = Vec2::new(2.0, 2.0);
         let minimap_pos = Vec2::new(10.0, 10.0);
 
-        let mut map_pixels = Pixels::new(map.get_width() * map_ratio, map.get_width() * map_ratio, gfx);
-
-
+        let mut map_pixels = Pixels::new(
+            map.get_width() * map_ratio,
+            map.get_width() * map_ratio,
+            gfx,
+        );
 
         let player_pixels = Pixels::new(map.get_width() * 10, map.get_width() * 10, gfx);
 
@@ -51,7 +54,6 @@ impl Minimap {
             player_pixels,
 
             map,
-
         }
     }
 
@@ -59,7 +61,8 @@ impl Minimap {
         self.map_pixels.texture()
     }
 
-    pub fn render_map(&mut self, gfx: &mut Graphics) { // Generate the texture for the map
+    pub fn render_map(&mut self, gfx: &mut Graphics) {
+        // Generate the texture for the map
         self.map_pixels.clear(self.floor_color);
 
         for x in 0..self.get_height() {
@@ -68,38 +71,35 @@ impl Minimap {
                 let map_y = (y as f32 / self.map_ratio as f32).floor() as usize;
 
                 match self.map.cell(map_x, map_y) {
-                    common::map::MapCell::Empty => {},
+                    common::map::MapCell::Empty => {}
                     common::map::MapCell::Wall(wall_color) => {
-                        let mut color:Color = wall_color.into();
+                        let mut color: Color = wall_color.into();
 
-                        if (
-                            x % self.map_ratio == 0 || 
-                            y % self.map_ratio == 0 ||
-                            y % self.map_ratio == self.map_ratio -1 ||
-                            x % self.map_ratio == self.map_ratio -1
-                            
-                        ) {
+                        if x % self.map_ratio == 0
+                            || y % self.map_ratio == 0
+                            || y % self.map_ratio == self.map_ratio - 1
+                            || x % self.map_ratio == self.map_ratio - 1
+                        {
                             color = Color::BLACK
                         }
 
                         self.map_pixels.set_color(x, y, color);
-                    },
+                    }
                 }
-
             }
         }
 
         self.map_pixels.flush(gfx);
     }
 
-    pub fn set_floor_color(&mut self, color:Color) {
+    pub fn set_floor_color(&mut self, color: Color) {
         self.floor_color = color
     }
 
-    pub fn set_border_color(&mut self, color:Color) {
+    pub fn set_border_color(&mut self, color: Color) {
         self.border_color = color
     }
-    
+
     pub fn set_border_size(&mut self, size: usize) {
         self.border_size = size
     }
@@ -117,71 +117,107 @@ impl Minimap {
     }
 
     pub fn get_width(&self) -> usize {
-        self.map.get_width()*self.map_ratio
+        self.map.get_width() * self.map_ratio
     }
     pub fn get_height(&self) -> usize {
-        self.map.get_height()*self.map_ratio
+        self.map.get_height() * self.map_ratio
     }
 
-
-    pub fn draw(&self, draw: &mut notan::draw::Draw, width: usize, height: usize) { // Draw the border and map
+    pub fn draw(&self, draw: &mut notan::draw::Draw, width: usize, height: usize) {
+        // Draw the border and map
 
         let minimap_translate = Vec2::new(
-            (width as f32 - (self.get_width() as f32 * self.minimap_scale.x)) - (self.minimap_pos.x ),
-            self.minimap_pos.y
+            (width as f32 - (self.get_width() as f32 * self.minimap_scale.x))
+                - (self.minimap_pos.x),
+            self.minimap_pos.y,
         );
-        
-        draw.rect((minimap_translate.x - self.border_size as f32, minimap_translate.y - self.border_size as f32), (
-            self.minimap_scale.x * self.get_width() as f32 + (self.border_size * 2) as f32,
-            self.minimap_scale.y * self.get_height() as f32 + (self.border_size * 2) as f32
-        )).color(self.border_color);
+
+        draw.rect(
+            (
+                minimap_translate.x - self.border_size as f32,
+                minimap_translate.y - self.border_size as f32,
+            ),
+            (
+                self.minimap_scale.x * self.get_width() as f32 + (self.border_size * 2) as f32,
+                self.minimap_scale.y * self.get_height() as f32 + (self.border_size * 2) as f32,
+            ),
+        )
+        .color(self.border_color);
 
         draw.image(self.get_map_texture())
             .translate(minimap_translate.x, minimap_translate.y)
             .scale(self.minimap_scale.x, self.minimap_scale.y);
-
     }
 
-    pub fn render_vision(&self, draw: &mut notan::draw::Draw, width: usize, height: usize, player: &Player, vision_color: Color, rays: Vec<Vec2>) {// Render vision form given rays
+    pub fn render_vision(
+        &self,
+        draw: &mut notan::draw::Draw,
+        width: usize,
+        height: usize,
+        player: &Player,
+        vision_color: Color,
+        rays: Vec<Vec2>,
+    ) {
+        // Render vision form given rays
         let minimap_translate = Vec2::new(
-            (width as f32 - (self.get_width() as f32 * self.minimap_scale.x)) - (self.minimap_pos.x ),
-            self.minimap_pos.y
+            (width as f32 - (self.get_width() as f32 * self.minimap_scale.x))
+                - (self.minimap_pos.x),
+            self.minimap_pos.y,
         );
 
-        let ray_start = minimap_translate + self.conver_ray_to_minimap_size(Vec2::new(player.x, player.y));
+        let ray_start =
+            minimap_translate + self.conver_ray_to_minimap_size(Vec2::new(player.x, player.y));
 
         for mut ray_end in rays {
             ray_end = self.conver_ray_to_minimap_size(ray_end);
 
-
             ray_end = minimap_translate + ray_end;
-            draw.line(ray_start.into(), ray_end.into()).color(vision_color);
+            draw.line(ray_start.into(), ray_end.into())
+                .color(vision_color);
         }
-
-
     }
 
-    pub fn render_player_location(&self, draw: &mut notan::draw::Draw, width: usize, height: usize, player: &Player, player_color: Color) { 
-        self.render_entity_location(draw, width, height, Vec2::new(player.x, player.y), player_color);
-
+    pub fn render_player_location(
+        &self,
+        draw: &mut notan::draw::Draw,
+        width: usize,
+        height: usize,
+        player: &Player,
+        player_color: Color,
+    ) {
+        self.render_entity_location(
+            draw,
+            width,
+            height,
+            Vec2::new(player.x, player.y),
+            player_color,
+        );
     }
 
-    pub fn render_entity_location(&self, draw: &mut notan::draw::Draw, width: usize, height: usize, entity_location: Vec2, entity_color: Color) { // Render entities onto minimap
+    pub fn render_entity_location(
+        &self,
+        draw: &mut notan::draw::Draw,
+        width: usize,
+        height: usize,
+        entity_location: Vec2,
+        entity_color: Color,
+    ) {
+        // Render entities onto minimap
         let minimap_translate = Vec2::new(
-            (width as f32 - (self.get_width() as f32 * self.minimap_scale.x)) - (self.minimap_pos.x ),
-            self.minimap_pos.y
+            (width as f32 - (self.get_width() as f32 * self.minimap_scale.x))
+                - (self.minimap_pos.x),
+            self.minimap_pos.y,
         );
 
         let entity_size = Vec2::new(1.0, 1.0) * self.minimap_scale;
         let entity_location = minimap_translate + self.conver_ray_to_minimap_size(entity_location);
         let entity_location = entity_location - (entity_size / 2.0);
 
-        draw.rect(entity_location.into(), entity_size.into()).color(entity_color);
+        draw.rect(entity_location.into(), entity_size.into())
+            .color(entity_color);
     }
 
-    pub fn conver_ray_to_minimap_size(&self, ray:Vec2) -> Vec2 {
+    pub fn conver_ray_to_minimap_size(&self, ray: Vec2) -> Vec2 {
         (ray * self.map_ratio as f32) * self.minimap_scale
     }
-
-
 }

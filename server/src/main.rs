@@ -5,7 +5,6 @@ use common::defaults::IP;
 use common::defaults::PORT;
 
 use clap::Parser;
-use common::map::Map;
 
 use crate::server::Server;
 mod server;
