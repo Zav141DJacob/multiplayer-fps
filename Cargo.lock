@@ -2613,7 +2613,6 @@ dependencies = [
  "common",
  "glam",
  "hecs",
- "impl-trait-for-tuples",
  "message-io",
  "resources",
  "serde",
