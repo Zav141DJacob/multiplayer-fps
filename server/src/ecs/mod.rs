@@ -11,9 +11,9 @@ mod systems;
 
 #[derive(Default)]
 pub struct ServerEcs {
-    world: World,
-    observer: Observer,
-    resources: Resources,
+    pub world: World,
+    pub observer: Observer,
+    pub resources: Resources,
 }
 
 impl ServerEcs {

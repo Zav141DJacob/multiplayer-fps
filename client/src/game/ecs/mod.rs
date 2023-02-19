@@ -10,8 +10,8 @@ mod component;
 
 #[derive(Default)]
 pub struct ClientEcs {
-    world: World,
-    resources: Resources,
+    pub world: World,
+    pub resources: Resources,
 
     /// Keeps track of what server entity maps to what client entity
     entity_map: HashMap<NonZeroU64, Entity>,
