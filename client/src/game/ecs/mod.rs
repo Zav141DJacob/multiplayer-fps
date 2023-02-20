@@ -5,8 +5,8 @@ use resources::Resources;
 use crate::game::ecs::systems::ClientSystems;
 
 pub mod net;
-mod systems;
-mod component;
+pub mod systems;
+pub mod component;
 
 #[derive(Default)]
 pub struct ClientEcs {

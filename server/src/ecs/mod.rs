@@ -5,9 +5,9 @@ use resources::Resources;
 use crate::ecs::observer::{ObservedWorld, Observer};
 use crate::ecs::systems::ServerSystems;
 
-mod components;
-mod observer;
-mod systems;
+pub mod components;
+pub mod observer;
+pub mod systems;
 
 #[derive(Default)]
 pub struct ServerEcs {
