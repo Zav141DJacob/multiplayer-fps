@@ -372,9 +372,11 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "derive_more",
  "glam",
  "hecs",
+ "message-io",
  "rand",
  "serde",
 ]

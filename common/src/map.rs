@@ -1,14 +1,11 @@
 use std::{str::FromStr};
 use serde::{Deserialize, Serialize};
-use hecs::World;
-
-use crate::{Player, UserID, Coordinates};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Map {
-    width: usize,
-    height: usize,
-    data: Vec<MapCell>,
+    pub width: usize,
+    pub height: usize,
+    pub data: Vec<MapCell>,
 }
 
 impl Default for Map {
@@ -73,30 +70,6 @@ impl Map {
     }
     pub fn get_height(&self) -> usize {
         self.height
-    }
-    pub fn spawn_player_at(&self, coords: Coordinates, world: &mut World, player: u64) -> Coordinates {
-        world.spawn((
-            Player,
-            player as UserID,
-            Coordinates {
-                x: coords.x,
-                y: coords.y,
-            }
-        ));
-        coords
-    }
-    pub fn spawn_player(&self, world: &mut World, player: u64) -> Coordinates {
-        let mut available_coords: Vec<Coordinates> = Vec::new();
-        for x in 0..self.width {
-            for y in 0..self.height {
-                if self.cell(x, y) == MapCell::Empty {
-                    available_coords.push(Coordinates { x, y });
-                }
-            }
-        }
-        let rand_num: usize = rand::random::<usize>() % available_coords.len();
-        self.spawn_player_at(available_coords[rand_num], world, player) 
-
     }
 }
 

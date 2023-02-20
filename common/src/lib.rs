@@ -1,4 +1,7 @@
+use bincode::Error;
+use hecs::{Bundle};
 use map::Map;
+use message_io::{network::Endpoint, node::NodeHandler};
 use serde::{Deserialize, Serialize};
 
 pub mod defaults;
@@ -13,7 +16,7 @@ pub enum FromClientMessage {
     Join,
 }
 
-type UserID = u64;
+pub type UserID = u64;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum FromServerMessage {
@@ -26,6 +29,20 @@ pub enum FromServerMessage {
     Spawn(UserID, Coordinates),
 }
 
+impl FromServerMessage {
+    pub fn construct(&self) -> Result<ConstructedMessage, Error> {
+        Ok(ConstructedMessage(bincode::serialize(self)?))
+    }
+}
+
+pub struct ConstructedMessage(Vec<u8>);
+
+impl ConstructedMessage {
+    pub fn send(&self, handler: &NodeHandler<()>, endpoint: Endpoint) {
+        handler.network().send(endpoint, &self.0);
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum Direction {
     Forward,
@@ -34,10 +51,11 @@ pub enum Direction {
     Right,
 }
 
+#[derive(Bundle)]
 pub struct Player;
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, Bundle)]
 pub struct Coordinates {
-    x: usize,
-    y: usize,
+    pub x: usize,
+    pub y: usize,
 }
