@@ -17,7 +17,6 @@ pub struct Minimap {
     minimap_pos: Vec2,
 
     map_pixels: Pixels,
-    player_pixels: Pixels,
 
     map: Map,
 }
@@ -33,13 +32,12 @@ impl Minimap {
         let minimap_scale = Vec2::new(2.0, 2.0);
         let minimap_pos = Vec2::new(10.0, 10.0);
 
-        let mut map_pixels = Pixels::new(
+        let map_pixels = Pixels::new(
             map.get_width() * map_ratio,
             map.get_width() * map_ratio,
             gfx,
         );
 
-        let player_pixels = Pixels::new(map.get_width() * 10, map.get_width() * 10, gfx);
 
         Self {
             border_size,
@@ -51,7 +49,6 @@ impl Minimap {
             minimap_pos,
 
             map_pixels,
-            player_pixels,
 
             map,
         }
@@ -123,7 +120,7 @@ impl Minimap {
         self.map.get_height() * self.map_ratio
     }
 
-    pub fn draw(&self, draw: &mut notan::draw::Draw, width: usize, height: usize) {
+    pub fn draw(&self, draw: &mut notan::draw::Draw, width: usize, _height: usize) {
         // Draw the border and map
 
         let minimap_translate = Vec2::new(
@@ -153,9 +150,9 @@ impl Minimap {
         &self,
         draw: &mut notan::draw::Draw,
         width: usize,
-        height: usize,
+        _height: usize,
         player: &Player,
-        vision_color: Color,
+        mut vision_color: Color,
         rays: Vec<Vec2>,
     ) {
         // Render vision form given rays
@@ -165,16 +162,29 @@ impl Minimap {
             self.minimap_pos.y,
         );
 
-        let ray_start =
-            minimap_translate + self.conver_ray_to_minimap_size(Vec2::new(player.x, player.y));
-
-        for mut ray_end in rays {
+        let ray_start = minimap_translate + self.conver_ray_to_minimap_size(Vec2::new(player.x, player.y));
+        let ray_middle = self.conver_ray_to_minimap_size(rays[rays.len()/2]) + minimap_translate;
+        for (i, mut ray_end) in rays.clone().into_iter().enumerate() {
             ray_end = self.conver_ray_to_minimap_size(ray_end);
 
             ray_end = minimap_translate + ray_end;
-            draw.line(ray_start.into(), ray_end.into())
-                .color(vision_color);
+
+            if i < (rays.len() / 2) {
+                vision_color.a = i as f32 / (rays.len() as f32);
+            } else {
+                vision_color.a =  1.0 - (i as f32 / (rays.len() as f32 ));
+            }
+
+            vision_color.a = vision_color.a.powf(1.0 / 1.1);
+
+            draw.line(ray_start.into(), ray_end.into()).color(vision_color);
+
+
+
+
         }
+        draw.line(ray_start.into(), ray_middle.into()).color(Color::GREEN);
+
     }
 
     pub fn render_player_location(
@@ -198,7 +208,7 @@ impl Minimap {
         &self,
         draw: &mut notan::draw::Draw,
         width: usize,
-        height: usize,
+        _height: usize,
         entity_location: Vec2,
         entity_color: Color,
     ) {
