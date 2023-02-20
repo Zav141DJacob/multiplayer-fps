@@ -38,6 +38,6 @@ bulk_attribute! {
     pub struct Health (pub i32);
 
     pub struct Player {
-        id: u8,
+        pub id: u8,
     }
 }
