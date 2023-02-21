@@ -23,6 +23,7 @@ use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
 // use notan::prelude::{Assets, Texture, KeyCode};
 
 use glam::f32::Vec2;
+use fps_counter::FPSCounter;
 
 const PLAYER_SPEED: f32 = 0.1;
 const CAMERA_SENSITIVITY: f32 = 0.08; // rad
@@ -38,6 +39,8 @@ pub struct Game {
     texture: Texture,
     enemy_texture: Texture,
     enemies: Vec<enemy::Sprite>,
+
+    fps: FPSCounter,
 }
 
 #[derive(Debug)]
@@ -98,6 +101,8 @@ impl Game {
 
         let enemy_texture = Texture::new(include_bytes!("../../assets/monsters.png")).unwrap();
 
+        let fps = FPSCounter::new();
+
         Game {
             world,
             map,
@@ -108,6 +113,8 @@ impl Game {
             texture,
             enemies,
             enemy_texture,
+
+            fps,
         }
     }
 }
@@ -401,15 +408,25 @@ impl ProgramState for Game {
 
         gfx.render(&draw);
 
-        // Render egui
-        // let out = plugins.egui(|ctx| {
-        //     Window::new("Debug")
-        //         .collapsible(true)
-        //         .resizable(false)
-        //         .show(ctx, |ui| self.debug_ui(ui));
-        // });
+        drop(query);
 
-        // gfx.render(&out);
+        // Render egui
+        let out = plugins.egui(|ctx| {
+            Window::new("Debug")
+                .collapsible(true)
+                .resizable(false)
+                .show(ctx, |ui| self.debug_ui(ui));
+        });
+
+        gfx.render(&out);
+
+        let fps_counter = plugins.egui(|ctx| {
+            notan::egui::Area::new("fps-counter")
+                .fixed_pos(notan::egui::pos2(0.0, 0.0))
+                .show(ctx, |ui| ui.label("FPS: ".to_owned() + &self.fps.tick().to_string()));
+        });
+
+        gfx.render(&fps_counter);
     }
 }
 

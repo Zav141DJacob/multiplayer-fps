@@ -20,6 +20,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 bincode = "1.3.3"
 
 # Rendering & Windowing
+fps_counter = "2.0"
 notan = { version = "0.9", features = ["egui"] }
 #egui = "0.20.1"
 
