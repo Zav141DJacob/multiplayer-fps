@@ -32,6 +32,11 @@ hecs = { version = "0.9.1", features = ["macros"] }
 resources = "1.1.0"
 common = { path = "../common" }
 
+# Math
+glam = "0.22.0"
+
 # Networking
 message-io = "0.14.6"
 tokio = { version = "1.25.0", features = ["full"] }
+stb_image = "0.2.4"
+image = "0.24.5"

@@ -1,4 +1,4 @@
-use std::{str::FromStr};
+use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 use hecs::World;
 
@@ -13,20 +13,21 @@ pub struct Map {
 
 impl Default for Map {
     fn default() -> Self {
-        // Map::new(MAP_WIDTH, MAP_HEIGHT)
-        let w = MapCell::Wall([1.0, 1.0, 1.0]);
         let e = MapCell::Empty;
+        let w = MapCell::Wall(Wall::SolidColor([1.0, 1.0, 1.0]));
+        let b = MapCell::Wall(Wall::Textured(Textured::Redstone));
+        let t = MapCell::Wall(Wall::Textured(Textured::GrayBrick));
         let temp_map = vec![
-            w, w, w, w, w, w, w, w, w, w,
-            w, e, w, e, e, e, e, e, e, w,
-            w, e, w, e, e, e, e, e, e, w,
-            w, e, w, e, e, e, w, e, w, w,
-            w, e, e, e, e, e, w, e, e, w,
-            w, e, e, e, e, e, w, e, e, w,
-            w, e, e, e, e, e, w, e, e, w,
-            w, e, e, w, e, e, w, e, e, w,
-            w, e, e, e, e, e, w, e, e, w,
-            w, w, w, w, w, w, w, w, w, w
+            t, t, t, t, t, t, t, t, t, t,
+            t, e, t, e, e, e, e, e, e, t,
+            t, e, t, e, e, e, e, e, e, t,
+            b, e, t, e, e, e, t, e, t, t,
+            t, e, e, e, e, e, t, e, e, t,
+            t, e, e, e, e, e, t, e, e, t,
+            t, e, e, e, e, e, t, e, e, t,
+            t, e, e, b, e, e, t, e, e, t,
+            t, e, e, e, e, e, t, e, e, t,
+            t, t, t, t, t, t, t, t, t, w
         ];
         Self {
             width: 10,
@@ -35,7 +36,6 @@ impl Default for Map {
         }
     }
 }
-
 
 impl Map {
     pub fn cell(&self, x: usize, y: usize) -> MapCell {
@@ -54,7 +54,7 @@ impl Map {
 
     pub fn gen(width: usize, height: usize) -> Self {
         let mut map = Map::new(width, height);
-        map.data = vec![MapCell::Wall([0.0, 0.0, 0.0]); width * height];
+        map.data = vec![MapCell::Wall(Wall::SolidColor([1.0, 1.0, 1.0])); width * height];
 
         for r in 1..map.height {
 			for c in 1..map.width {
@@ -95,7 +95,7 @@ impl Map {
             }
         }
         let rand_num: usize = rand::random::<usize>() % available_coords.len();
-        self.spawn_player_at(available_coords[rand_num], world, player) 
+        self.spawn_player_at(available_coords[rand_num], world, player)
 
     }
 }
@@ -103,9 +103,23 @@ impl Map {
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum MapCell {
     Empty,
+    Wall(Wall),
+}
 
-    /// Wall with color
-    Wall([f32; 3])
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum Wall {
+    SolidColor([f32; 3]),
+    Textured(Textured),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum Textured {
+    Redstone,
+    GrayBrick,
+    RedBrick,
+    Door,
+    Green,
+    Graystone,
 }
 
 
@@ -114,7 +128,8 @@ impl FromStr for MapCell {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "empty" => Ok(Self::Empty),
-            "wall"  => Ok(Self::Wall([0.0, 0.0, 0.0])),
+            "wall"  => Ok(Self::Wall(Wall::SolidColor([0., 0., 0.]))),
+            "brick"  => Ok(Self::Wall(Wall::Textured(Textured::RedBrick))),
             _       => Err("Invalid MapElement in MapElement::from_str()".to_string())
         }
     }
