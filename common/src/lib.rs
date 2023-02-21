@@ -20,10 +20,8 @@ pub type UserID = u64;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum FromServerMessage {
-    Move(UserID, Direction),
-    Join(UserID),
-    Leave(UserID),
-    LobbyMembers(Vec<UserID>),
+    Join(UserID), // TODO: look into if this is still needed in the future
+    LobbyMembers(Vec<UserID>), // TODO: look into if this is still needed in the future
     SendMap(Map),
     Pong,
     EcsChanges(Vec<EcsProtocol>)
@@ -40,6 +38,12 @@ pub struct ConstructedMessage(Vec<u8>);
 impl ConstructedMessage {
     pub fn send(&self, handler: &NodeHandler<()>, endpoint: Endpoint) {
         handler.network().send(endpoint, &self.0);
+    }
+
+    pub fn send_all(&self, handler: &NodeHandler<()>, endpoints: Vec<Endpoint>) {
+        for endpoint in endpoints {
+            self.send(handler, endpoint)
+        }
     }
 }
 

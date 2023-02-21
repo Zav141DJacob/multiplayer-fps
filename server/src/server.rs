@@ -1,7 +1,6 @@
 use common::defaults::{MAP_HEIGHT, MAP_WIDTH};
-use common::ecs::components::{EcsProtocol, Position, Player};
-use common::{map::Map};
-use hecs::Entity;
+use common::ecs::components::{EcsProtocol, Player, Position};
+use common::map::Map;
 use server::ecs::ServerEcs;
 use server::utils::spawn_player;
 
@@ -33,41 +32,71 @@ impl ClientIdentificationInfo {
     }
 }
 
-struct ClientInfo {
+pub struct ClientInfo {
     id: ClientIdentificationInfo,
-    entity: Option<Entity>,
 }
 
 impl ClientInfo {
     fn new(addr: SocketAddr, endpoint: Endpoint) -> Self {
         ClientInfo {
             id: ClientIdentificationInfo { addr, endpoint },
-            entity: None,
         }
     }
 
     fn set_position(&mut self, ecs: &mut ServerEcs, new_pos: Position) {
-        for (_, (pos, &player)) in ecs.world
-            .query_mut::<(&mut Position, &Player)>()
-        {
-            if player.id == self.id.get_id() {
-                *pos = new_pos
-            }
-        }
+        let id = self.id.get_id();
+
+        // TODO: better error handling
+        let (entity, (_, position)) = ecs
+            .world
+            .query_mut::<(&Player, &mut Position)>()
+            .into_iter()
+            .find(|(_, (&player, _))| player.id == id)
+            .unwrap();
+
+        *ecs.observer.observe_component(entity, position) = new_pos;
     }
 
     fn get_position(&self, ecs: &ServerEcs) -> Position {
+        let id = self.id.get_id();
+
         // TODO: better error handling
-        *ecs.world.get::<&Position>(self.entity.unwrap()).unwrap()
+        *ecs.world
+            .query::<(&Position, &Player)>()
+            .iter()
+            .find(|(_, (_, &player))| player.id == id)
+            .unwrap()
+            .1
+             .0
     }
 }
 pub struct Server {
     handler: NodeHandler<()>,
     listener: Option<NodeListener<()>>,
 
-    clients: HashMap<u64, ClientInfo>,
+    registered_clients: RegisteredClients,
     ecs: ServerEcs,
     map: Map,
+}
+
+// Clients who have sent the join event basically
+pub struct RegisteredClients {
+    clients: HashMap<u64, ClientInfo>,
+}
+
+impl RegisteredClients {
+    pub fn new() -> Self {
+        RegisteredClients {
+            clients: HashMap::new(),
+        }
+    }
+
+    pub fn get_all_endpoints(&self) -> Vec<Endpoint> {
+        self.clients
+            .values()
+            .map(|client| client.id.endpoint)
+            .collect()
+    }
 }
 
 impl Server {
@@ -79,7 +108,7 @@ impl Server {
         Ok(Server {
             handler,
             listener: Some(listener),
-            clients: HashMap::new(),
+            registered_clients: RegisteredClients::new(),
             ecs: ServerEcs::default(),
             map: Map::gen(MAP_WIDTH, MAP_HEIGHT),
         })
@@ -92,11 +121,11 @@ impl Server {
             NetEvent::Message(endpoint, input_data) => {
                 let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
 
-                let id = ClientIdentificationInfo {
+                let requester_info = ClientIdentificationInfo {
                     addr: endpoint.addr(),
                     endpoint,
                 };
-                let name = id.get_id();
+                let requester_id = requester_info.get_id();
 
                 println!("Event: {message:?}");
                 match message {
@@ -110,13 +139,17 @@ impl Server {
                             .send(&self.handler, endpoint);
                     }
                     FromClientMessage::Move(direction) => {
-                        if self.is_registered(name) {
+                        if self.is_registered(requester_id) {
                             println!("move {direction:?}");
 
-                            let client = self.clients.get_mut(&name).unwrap();
+                            let client = self
+                                .registered_clients
+                                .clients
+                                .get_mut(&requester_id)
+                                .unwrap();
                             let mut pos = client.get_position(&self.ecs);
 
-                            // TODO: get player and change position
+                            // TODO: account for rotation here
                             match direction {
                                 common::Direction::Forward => pos.0.x += 0.1,
                                 common::Direction::Backward => pos.0.x -= 0.1,
@@ -134,28 +167,29 @@ impl Server {
                             )
                             .construct()
                             .unwrap()
-                            .send(&self.handler, endpoint)
+                            .send_all(&self.handler, self.registered_clients.get_all_endpoints());
                         }
                     }
                     FromClientMessage::Leave => {
-                        if self.is_registered(name) {
-                            self.unregister(&name)
+                        if self.is_registered(requester_id) {
+                            self.unregister(requester_id)
                         }
                     }
                     FromClientMessage::Join => {
-                        if !self.is_registered(name) {
+                        if !self.is_registered(requester_id) {
                             // Registers user
-                            if let Some(player_id) = self.register(id) {
+                            // TODO: clean up this part
+                            if let Some(player_id) = self.register(requester_info) {
                                 // spawns player
-                                if let Some(client) = self.clients.get_mut(&player_id) {
-                                    let coords_and_entity =
-                                        spawn_player(&self.map, &mut self.ecs, player_id);
-
-                                    // Adds ECS entity to ClientInfo
-                                    client.entity = Some(coords_and_entity.1);
+                                if self
+                                    .registered_clients
+                                    .clients
+                                    .get_mut(&player_id)
+                                    .is_some()
+                                {
+                                    spawn_player(&self.map, &mut self.ecs, player_id);
 
                                     // TODO: handle errors better
-                                    // TODO: should be sent to everyone
                                     FromServerMessage::EcsChanges(
                                         self.ecs
                                             .observer
@@ -164,7 +198,10 @@ impl Server {
                                     )
                                     .construct()
                                     .unwrap()
-                                    .send(&self.handler, endpoint)
+                                    .send_all(
+                                        &self.handler,
+                                        self.registered_clients.get_all_endpoints(),
+                                    );
                                 }
                             }
                         }
@@ -179,15 +216,15 @@ impl Server {
     }
 
     fn is_registered(&self, name: u64) -> bool {
-        self.clients.contains_key(&name)
+        self.registered_clients.clients.contains_key(&name)
     }
 
     fn register(&mut self, info: ClientIdentificationInfo) -> Option<u64> {
-        let name = info.get_id();
+        let id = info.get_id();
 
-        if !self.is_registered(name) {
+        if !self.is_registered(id) {
             // Sends player list to the newly joined player
-            let player_list = self.clients.keys().copied().collect();
+            let player_list = self.registered_clients.clients.keys().copied().collect();
 
             // TODO: handle errors better
             FromServerMessage::LobbyMembers(player_list)
@@ -197,47 +234,60 @@ impl Server {
 
             // Notify other players about this new player joining the game server
             println!("Notifying players about new player");
-            let message = FromServerMessage::Join(name).construct().unwrap();
-            for participant in &mut self.clients {
-                // TODO: handle errors better
-                message.send(&self.handler, participant.1.id.endpoint);
-            }
+            FromServerMessage::Join(id)
+                .construct()
+                .unwrap()
+                .send_all(&self.handler, self.registered_clients.get_all_endpoints());
 
             // Add player to the server clients
-            println!("Added participant '{name}' with ip {}", info.addr);
-            self.clients
-                .insert(name, ClientInfo::new(info.addr, info.endpoint));
+            println!("Added participant '{id}' with ip {}", info.addr);
+            self.registered_clients
+                .clients
+                .insert(id, ClientInfo::new(info.addr, info.endpoint));
 
-            // Sending initial map
+            // Sending initial map to player
             // TODO: handle errors better
-            println!("Sending map to '{name}'");
+            println!("Sending map to '{id}'");
             FromServerMessage::SendMap(self.map.clone())
                 .construct()
                 .unwrap()
                 .send(&self.handler, info.endpoint);
 
-            Some(name)
+            Some(id)
         } else {
-            println!("Participant with name '{name}' already exists");
+            println!("Participant with name '{id}' already exists");
 
             None
         }
     }
 
-    fn unregister(&mut self, name: &u64) {
-        // TODO: Delete player from ECS
+    fn unregister(&mut self, id: u64) {
+        if let Some(info) = self.registered_clients.clients.remove(&id) {
+            // TODO: fix it not sending leave message
+            // Notifies other participants about this removed participant
+            let entity = self
+                .ecs
+                .world
+                .query::<&Player>()
+                .iter()
+                .find(|(_, &player)| player.id == id)
+                .unwrap()
+                .0;
+            self.ecs.observed_world().despawn(entity).unwrap();
 
-        if let Some(info) = self.clients.remove(name) {
-            // Notify other participants about this removed participant
-            // TODO: handle errors better
-            let message = FromServerMessage::Leave(*name).construct().unwrap();
-            for participant in &mut self.clients {
-                message.send(&self.handler, participant.1.id.endpoint);
-            }
+            FromServerMessage::EcsChanges(
+                self.ecs
+                    .observer
+                    .drain_reliable()
+                    .collect::<Vec<EcsProtocol>>(),
+            )
+            .construct()
+            .unwrap()
+            .send_all(&self.handler, self.registered_clients.get_all_endpoints());
 
-            println!("Unregistered participant '{name}' with ip {}", info.id.addr);
+            println!("Unregistered participant '{id}' with ip {}", info.id.addr);
         } else {
-            println!("Can not unregister an non-existent participant with name '{name}'");
+            println!("Can not unregister an non-existent participant with name '{id}'");
         }
     }
 }
