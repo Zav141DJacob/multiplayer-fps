@@ -2,6 +2,7 @@ use common::defaults::{MAP_HEIGHT, MAP_WIDTH};
 use common::ecs::utils::spawn_player;
 use common::{map::Map, Coordinates};
 use hecs::{Entity, World};
+use server::ecs::ServerEcs;
 
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
@@ -10,7 +11,7 @@ use std::{
     net::SocketAddr,
 };
 
-use common::{FromClientMessage, FromServerMessage};
+use common::{FromClientMessage, FromServerMessage, Player};
 use message_io::{
     network::{Endpoint, NetEvent, Transport},
     node::{self, NodeHandler, NodeListener},
@@ -44,12 +45,12 @@ impl ClientInfo {
         }
     }
 
-    // TODO: Get it working
-    fn set_position(&mut self, world: &mut World, coords: Coordinates) {
-        // TODO: better error handling
-        world
-            .exchange::<common::Coordinates, common::Coordinates>(self.entity.unwrap(), coords)
-            .unwrap();
+    fn set_position(&mut self, world: &mut World, new_cords: Coordinates) {
+        for (_, (coords, &id)) in world.query_mut::<(&mut Coordinates, &u64)>().with::<&Player>() {
+            if id == self.id.get_id() {
+                *coords = new_cords
+            }
+        }
     }
 
     fn get_position(&self, world: &mut World) -> Coordinates {
@@ -62,7 +63,7 @@ pub struct Server {
     listener: Option<NodeListener<()>>,
 
     clients: HashMap<u64, ClientInfo>,
-    world: World,
+    ecs: ServerEcs,
     map: Map,
 }
 
@@ -76,7 +77,7 @@ impl Server {
             handler,
             listener: Some(listener),
             clients: HashMap::new(),
-            world: World::new(),
+            ecs: ServerEcs::default(),
             map: Map::gen(MAP_WIDTH, MAP_HEIGHT),
         })
     }
@@ -110,7 +111,7 @@ impl Server {
                             println!("move {direction:?}");
 
                             let client = self.clients.get_mut(&name).unwrap();
-                            let mut coords = client.get_position(&mut self.world);
+                            let mut coords = client.get_position(&mut self.ecs.world);
 
                             // TODO: get player and change position
                             match direction {
@@ -120,7 +121,7 @@ impl Server {
                                 common::Direction::Right => coords.y -= 0.1,
                             };
 
-                            client.set_position(&mut self.world, coords);
+                            client.set_position(&mut self.ecs.world, coords);
                         }
                     }
                     FromClientMessage::Leave => {
@@ -135,7 +136,7 @@ impl Server {
                                 // spawns player
                                 if let Some(client) = self.clients.get_mut(&player_id) {
                                     let coords_and_entity =
-                                        spawn_player(&self.map, &mut self.world, player_id);
+                                        spawn_player(&self.map, &mut self.ecs.world, player_id);
 
                                     // Adds ECS entity to ClientInfo
                                     client.entity = Some(coords_and_entity.1);
