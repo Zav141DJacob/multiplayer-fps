@@ -1,5 +1,5 @@
 use bincode::Error;
-use hecs::{Bundle};
+use ecs::components::EcsProtocol;
 use map::Map;
 use message_io::{network::Endpoint, node::NodeHandler};
 use serde::{Deserialize, Serialize};
@@ -26,7 +26,7 @@ pub enum FromServerMessage {
     LobbyMembers(Vec<UserID>),
     SendMap(Map),
     Pong,
-    Spawn(UserID, Coordinates),
+    EcsChanges(Vec<EcsProtocol>)
 }
 
 impl FromServerMessage {
@@ -49,13 +49,4 @@ pub enum Direction {
     Backward,
     Left,
     Right,
-}
-
-#[derive(Bundle)]
-pub struct Player;
-
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, Bundle)]
-pub struct Coordinates {
-    pub x: f32,
-    pub y: f32,
 }

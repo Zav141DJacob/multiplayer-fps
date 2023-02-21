@@ -30,7 +30,7 @@ register_shared_components! {
 // This macro simply adds derives for all these structs.
 // You can just as easily define structs outside it and derive stuff manually
 bulk_attribute! {
-    derive(Debug, Clone, Serialize, Deserialize);
+    derive(Debug, Clone, Copy, Serialize, Deserialize);
     pub struct Position (pub Vec2);
     pub struct Velocity (pub Vec2);
     pub struct LookDirection (pub Vec2);
@@ -38,6 +38,6 @@ bulk_attribute! {
     pub struct Health (pub i32);
 
     pub struct Player {
-        pub id: u8,
+        pub id: u64,
     }
 }

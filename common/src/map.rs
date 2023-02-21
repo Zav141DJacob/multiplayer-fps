@@ -1,5 +1,9 @@
-use std::{str::FromStr};
+use glam::Vec2;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+
+use crate::ecs::components::Position;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Map {
@@ -8,6 +12,27 @@ pub struct Map {
     pub data: Vec<MapCell>,
 }
 
+impl Map {
+    pub fn random_empty_spot(&self) -> Position {
+        let mut available_coords: Vec<Position> = Vec::new();
+        for x in 0..self.width {
+            for y in 0..self.height {
+                if self.cell(x, y) == MapCell::Empty {
+                    available_coords.push(Position(Vec2 {
+                        x: x as f32,
+                        y: y as f32,
+                    }));
+                }
+            }
+        }
+
+        let rand_num: usize = rand::thread_rng().gen_range(0..=available_coords.len());
+
+        available_coords[rand_num]
+    }
+}
+
+#[rustfmt::skip::macros(vec)]
 impl Default for Map {
     fn default() -> Self {
         // Map::new(MAP_WIDTH, MAP_HEIGHT)
@@ -33,7 +58,6 @@ impl Default for Map {
     }
 }
 
-
 impl Map {
     pub fn cell(&self, x: usize, y: usize) -> MapCell {
         assert!(x < self.width);
@@ -45,7 +69,7 @@ impl Map {
         Self {
             width,
             height,
-            data: vec![MapCell::Empty; width * height]
+            data: vec![MapCell::Empty; width * height],
         }
     }
 
@@ -54,14 +78,14 @@ impl Map {
         map.data = vec![MapCell::Wall([0.0, 0.0, 0.0]); width * height];
 
         for r in 1..map.height {
-			for c in 1..map.width {
-				if rand::random() {
-					map.data[r * map.width + c - 1] = MapCell::Empty
-				} else {
+            for c in 1..map.width {
+                if rand::random() {
+                    map.data[r * map.width + c - 1] = MapCell::Empty
+                } else {
                     map.data[(r - 1) * map.width + c] = MapCell::Empty
-				}
-			}
-		}
+                }
+            }
+        }
         //print!("{:?}", map);
         map
     }
@@ -78,17 +102,16 @@ pub enum MapCell {
     Empty,
 
     /// Wall with color
-    Wall([f32; 3])
+    Wall([f32; 3]),
 }
-
 
 impl FromStr for MapCell {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "empty" => Ok(Self::Empty),
-            "wall"  => Ok(Self::Wall([0.0, 0.0, 0.0])),
-            _       => Err("Invalid MapElement in MapElement::from_str()".to_string())
+            "wall" => Ok(Self::Wall([0.0, 0.0, 0.0])),
+            _ => Err("Invalid MapElement in MapElement::from_str()".to_string()),
         }
     }
 }

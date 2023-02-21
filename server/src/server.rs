@@ -1,8 +1,9 @@
 use common::defaults::{MAP_HEIGHT, MAP_WIDTH};
-use common::ecs::utils::spawn_player;
-use common::{map::Map, Coordinates};
-use hecs::{Entity, World};
+use common::ecs::components::{EcsProtocol, Position, Player};
+use common::{map::Map};
+use hecs::Entity;
 use server::ecs::ServerEcs;
+use server::utils::spawn_player;
 
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
@@ -11,7 +12,7 @@ use std::{
     net::SocketAddr,
 };
 
-use common::{FromClientMessage, FromServerMessage, Player};
+use common::{FromClientMessage, FromServerMessage};
 use message_io::{
     network::{Endpoint, NetEvent, Transport},
     node::{self, NodeHandler, NodeListener},
@@ -45,17 +46,19 @@ impl ClientInfo {
         }
     }
 
-    fn set_position(&mut self, world: &mut World, new_cords: Coordinates) {
-        for (_, (coords, &id)) in world.query_mut::<(&mut Coordinates, &u64)>().with::<&Player>() {
-            if id == self.id.get_id() {
-                *coords = new_cords
+    fn set_position(&mut self, ecs: &mut ServerEcs, new_pos: Position) {
+        for (_, (pos, &player)) in ecs.world
+            .query_mut::<(&mut Position, &Player)>()
+        {
+            if player.id == self.id.get_id() {
+                *pos = new_pos
             }
         }
     }
 
-    fn get_position(&self, world: &mut World) -> Coordinates {
+    fn get_position(&self, ecs: &ServerEcs) -> Position {
         // TODO: better error handling
-        *world.get::<&Coordinates>(self.entity.unwrap()).unwrap()
+        *ecs.world.get::<&Position>(self.entity.unwrap()).unwrap()
     }
 }
 pub struct Server {
@@ -111,17 +114,27 @@ impl Server {
                             println!("move {direction:?}");
 
                             let client = self.clients.get_mut(&name).unwrap();
-                            let mut coords = client.get_position(&mut self.ecs.world);
+                            let mut pos = client.get_position(&self.ecs);
 
                             // TODO: get player and change position
                             match direction {
-                                common::Direction::Forward => coords.x += 0.1,
-                                common::Direction::Backward => coords.x -= 0.1,
-                                common::Direction::Left => coords.y += 0.1,
-                                common::Direction::Right => coords.y -= 0.1,
+                                common::Direction::Forward => pos.0.x += 0.1,
+                                common::Direction::Backward => pos.0.x -= 0.1,
+                                common::Direction::Left => pos.0.y += 0.1,
+                                common::Direction::Right => pos.0.y -= 0.1,
                             };
 
-                            client.set_position(&mut self.ecs.world, coords);
+                            client.set_position(&mut self.ecs, pos);
+
+                            FromServerMessage::EcsChanges(
+                                self.ecs
+                                    .observer
+                                    .drain_reliable()
+                                    .collect::<Vec<EcsProtocol>>(),
+                            )
+                            .construct()
+                            .unwrap()
+                            .send(&self.handler, endpoint)
                         }
                     }
                     FromClientMessage::Leave => {
@@ -136,16 +149,22 @@ impl Server {
                                 // spawns player
                                 if let Some(client) = self.clients.get_mut(&player_id) {
                                     let coords_and_entity =
-                                        spawn_player(&self.map, &mut self.ecs.world, player_id);
+                                        spawn_player(&self.map, &mut self.ecs, player_id);
 
                                     // Adds ECS entity to ClientInfo
                                     client.entity = Some(coords_and_entity.1);
 
                                     // TODO: handle errors better
-                                    FromServerMessage::Spawn(player_id, coords_and_entity.0)
-                                        .construct()
-                                        .unwrap()
-                                        .send(&self.handler, endpoint);
+                                    // TODO: should be sent to everyone
+                                    FromServerMessage::EcsChanges(
+                                        self.ecs
+                                            .observer
+                                            .drain_reliable()
+                                            .collect::<Vec<EcsProtocol>>(),
+                                    )
+                                    .construct()
+                                    .unwrap()
+                                    .send(&self.handler, endpoint)
                                 }
                             }
                         }
@@ -176,7 +195,7 @@ impl Server {
                 .unwrap()
                 .send(&self.handler, info.endpoint);
 
-            // Notify other players about this new player
+            // Notify other players about this new player joining the game server
             println!("Notifying players about new player");
             let message = FromServerMessage::Join(name).construct().unwrap();
             for participant in &mut self.clients {
@@ -185,7 +204,6 @@ impl Server {
             }
 
             // Add player to the server clients
-            // TODO: replace with ECS
             println!("Added participant '{name}' with ip {}", info.addr);
             self.clients
                 .insert(name, ClientInfo::new(info.addr, info.endpoint));
