@@ -114,10 +114,10 @@ impl Server {
 
                             // TODO: get player and change position
                             match direction {
-                                common::Direction::Forward => coords.x += 1,
-                                common::Direction::Backward => coords.x -= 1,
-                                common::Direction::Left => coords.y += 1,
-                                common::Direction::Right => coords.y -= 1,
+                                common::Direction::Forward => coords.x += 0.1,
+                                common::Direction::Backward => coords.x -= 0.1,
+                                common::Direction::Left => coords.y += 0.1,
+                                common::Direction::Right => coords.y -= 0.1,
                             };
 
                             client.set_position(&mut self.world, coords);

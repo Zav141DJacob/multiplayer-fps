@@ -56,6 +56,6 @@ pub struct Player;
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, Bundle)]
 pub struct Coordinates {
-    pub x: usize,
-    pub y: usize,
+    pub x: f32,
+    pub y: f32,
 }

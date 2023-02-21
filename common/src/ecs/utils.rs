@@ -24,7 +24,7 @@ pub fn spawn_player(map: &Map, world: &mut World, player: u64) -> (Coordinates, 
     for x in 0..map.width {
         for y in 0..map.height {
             if map.cell(x, y) == MapCell::Empty {
-                available_coords.push(Coordinates { x, y });
+                available_coords.push(Coordinates { x: x as f32, y: y as f32 });
             }
         }
     }
