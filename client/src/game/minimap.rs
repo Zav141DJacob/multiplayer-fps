@@ -1,11 +1,11 @@
 use super::{pixels::Pixels, Player};
-use common::map::Map;
+use common::map::{Map, Wall};
 use notan::draw::{DrawImages, DrawTransform};
 use notan::{
     draw::DrawShapes,
-    egui::Vec2,
     prelude::{Color, Graphics, Texture},
 };
+use glam::Vec2;
 
 pub struct Minimap {
     border_size: usize,
@@ -67,21 +67,26 @@ impl Minimap {
                 let map_x = (x as f32 / self.map_ratio as f32).floor() as usize;
                 let map_y = (y as f32 / self.map_ratio as f32).floor() as usize;
 
-                match self.map.cell(map_x, map_y) {
-                    common::map::MapCell::Empty => {}
-                    common::map::MapCell::Wall(wall_color) => {
-                        let mut color: Color = wall_color.into();
-
-                        if x % self.map_ratio == 0
-                            || y % self.map_ratio == 0
-                            || y % self.map_ratio == self.map_ratio - 1
-                            || x % self.map_ratio == self.map_ratio - 1
-                        {
-                            color = Color::BLACK
-                        }
-
-                        self.map_pixels.set_color(x, y, color);
+                let color = match self.map.cell(map_x, map_y) {
+                    common::map::MapCell::Empty => None,
+                    common::map::MapCell::Wall(Wall::SolidColor(wall_color)) => {
+                        Some(wall_color.into())
                     }
+                    common::map::MapCell::Wall(Wall::Textured(_)) => {
+                        Some(Color::new(1.0, 0.0, 1.0, 1.0))
+                    }
+                };
+
+                if let Some(mut color) = color {
+                    if x % self.map_ratio == 0
+                        || y % self.map_ratio == 0
+                        || y % self.map_ratio == self.map_ratio - 1
+                        || x % self.map_ratio == self.map_ratio - 1
+                    {
+                        color = Color::BLACK
+                    }
+
+                    self.map_pixels.set_color(x, y, color);
                 }
             }
         }
@@ -151,7 +156,7 @@ impl Minimap {
         draw: &mut notan::draw::Draw,
         width: usize,
         _height: usize,
-        player: &Player,
+        vision_origin: Vec2,
         mut vision_color: Color,
         rays: Vec<Vec2>,
     ) {
@@ -162,7 +167,7 @@ impl Minimap {
             self.minimap_pos.y,
         );
 
-        let ray_start = minimap_translate + self.conver_ray_to_minimap_size(Vec2::new(player.x, player.y));
+        let ray_start = minimap_translate + self.conver_ray_to_minimap_size(Vec2::new(vision_origin.x, vision_origin.y));
         let ray_middle = self.conver_ray_to_minimap_size(rays[rays.len()/2]) + minimap_translate;
         for (i, mut ray_end) in rays.clone().into_iter().enumerate() {
             ray_end = self.conver_ray_to_minimap_size(ray_end);
@@ -192,14 +197,14 @@ impl Minimap {
         draw: &mut notan::draw::Draw,
         width: usize,
         height: usize,
-        player: &Player,
+        player_pos: Vec2,
         player_color: Color,
     ) {
         self.render_entity_location(
             draw,
             width,
             height,
-            Vec2::new(player.x, player.y),
+            Vec2::new(player_pos.x, player_pos.y),
             player_color,
         );
     }
@@ -209,7 +214,7 @@ impl Minimap {
         draw: &mut notan::draw::Draw,
         width: usize,
         _height: usize,
-        entity_location: Vec2,
+        entity_pos: Vec2,
         entity_color: Color,
     ) {
         // Render entities onto minimap
@@ -220,10 +225,10 @@ impl Minimap {
         );
 
         let entity_size = Vec2::new(1.0, 1.0) * self.minimap_scale;
-        let entity_location = minimap_translate + self.conver_ray_to_minimap_size(entity_location);
-        let entity_location = entity_location - (entity_size / 2.0);
+        let entity_pos = minimap_translate + self.conver_ray_to_minimap_size(entity_pos);
+        let entity_pos = entity_pos - (entity_size / 2.0);
 
-        draw.rect(entity_location.into(), entity_size.into())
+        draw.rect(entity_pos.into(), entity_size.into())
             .color(entity_color);
     }
 

@@ -1,24 +1,32 @@
 mod ecs;
+mod enemy;
 mod minimap;
 mod pixels;
+mod textures;
 
+use crate::game::enemy::*;
 use crate::game::minimap::Minimap;
 use crate::game::pixels::Pixels;
+use crate::game::textures::Texture;
 use crate::program::state::ProgramState;
-use common::map::Map;
+use common::map::{Map, Textured, Wall};
 use hecs::Entity;
 use notan::app::{App, Color, Graphics, Plugins};
 
 use notan::draw::{CreateDraw, DrawImages, DrawShapes, DrawTransform};
 use notan::prelude::*;
+use std::cmp;
 use std::f32::consts::PI;
 use std::fmt::{Display, Formatter};
 
-use notan::egui::{EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
+use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
 // use notan::prelude::{Assets, Texture, KeyCode};
 
+use glam::f32::Vec2;
+use fps_counter::FPSCounter;
+
 const PLAYER_SPEED: f32 = 0.1;
-const CAMERA_SENSITIVITY: f32 = 3.0;
+const CAMERA_SENSITIVITY: f32 = 0.08; // rad
 
 pub struct Game {
     world: hecs::World,
@@ -28,15 +36,23 @@ pub struct Game {
     minimap: Minimap,
 
     player: Entity,
+    texture: Texture,
+    enemy_texture: Texture,
+    enemies: Vec<enemy::Sprite>,
+
+    fps: FPSCounter,
 }
 
 #[derive(Debug)]
-pub struct Player {
-    x: f32,
-    dx: f32,
-    y: f32,
-    dy: f32,
-    a: f32, // angle
+pub struct Player;
+
+#[derive(Debug, Clone, Copy)]
+pub struct Position {
+    xy: Vec2,
+}
+
+pub struct Direction {
+    xy: Vec2,
 }
 
 impl Game {
@@ -51,14 +67,41 @@ impl Game {
         minimap.render_map(gfx);
 
         let mut world = hecs::World::new();
-        let a: f32 = 90.0;
-        let player = world.spawn((Player {
-            x: 1.5,
-            dx: a.to_radians().cos(),
-            y: 1.5,
-            dy: -a.to_radians().sin(),
-            a,
-        },));
+        let player = world.spawn((
+            Player,
+            Position {
+                xy: Vec2::new(1.5, 1.5),
+            },
+            Direction {
+                xy: Vec2::new(0.0, 1.0),
+            },
+        ));
+
+        // WIP enemies
+        let enemies_init = vec![(3.834, 2.765, 0), (5.323, 5.365, 2), (8.123, 8.265, 3)];
+        let mut enemies = vec![];
+        for i in enemies_init {
+            let enemy = Sprite {
+                texture_id: i.2,
+                position: Position {
+                    xy: Vec2::new(i.0, i.1),
+                },
+            };
+            enemies.push(enemy);
+            world.spawn((
+                enemy,
+                enemy.position,
+                Direction {
+                    xy: Vec2::new(0.0, 1.0),
+                },
+            ));
+        }
+
+        let texture = Texture::new(include_bytes!("../../assets/walltext.png")).unwrap();
+
+        let enemy_texture = Texture::new(include_bytes!("../../assets/monsters.png")).unwrap();
+
+        let fps = FPSCounter::new();
 
         Game {
             world,
@@ -67,6 +110,11 @@ impl Game {
 
             pixels,
             minimap,
+            texture,
+            enemies,
+            enemy_texture,
+
+            fps,
         }
     }
 }
@@ -79,97 +127,75 @@ impl Display for Game {
 
 impl ProgramState for Game {
     fn update(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins) {
-        let p = self
+        let mut p = self
             .world
-            .query_one_mut::<&mut Player>(self.player)
+            .query_one_mut::<(&mut Position, &mut Direction)>(self.player)
             .unwrap();
         let w = self.map.get_width() as f32;
         let h = self.map.get_height() as f32;
 
         if app.keyboard.is_down(KeyCode::W) {
-            if p.x + p.dx * PLAYER_SPEED < 0.0 {
-                p.x = 0.0;
-            } else if p.x + p.dx * PLAYER_SPEED > w {
-                p.x = w;
+            if (p.0.xy + p.1.xy * PLAYER_SPEED).x < 0.0 {
+                p.0.xy.x = 0.0;
+            } else if (p.0.xy + p.1.xy * PLAYER_SPEED).y < 0.0 {
+                p.0.xy.y = 0.0;
+            } else if (p.0.xy + p.1.xy * PLAYER_SPEED).x > w as f32 {
+                p.0.xy.x = w;
+            } else if (p.0.xy + p.1.xy * PLAYER_SPEED).y > h as f32 {
+                p.0.xy.y = h;
             } else {
-                p.x += p.dx * PLAYER_SPEED;
-            }
-
-            if p.y - p.dy * PLAYER_SPEED < 0.0 {
-                p.y = 0.0;
-            } else if p.y - p.dy * PLAYER_SPEED > h {
-                p.y = h;
-            } else {
-                p.y -= p.dy * PLAYER_SPEED;
+                p.0.xy += p.1.xy * PLAYER_SPEED;
             }
         }
 
         if app.keyboard.is_down(KeyCode::A) {
-            if p.x - p.dy * PLAYER_SPEED < 0.0 {
-                p.x = 0.0;
-            } else if p.x - p.dy * PLAYER_SPEED > w {
-                p.x = w;
+            if (p.0.xy - p.1.xy.perp() * PLAYER_SPEED).x < 0.0 {
+                p.0.xy.x = 0.0;
+            } else if (p.0.xy - p.1.xy.perp() * PLAYER_SPEED).y < 0.0 {
+                p.0.xy.y = 0.0;
+            } else if (p.0.xy - p.1.xy.perp() * PLAYER_SPEED).x > w as f32 {
+                p.0.xy.x = w;
+            } else if (p.0.xy - p.1.xy.perp() * PLAYER_SPEED).y > h as f32 {
+                p.0.xy.y = h;
             } else {
-                p.x -= p.dy * PLAYER_SPEED;
-            }
-
-            if p.y - p.dx * PLAYER_SPEED < 0.0 {
-                p.y = 0.0;
-            } else if p.y - p.dx * PLAYER_SPEED > h {
-                p.y = h;
-            } else {
-                p.y -= p.dx * PLAYER_SPEED;
+                p.0.xy -= p.1.xy.perp() * PLAYER_SPEED;
             }
         }
 
         if app.keyboard.is_down(KeyCode::S) {
-            if p.x - p.dx * PLAYER_SPEED < 0.0 {
-                p.x = 0.0;
-            } else if p.x - p.dx * PLAYER_SPEED > w {
-                p.x = w;
+            if (p.0.xy - p.1.xy * PLAYER_SPEED).x < 0.0 {
+                p.0.xy.x = 0.0;
+            } else if (p.0.xy - p.1.xy * PLAYER_SPEED).y < 0.0 {
+                p.0.xy.y = 0.0;
+            } else if (p.0.xy - p.1.xy * PLAYER_SPEED).x > w as f32 {
+                p.0.xy.x = w;
+            } else if (p.0.xy - p.1.xy * PLAYER_SPEED).y > h as f32 {
+                p.0.xy.y = h;
             } else {
-                p.x -= p.dx * PLAYER_SPEED;
-            }
-
-            if p.y + p.dy * PLAYER_SPEED < 0.0 {
-                p.y = 0.0;
-            } else if p.y + p.dy * PLAYER_SPEED > h {
-                p.y = h;
-            } else {
-                p.y += p.dy * PLAYER_SPEED;
+                p.0.xy -= p.1.xy * PLAYER_SPEED;
             }
         }
 
         if app.keyboard.is_down(KeyCode::D) {
-            if p.x + p.dy * PLAYER_SPEED < 0.0 {
-                p.x = 0.0;
-            } else if p.x + p.dy * PLAYER_SPEED > w {
-                p.x = w;
+            if (p.0.xy + p.1.xy.perp() * PLAYER_SPEED).x < 0.0 {
+                p.0.xy.x = 0.0;
+            } else if (p.0.xy + p.1.xy.perp() * PLAYER_SPEED).y < 0.0 {
+                p.0.xy.y = 0.0;
+            } else if (p.0.xy + p.1.xy.perp() * PLAYER_SPEED).x > w as f32 {
+                p.0.xy.x = w;
+            } else if (p.0.xy + p.1.xy.perp() * PLAYER_SPEED).y > h as f32 {
+                p.0.xy.y = h;
             } else {
-                p.x += p.dy * PLAYER_SPEED;
-            }
-
-            if p.y + p.dx * PLAYER_SPEED < 0.0 {
-                p.y = 0.0;
-            } else if p.y + p.dx * PLAYER_SPEED > h {
-                p.y = h;
-            } else {
-                p.y += p.dx * PLAYER_SPEED;
+                p.0.xy += p.1.xy.perp() * PLAYER_SPEED;
             }
         }
 
         if app.keyboard.is_down(KeyCode::Left) {
-            p.a -= CAMERA_SENSITIVITY;
-            p.a = p.a.rem_euclid(360.0);
-            p.dx = p.a.to_radians().cos();
-            p.dy = -p.a.to_radians().sin();
+            p.1.xy = p.1.xy.rotate(Vec2::from_angle(-CAMERA_SENSITIVITY));
         }
 
         if app.keyboard.is_down(KeyCode::Right) {
-            p.a += CAMERA_SENSITIVITY;
-            p.a = p.a.rem_euclid(360.0);
-            p.dx = p.a.to_radians().cos();
-            p.dy = -p.a.to_radians().sin();
+            p.1.xy = p.1.xy.rotate(Vec2::from_angle(CAMERA_SENSITIVITY));
         }
     }
 
@@ -180,24 +206,17 @@ impl ProgramState for Game {
         gfx: &mut Graphics,
         plugins: &mut Plugins,
     ) {
-        let p = self
+        let mut query = self
             .world
-            .query_one_mut::<&mut Player>(self.player)
+            .query_one::<(&Position, &Direction)>(self.player)
             .unwrap();
-        let m = self.map.clone();
-
-        // Draw a red dot
-        let x = p.x;
-        let y = p.y;
-        self.pixels.set_color(x as usize, y as usize, Color::RED);
+        let p = query.get().unwrap();
 
         // Draw canvas background
         let (width, height) = self.pixels.dimensions();
 
         // init map
         //
-        let map_w = m.get_width();
-        let map_h = m.get_height();
 
         // Render pixels
         self.pixels.flush(gfx);
@@ -207,58 +226,142 @@ impl ProgramState for Game {
         draw.image(self.pixels.texture()).scale(1.0, 1.0);
 
         // Render map
-        let rect_w = (width / (map_w * 2)) as f32;
-        let rect_h = (height / map_h) as f32;
-        // for j in 0..map_h {
-        //     // draw the map
-        //     for i in 0..map_w {
-        //         match self.map.cell(i, j) {
-        //             common::map::MapCell::Empty => {}
-        //             common::map::MapCell::Wall(wall_color) => {
-        //                 let rect_x = (i as f32) * rect_w;
-        //                 let rect_y = (j as f32) * rect_h;
-        //                 draw.rect((rect_x, rect_y), (rect_w, rect_h));
-        //             }
-        //         }
-        //     }
-        // }
 
-        //draw.rect((p.x * rect_w - 5., p.y * rect_h - 5.), (5., 5.));
         const FOV: f32 = PI / 3.;
+        let mut depth_map = vec![0.; width];
+
+        let mut minimap_rays = Vec::new();
 
         // DRAW FOV RAYCAST
         for i in 0..width {
             let mut t = 0.;
             // draw the visibility cone
-            let angle = p.a.to_radians() - FOV / 2. + FOV * i as f32 / width as f32;
+            let angle = -p.1.xy.angle_between(Vec2::X) - FOV / 2. + FOV * i as f32 / width as f32;
 
             while t < 20. {
-                let cx = p.x + t * angle.cos();
-                let cy = p.y + t * angle.sin();
+                let cx = p.0.xy.x + t * angle.cos();
+                let cy = p.0.xy.y + t * angle.sin();
                 match self.map.cell(cx as usize, cy as usize) {
-                    common::map::MapCell::Wall(wall_color) => {
-                        let column_height = height as f32 / (t * (angle - p.a.to_radians()).cos());
-                        draw.rect(
-                            (i as f32, height as f32 / 2.0 - column_height / 2.0),
-                            (1.0, column_height),
-                        )
-                        .fill_color(Color::new(
-                            0.85 - (t / 10.),
-                            0.85 - (t / 10.),
-                            0.85 - (t / 10.),
-                            1.,
-                        ));
+                    common::map::MapCell::Wall(Wall::SolidColor(wall_color)) => {
+                        let column_height =
+                            height as f32 / (t * (angle - -p.1.xy.angle_between(Vec2::X)).cos());
+                        for o in 0..1 {
+                            for p in 0..column_height as usize {
+                                let y = height as f32 / 2. - column_height / 2.;
+                                let rx = i + o;
+                                let ry = y as usize + p;
+                                if (rx >= width || ry >= height) {
+                                    continue;
+                                } // no need to check negative values, (unsigned variables)
+                                self.pixels.set_color(
+                                    rx,
+                                    ry,
+                                    Color::new(
+                                        wall_color[1] - (t / 20.),
+                                        wall_color[1] - (t / 20.),
+                                        wall_color[1] - (t / 20.),
+                                        1.,
+                                    ),
+                                );
+                            }
+                        }
+                        minimap_rays.push(Vec2::new(cx, cy));
                         break;
                     }
-                    common::map::MapCell::Empty => {
-                        let pix_x = cx * rect_w;
-                        let pix_y = cy * rect_h;
+                    common::map::MapCell::Wall(Wall::Textured(wall_type)) => {
+                        let column_height =
+                            height as f32 / (t * (angle - -p.1.xy.angle_between(Vec2::X)).cos());
+                        let hitx = cx - (cx + 0.5).floor();
+                        let hity = cy - (cy + 0.5).floor();
+                        let mut x_texcoord = hitx * self.texture.size as f32;
 
-                        //self.pixels
-                        //    .set_color(pix_x as usize, pix_y as usize, Color::WHITE)
+                        if (hity.abs() > hitx.abs()) {
+                            x_texcoord = hity * self.texture.size as f32;
+                        }
+                        if (x_texcoord < 0.) {
+                            x_texcoord = x_texcoord.abs()
+                        }
+                        let column = self.texture.texture_column(
+                            wall_type as i32,
+                            x_texcoord,
+                            column_height,
+                        );
+
+                        depth_map[i] = t;
+                        for j in 0..column_height as usize {
+                            let y = height as f32 / 2. - column_height / 2.;
+                            let rx = i;
+                            let ry = j + y as usize;
+                            if (rx >= height || ry >= width) {
+                                continue;
+                            } // no need to check negative values, (unsigned variables)
+                            let color = column[j];
+                            self.pixels.set_color(
+                                rx,
+                                ry,
+                                Color::new(
+                                    color.r - (t / 20.),
+                                    color.g - (t / 20.),
+                                    color.b - (t / 20.),
+                                    color.a,
+                                ),
+                            );
+                        }
+                        minimap_rays.push(Vec2::new(cx, cy));
+                        break;
                     }
+                    common::map::MapCell::Empty => {}
                 }
                 t = t + 0.05;
+            }
+        }
+        for (i, enemy) in self.enemies.iter().enumerate() {
+            let mut sprite_dir = (enemy.position.xy.y - p.0.xy.y).atan2(enemy.position.xy.x - p.0.xy.x);
+            let sprite_dist = ((p.0.xy.x - enemy.position.xy.x).powf(2.)
+                + (p.0.xy.y - enemy.position.xy.y).powf(2.))
+            .sqrt();
+            while (sprite_dir - -p.1.xy.angle_between(Vec2::X) > PI) {
+                sprite_dir -= 2. * PI; // remove unncesessary periods from the relative direction
+            }
+            while (sprite_dir - -p.1.xy.angle_between(Vec2::X) < -PI) {
+                sprite_dir += 2. * PI;
+            }
+            let sprite_screen_size = (2000 as f32).min(height as f32 / sprite_dist);
+            let h_offset = (sprite_dir - -p.1.xy.angle_between(Vec2::X)) / FOV * width as f32
+                + width as f32 / 2.
+                - (self.enemy_texture.size as f32 * 5. / sprite_dist);
+            let v_offset = height as i32 / 2 - sprite_screen_size as i32 / 2;
+
+            for i in 0..sprite_screen_size as i32 {
+                if (h_offset + i as f32) < 0. || (h_offset + i as f32) >= width as f32 {
+                    continue;
+                }
+                if (depth_map.len() < h_offset as usize + i as usize
+                    || depth_map[(h_offset + i as f32) as usize] < sprite_dist)
+                {
+                    continue;
+                }; // this sprite column is occluded
+                for j in 0..sprite_screen_size as i32 {
+                    if v_offset < 0 || (v_offset + j) < 0 || (v_offset + j) >= height as i32 {
+                        continue;
+                    }
+                    let mut r = self.enemy_texture.get(
+                        i * self.enemy_texture.size as i32 / sprite_screen_size as i32,
+                        j * self.enemy_texture.size as i32 / sprite_screen_size as i32,
+                        enemy.texture_id,
+                    );
+                    if r.a == 0. {
+                        continue;
+                    }
+                    r.r = r.r - (sprite_dist / 17.);
+                    r.b = r.b - (sprite_dist / 17.);
+                    r.g = r.g - (sprite_dist / 17.);
+                    self.pixels.set_color(
+                        (h_offset + i as f32) as usize,
+                        v_offset as usize + j as usize,
+                        r,
+                    );
+                }
             }
         }
 
@@ -268,10 +371,44 @@ impl ProgramState for Game {
 
         // Drawing minimap
         self.minimap.draw(&mut draw, width, height);
+
+        self.minimap.render_vision(
+            &mut draw,
+            width,
+            height,
+            p.0.xy,
+            Color::new(0.2, 0.2, 0.2, 1.0),
+            minimap_rays,
+        );
+
         self.minimap
-            .render_player_location(&mut draw, width, height, p, Color::RED);
+            .render_player_location(&mut draw, width, height, p.0.xy, Color::RED);
+
+        self.minimap.render_entity_location(
+            &mut draw,
+            width,
+            height,
+            self.enemies[0].position.xy,
+            Color::WHITE,
+        );
+        self.minimap.render_entity_location(
+            &mut draw,
+            width,
+            height,
+            self.enemies[1].position.xy,
+            Color::WHITE,
+        );
+        self.minimap.render_entity_location(
+            &mut draw,
+            width,
+            height,
+            self.enemies[2].position.xy,
+            Color::WHITE,
+        );
 
         gfx.render(&draw);
+
+        drop(query);
 
         // Render egui
         let out = plugins.egui(|ctx| {
@@ -282,6 +419,14 @@ impl ProgramState for Game {
         });
 
         gfx.render(&out);
+
+        let fps_counter = plugins.egui(|ctx| {
+            notan::egui::Area::new("fps-counter")
+                .fixed_pos(notan::egui::pos2(0.0, 0.0))
+                .show(ctx, |ui| ui.label("FPS: ".to_owned() + &self.fps.tick().to_string()));
+        });
+
+        gfx.render(&fps_counter);
     }
 }
 
@@ -290,17 +435,17 @@ impl Game {
         Grid::new("debug_grid_1").show(ui, |ui| {
             let p = self
                 .world
-                .query_one_mut::<&mut Player>(self.player)
+                .query_one_mut::<&mut Position>(self.player)
                 .unwrap();
             let height = self.map.get_height();
             let width = self.map.get_width();
 
             ui.label("X");
-            Slider::new(&mut p.x, 0.0..=width as f32 - 1.0).ui(ui);
+            Slider::new(&mut p.xy.x, 0.0..=width as f32 - 1.0).ui(ui);
             ui.end_row();
 
             ui.label("Y");
-            Slider::new(&mut p.y, 0.0..=height as f32 - 1.0).ui(ui);
+            Slider::new(&mut p.xy.y, 0.0..=height as f32 - 1.0).ui(ui);
             ui.end_row();
         });
     }
