@@ -33,7 +33,7 @@ bulk_attribute! {
     derive(Debug, Clone, Copy, Serialize, Deserialize);
     pub struct Position (pub Vec2);
     pub struct Velocity (pub Vec2);
-    pub struct LookDirection (pub Vec2);
+    pub struct LookDirection (pub f32);
     pub struct Size (pub Vec2);
     pub struct Health (pub i32);
 

@@ -1,4 +1,4 @@
-use common::{ecs::components::{Position, Player}, map::Map};
+use common::{ecs::components::{Position, Player, LookDirection}, map::Map};
 use glam::Vec2;
 use hecs::Entity;
 
@@ -13,11 +13,12 @@ pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs, player_id: u64) -> En
             x: pos.0.x,
             y: pos.0.y,
         }),
+        LookDirection(0.0)
     ))
 }
 
-pub fn spawn_player(map: &Map, world: &mut ServerEcs, player: u64) -> (Position, Entity) {
+pub fn spawn_player(map: &Map, ecs: &mut ServerEcs, player: u64) -> (Position, Entity) {
     let pos = map.random_empty_spot();
 
-    (pos, spawn_player_at(pos, world, player))
+    (pos, spawn_player_at(pos, ecs, player))
 }
