@@ -12,26 +12,6 @@ pub struct Map {
     pub data: Vec<MapCell>,
 }
 
-impl Map {
-    pub fn random_empty_spot(&self) -> Position {
-        let mut available_coords: Vec<Position> = Vec::new();
-        for x in 0..self.width {
-            for y in 0..self.height {
-                if self.cell(x, y) == MapCell::Empty {
-                    available_coords.push(Position(Vec2 {
-                        x: x as f32,
-                        y: y as f32,
-                    }));
-                }
-            }
-        }
-
-        let rand_num: usize = rand::thread_rng().gen_range(0..=available_coords.len());
-
-        available_coords[rand_num]
-    }
-}
-
 #[rustfmt::skip::macros(vec)]
 impl Default for Map {
     fn default() -> Self {
@@ -94,6 +74,24 @@ impl Map {
     }
     pub fn get_height(&self) -> usize {
         self.height
+    }
+
+    pub fn random_empty_spot(&self) -> Position {
+        let mut available_coords: Vec<Position> = Vec::new();
+        for x in 0..self.width {
+            for y in 0..self.height {
+                if self.cell(x, y) == MapCell::Empty {
+                    available_coords.push(Position(Vec2 {
+                        x: x as f32,
+                        y: y as f32,
+                    }));
+                }
+            }
+        }
+
+        let rand_num: usize = rand::thread_rng().gen_range(0..=available_coords.len());
+
+        available_coords[rand_num]
     }
 }
 
