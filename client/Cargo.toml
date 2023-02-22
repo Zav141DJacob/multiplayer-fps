@@ -23,6 +23,7 @@ bincode = "1.3.3"
 fps_counter = "2.0"
 notan = { version = "0.9", features = ["egui"] }
 #egui = "0.20.1"
+color-thief = "0.2.2"
 
 # CLI Arguments
 clap = { version = "4.1.4", features = ["derive"] }

@@ -38,6 +38,15 @@ impl Pixels {
         self.buffer[i..i + 4].copy_from_slice(&color.rgba_u8())
     }
 
+    /// Set the color of a single pixel.
+    pub fn set_color_u8(&mut self, x: usize, y: usize, color: [u8; 4]) {
+        debug_assert!(x < self.width, "x: {}, width: {}", x, self.width);
+        debug_assert!(y < self.height, "y: {}, height: {}", y, self.height);
+
+        let i = (y * self.width + x) * 4;
+        self.buffer[i..i + 4].copy_from_slice(&color)
+    }
+
     /// Clears the pixel buffer with a single color
     pub fn clear(&mut self, color: Color) {
         let rgba = color.rgba_u8();
