@@ -1,5 +1,5 @@
 use common::defaults::{MAP_HEIGHT, MAP_WIDTH};
-use common::ecs::components::{EcsProtocol, Player, Position};
+use common::ecs::components::{EcsProtocol, LookDirection, Player, Position};
 use common::map::Map;
 use server::ecs::ServerEcs;
 use server::utils::spawn_player;
@@ -16,6 +16,8 @@ use message_io::{
     network::{Endpoint, NetEvent, Transport},
     node::{self, NodeHandler, NodeListener},
 };
+
+const PLAYER_SPEED: f32 = 0.1;
 
 #[derive(Hash)]
 struct ClientIdentificationInfo {
@@ -142,22 +144,92 @@ impl Server {
                         if self.is_registered(requester_id) {
                             println!("move {direction:?}");
 
-                            let client = self
-                                .registered_clients
-                                .clients
-                                .get_mut(&requester_id)
+                            let (entity, (_, look_direction, position)) = self
+                                .ecs
+                                .world
+                                .query_mut::<(&Player, &mut LookDirection, &mut Position)>()
+                                .into_iter()
+                                .find(|(_, (&player, _, _))| player.id == requester_id)
                                 .unwrap();
-                            let mut pos = client.get_position(&self.ecs);
 
-                            // TODO: account for rotation here
+                            let mut pos = *position;
+                            let dir = *look_direction;
+                            let w = self.map.get_width() as f32;
+                            let h = self.map.get_height() as f32;
+
                             match direction {
-                                common::Direction::Forward => pos.0.x += 0.1,
-                                common::Direction::Backward => pos.0.x -= 0.1,
-                                common::Direction::Left => pos.0.y += 0.1,
-                                common::Direction::Right => pos.0.y -= 0.1,
+                                common::Direction::Forward => {
+                                    if pos.0.x + dir.0.x * PLAYER_SPEED < 0.0 {
+                                        pos.0.x = 0.0;
+                                    } else if pos.0.x + dir.0.x * PLAYER_SPEED > w {
+                                        pos.0.x = w;
+                                    } else {
+                                        pos.0.x += dir.0.x * PLAYER_SPEED;
+                                    }
+
+                                    if pos.0.y - dir.0.y * PLAYER_SPEED < 0.0 {
+                                        pos.0.y = 0.0;
+                                    } else if pos.0.y - dir.0.y * PLAYER_SPEED > h {
+                                        pos.0.y = h;
+                                    } else {
+                                        pos.0.y -= dir.0.y * PLAYER_SPEED;
+                                    }
+                                }
+                                common::Direction::Backward => {
+                                    if pos.0.x - dir.0.x * PLAYER_SPEED < 0.0 {
+                                        pos.0.x = 0.0;
+                                    } else if pos.0.x - dir.0.x * PLAYER_SPEED > w {
+                                        pos.0.x = w;
+                                    } else {
+                                        pos.0.x -= dir.0.x * PLAYER_SPEED;
+                                    }
+
+                                    if pos.0.y + dir.0.y * PLAYER_SPEED < 0.0 {
+                                        pos.0.y = 0.0;
+                                    } else if pos.0.y + dir.0.y * PLAYER_SPEED > h {
+                                        pos.0.y = h;
+                                    } else {
+                                        pos.0.y += dir.0.y * PLAYER_SPEED;
+                                    }
+                                }
+                                common::Direction::Left => {
+                                    if pos.0.x - dir.0.y * PLAYER_SPEED < 0.0 {
+                                        pos.0.x = 0.0;
+                                    } else if pos.0.x - dir.0.y * PLAYER_SPEED > w {
+                                        pos.0.x = w;
+                                    } else {
+                                        pos.0.x -= dir.0.y * PLAYER_SPEED;
+                                    }
+
+                                    if pos.0.y - dir.0.x * PLAYER_SPEED < 0.0 {
+                                        pos.0.y = 0.0;
+                                    } else if pos.0.y - dir.0.x * PLAYER_SPEED > h {
+                                        pos.0.y = h;
+                                    } else {
+                                        pos.0.y -= dir.0.x * PLAYER_SPEED;
+                                    }
+                                }
+                                common::Direction::Right => {
+                                    if pos.0.x + dir.0.y * PLAYER_SPEED < 0.0 {
+                                        pos.0.x = 0.0;
+                                    } else if pos.0.x + dir.0.y * PLAYER_SPEED > w {
+                                        pos.0.x = w;
+                                    } else {
+                                        pos.0.x += dir.0.y * PLAYER_SPEED;
+                                    }
+
+                                    if pos.0.y + dir.0.x * PLAYER_SPEED < 0.0 {
+                                        pos.0.y = 0.0;
+                                    } else if pos.0.y + dir.0.x * PLAYER_SPEED > h {
+                                        pos.0.y = h;
+                                    } else {
+                                        pos.0.y += dir.0.x * PLAYER_SPEED;
+                                    }
+                                }
                             };
 
-                            client.set_position(&mut self.ecs, pos);
+                            *self.ecs.observer.observe_component(entity, position) = pos;
+                            *self.ecs.observer.observe_component(entity, look_direction) = dir;
 
                             FromServerMessage::EcsChanges(
                                 self.ecs
