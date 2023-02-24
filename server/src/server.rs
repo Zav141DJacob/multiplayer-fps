@@ -78,7 +78,6 @@ pub struct Server {
 
     registered_clients: RegisteredClients,
     ecs: ServerEcs,
-    map: Map,
 }
 
 // Clients who have sent the join event basically
@@ -107,12 +106,14 @@ impl Server {
 
         handler.network().listen(Transport::Udp, addr)?;
 
+        let mut ecs = ServerEcs::default();
+        ecs.resources.insert(Map::gen(MAP_WIDTH, MAP_HEIGHT));
+
         Ok(Server {
             handler,
             listener: Some(listener),
             registered_clients: RegisteredClients::new(),
-            ecs: ServerEcs::default(),
-            map: Map::gen(MAP_WIDTH, MAP_HEIGHT),
+            ecs,
         })
     }
 
@@ -154,8 +155,10 @@ impl Server {
 
                             let mut pos = *position;
                             let dir = *look_direction;
-                            let w = self.map.get_width() as f32;
-                            let h = self.map.get_height() as f32;
+
+                            let map = self.ecs.resources.get::<Map>().unwrap();
+                            let w = map.get_width() as f32;
+                            let h = map.get_height() as f32;
 
                             match direction {
                                 common::Direction::Forward => {
@@ -259,7 +262,7 @@ impl Server {
                                     .get_mut(&player_id)
                                     .is_some()
                                 {
-                                    spawn_player(&self.map, &mut self.ecs, player_id);
+                                    spawn_player(&mut self.ecs, player_id);
 
                                     // TODO: handle errors better
                                     FromServerMessage::EcsChanges(
@@ -320,7 +323,7 @@ impl Server {
             // Sending initial map to player
             // TODO: handle errors better
             println!("Sending map to '{id}'");
-            FromServerMessage::SendMap(self.map.clone())
+            FromServerMessage::SendMap(self.ecs.resources.get::<Map>().unwrap().clone())
                 .construct()
                 .unwrap()
                 .send(&self.handler, info.endpoint);
