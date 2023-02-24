@@ -27,8 +27,6 @@ use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
 
 use fps_counter::FPSCounter;
 use glam::f32::Vec2;
-
-const PLAYER_SPEED: f32 = 0.1;
 const CAMERA_SENSITIVITY: f32 = 0.08; // rad
 
 pub struct Game {

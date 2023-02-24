@@ -1,8 +1,6 @@
-use common::{Direction, ecs::components::{LookDirection, Position, Player, EcsProtocol}, map::Map, FromServerMessage};
+use common::{Direction, ecs::components::{LookDirection, Position, Player, EcsProtocol}, map::Map, FromServerMessage, defaults::PLAYER_SPEED};
 
 use crate::server::Server;
-
-const PLAYER_SPEED: f32 = 0.1;
 
 pub fn execute(server: &mut Server, direction: Direction, requester_id: u64) {
     if server.is_registered(requester_id) {
