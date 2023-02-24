@@ -5,9 +5,7 @@ use common::defaults::IP;
 use common::defaults::PORT;
 
 use clap::Parser;
-
-use crate::server::Server;
-mod server;
+use server::server::Server;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -26,7 +24,7 @@ async fn main() -> io::Result<()> {
     let args = Args::parse();
     let addr: SocketAddr = SocketAddr::new(args.ip, args.port);
 
-    println!("Starting server");
+    println!("Starting server on {addr}");
     let mut server = Server::new(addr)?;
     server.run();
 
