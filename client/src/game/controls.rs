@@ -1,3 +1,5 @@
+use common::defaults::PLAYER_SPEED;
+
 use crate::game::*;
 
 pub fn handle_keyboard_input(app: &App, w: f32, h: f32, p: (&mut Position, &mut Direction)) {
