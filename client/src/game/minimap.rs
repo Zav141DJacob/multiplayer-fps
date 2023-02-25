@@ -1,4 +1,3 @@
-use super::{pixels::Pixels, Player};
 use common::map::{Map, Wall};
 use notan::draw::{DrawImages, DrawTransform};
 use notan::{
@@ -6,6 +5,8 @@ use notan::{
     prelude::{Color, Graphics, Texture},
 };
 use glam::Vec2;
+use crate::game::texture::get_wall_texture;
+use crate::game::texture::pixels::Pixels;
 
 pub struct Minimap {
     border_size: usize,
@@ -72,8 +73,8 @@ impl Minimap {
                     common::map::MapCell::Wall(Wall::SolidColor(wall_color)) => {
                         Some(wall_color.into())
                     }
-                    common::map::MapCell::Wall(Wall::Textured(_)) => {
-                        Some(Color::new(1.0, 0.0, 1.0, 1.0))
+                    common::map::MapCell::Wall(Wall::Textured(wall_type)) => {
+                        Some(get_wall_texture(wall_type).dominant().into())
                     }
                 };
 
@@ -126,6 +127,7 @@ impl Minimap {
     }
 
     pub fn draw(&self, draw: &mut notan::draw::Draw, width: usize, _height: usize) {
+        puffin::profile_function!();
         // Draw the border and map
 
         let minimap_translate = Vec2::new(
@@ -158,8 +160,13 @@ impl Minimap {
         _height: usize,
         vision_origin: Vec2,
         mut vision_color: Color,
-        rays: Vec<Vec2>,
+        rays: &[Vec2],
     ) {
+        puffin::profile_function!();
+        if rays.is_empty() {
+            return
+        }
+
         // Render vision form given rays
         let minimap_translate = Vec2::new(
             (width as f32 - (self.get_width() as f32 * self.minimap_scale.x))
@@ -169,10 +176,8 @@ impl Minimap {
 
         let ray_start = minimap_translate + self.conver_ray_to_minimap_size(Vec2::new(vision_origin.x, vision_origin.y));
         let ray_middle = self.conver_ray_to_minimap_size(rays[rays.len()/2]) + minimap_translate;
-        for (i, mut ray_end) in rays.clone().into_iter().enumerate() {
-            ray_end = self.conver_ray_to_minimap_size(ray_end);
-
-            ray_end = minimap_translate + ray_end;
+        for (i, &ray_end) in rays.iter().enumerate() {
+            let ray_end = minimap_translate + self.conver_ray_to_minimap_size(ray_end);
 
             if i < (rays.len() / 2) {
                 vision_color.a = i as f32 / (rays.len() as f32);
@@ -217,6 +222,7 @@ impl Minimap {
         entity_pos: Vec2,
         entity_color: Color,
     ) {
+        puffin::profile_function!();
         // Render entities onto minimap
         let minimap_translate = Vec2::new(
             (width as f32 - (self.get_width() as f32 * self.minimap_scale.x))

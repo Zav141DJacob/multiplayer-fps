@@ -1,13 +1,18 @@
 use std::ops::Range;
 
 use anyhow::bail;
-use image::{imageops, RgbaImage};
+use image::{GenericImageView, imageops, RgbaImage};
+use crate::game::texture::pixels::u8_to_rgba;
 
 pub struct TextureSampler {
     /// IMPORTANT: This is a transposed version of the original image.
     /// Doing it like this increases CPU cache performance when reading columns.
     /// This only affects the private implementation, not the public API.
     image: RgbaImage,
+
+    // The un-transpose dimensions
+    width: u32,
+    height: u32,
 
     /// The dominant color of this texture, for use in minimap.
     dominant: [u8; 4],
@@ -18,7 +23,7 @@ impl TryFrom<&[u8]> for TextureSampler {
 
     /// Create a texture from rgba bytes
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        let mut image = image::load_from_memory(bytes)?.into_rgba8();
+        let image = image::load_from_memory(bytes)?.into_rgba8();
 
         Ok(Self::from(&image))
     }
@@ -27,6 +32,9 @@ impl TryFrom<&[u8]> for TextureSampler {
 impl From<&RgbaImage> for TextureSampler {
     /// Create a texture from an existing image
     fn from(image: &RgbaImage) -> Self {
+        assert_ne!(image.width(), 0);
+        assert_ne!(image.height(), 0);
+
         // Transpose image (i.e. switch columns and rows)
         let mut image = imageops::rotate90(image);
         imageops::flip_horizontal_in_place(&mut image);
@@ -40,6 +48,8 @@ impl From<&RgbaImage> for TextureSampler {
         let dominant = [dominant.r, dominant.g, dominant.b, 255];
 
         Self {
+            width: image.height(),
+            height: image.width(),
             image,
             dominant,
         }
@@ -49,18 +59,21 @@ impl From<&RgbaImage> for TextureSampler {
 impl TextureSampler {
     /// Turns a given image into a vector of GameTextures. Takes in the width and height of a single tile in the image.
     /// Might be useful for animations and texture atlases.
-    pub fn from_tiles(tile_width: u32, tile_height: u32, gap: u32, bytes: &[u8]) -> anyhow::Result<Vec<Self>> {
+    pub fn from_tiles(tiles_x: u32, tiles_y: u32, gap: u32, bytes: &[u8]) -> anyhow::Result<Vec<Self>> {
         let big_image = image::load_from_memory(bytes)?.into_rgba8();
 
-        if big_image.width() % tile_width != 0 {
-            bail!("image width {} is not an exact multiple of tile width {}", big_image.width(), tile_width);
+        if big_image.width() % tiles_x != 0 {
+            bail!("image width {} is not an exact multiple of tiles_x {}", big_image.width(), tiles_x);
         }
-        if big_image.height() % tile_height != 0 {
-            bail!("image height {} is not an exact multiple of tile height {}", big_image.height(), tile_height);
+        if big_image.height() % tiles_y != 0 {
+            bail!("image height {} is not an exact multiple of tiles_y {}", big_image.height(), tiles_y);
         }
 
-        let res = (0..(big_image.width() / tile_width)).flat_map(|x| {
-            (0..(big_image.width() / tile_width)).map(|y| (x, y))
+        let tile_width = big_image.width() / tiles_x;
+        let tile_height = big_image.height() / tiles_y;
+
+        let res = (0..(big_image.height() / tile_height)).flat_map(|y| {
+            (0..(big_image.width() / tile_width)).map(move |x| (x, y))
         })
             .map(|(tile_x, tile_y)| {
                 let x = tile_x * (tile_width + gap);
@@ -78,6 +91,14 @@ impl TextureSampler {
         self.dominant
     }
 
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    pub fn height(&self) -> u32 {
+        self.height
+    }
+
     /// Gets the original image of this texture.
     /// WARNING: This is an expensive operation because the image needs to be re-transposed first.
     pub fn original_image(&self) -> RgbaImage {
@@ -89,16 +110,22 @@ impl TextureSampler {
     /// Sample a color based on uv coordinates.
     /// NOTE: If you're unfamiliar, uv coordinates are just xy coordinates in the range 0.0..1.0
     pub fn sample(&self, u: f32, v: f32) -> [u8; 4] {
-        let x = (u * self.image.height() as f32) as i32;
-        let y = (v * self.image.width() as f32) as i32;
+        let x = (u * self.width as f32) as i32;
+        let y = (v * self.height as f32) as i32;
         self.sample_exact(x, y)
     }
 
     /// Sample a color based on exact pixel coordinates
     pub fn sample_exact(&self, x: i32, y: i32) -> [u8; 4] {
-        let x = x.rem_euclid(self.image.height() as i32) as u32;
-        let y = y.rem_euclid(self.image.width() as i32) as u32;
-        let px = self.image.get_pixel(y, x);
+        // SAFETY: Clamp x and y between 0..width and 0..height respectively, so the unsafe block should be safe.
+        let x = x.rem_euclid(self.width as i32) as u32;
+        let y = y.rem_euclid(self.height as i32) as u32;
+        unsafe { self.sample_exact_unchecked(x, y) }
+    }
+
+    /// Only safe to use if x < width and y < height
+    pub unsafe fn sample_exact_unchecked(&self, x: u32, y: u32) -> [u8; 4] {
+        let px = self.image.unsafe_get_pixel(y, x);
         px.0
     }
 
@@ -114,23 +141,46 @@ impl TextureSampler {
     /// tex.sample_column(0, 0.0..1.0, 2) == AC;
     /// tex.sample_column(0, -1.0..2.0, 12) == ABCDABCDABCD;
     /// ```
-    pub fn sample_column(&self, u: f32, v_range: Range<f32>, height: usize) -> impl Iterator<Item=[u8; 4]> + DoubleEndedIterator + '_ {
-        let x = (u * self.image.height() as f32) as i32;
-        let y_start = (v_range.start * self.image.width() as f32) as i32;
-        let y_end = (v_range.end * self.image.width() as f32) as i32;
+    pub fn sample_column(&self, u: f32, v_range: Range<f32>, height: usize) -> impl Iterator<Item=[u8; 4]> + DoubleEndedIterator + ExactSizeIterator + '_ {
+        let x = (u * self.width as f32) as i32;
+        let y_start = v_range.start * self.height as f32;
+        let y_end = v_range.end * self.height as f32;
 
-        self.sample_column_exact(x, y_start..y_end, height)
+        self.sample_column_internal(x, y_start, y_end, height)
     }
 
     /// Same as [Self::sample_column], except it uses exact pixel coordinates.
-    pub fn sample_column_exact(&self, x: i32, y_range: Range<i32>, height: usize) -> impl Iterator<Item=[u8; 4]> + DoubleEndedIterator + '_ {
+    pub fn sample_column_exact(&self, x: i32, y_range: Range<i32>, height: usize) -> impl Iterator<Item=[u8; 4]> + DoubleEndedIterator + ExactSizeIterator + '_ {
         let y_start = y_range.start as f32;
         let y_end = y_range.end as f32;
 
+        self.sample_column_internal(x, y_start, y_end, height)
+    }
+
+    fn sample_column_internal(&self, x: i32, y_start: f32, y_end: f32, height: usize) -> impl Iterator<Item=[u8; 4]> + DoubleEndedIterator + ExactSizeIterator + '_ {
+        let x = (x as u32).rem_euclid(self.width); // x < self.width
+
+        let col_start = (x * self.height * 4) as usize;
+        let col_end = col_start + self.height as usize * 4;
+        let column = &self.image.as_raw()[col_start..col_end];
+        let column = u8_to_rgba(column);
+        debug_assert_eq!(column.len(), self.height as usize);
+
+        // Make y_start 0..self.height
+        let y_offset = y_start.div_euclid(self.height as f32);
+        let y_start = y_start + y_offset * self.height as f32;
+        let y_end = y_end + y_offset * self.height as f32;
+
+
         (0..height).map(move |h| {
             let fraction = h as f32 / height as f32;
-            let y = lerp(y_start, y_end, fraction) as i32;
-            self.sample_exact(x, y)
+            let y = lerp(y_start, y_end, fraction) as u32;
+            let y = y % self.height; // y < self.height
+
+            // SAFETY: This should be safe because the column has to be of length self.height and y < self.height
+            unsafe { *column.get_unchecked(y as usize) }
+            // column[y as usize]
+            // unsafe { self.sample_exact_unchecked(x, y) }
         })
     }
 }

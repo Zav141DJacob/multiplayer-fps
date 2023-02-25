@@ -22,9 +22,10 @@ async fn main() -> anyhow::Result<()> {
     let win = WindowConfig::new()
         .vsync(true)
         // .lazy_loop(true)
-        .high_dpi(true)
+        // .fullscreen(true)
+        .high_dpi(false)
         .resizable(false)
-        .size(720, 720);
+        .size(1280, 720);
 
     notan::init_with(Program::notan_setup)
         .add_config(win)

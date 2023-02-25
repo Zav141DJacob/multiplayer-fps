@@ -1,13 +1,17 @@
+
 use once_cell::sync::Lazy;
 
 use common::map::Textured;
+
 
 use crate::game::texture::sampler::TextureSampler;
 
 pub mod pixels;
 pub mod sampler;
+pub mod draw_column;
 
 pub fn get_wall_texture(tex: Textured) -> &'static TextureSampler {
+    // return &TEX_TEST2;
     match tex {
         Textured::Redstone => &ATLAS_WALL[0],
         Textured::GrayBrick => &ATLAS_WALL[1],
@@ -19,11 +23,11 @@ pub fn get_wall_texture(tex: Textured) -> &'static TextureSampler {
 }
 
 pub static ATLAS_WALL: Lazy<Vec<TextureSampler>> = Lazy::new(|| {
-    TextureSampler::from_tiles(64, 64, 0, include_bytes!("../../../assets/walltext.png")).unwrap()
+    TextureSampler::from_tiles(6, 1, 0, include_bytes!("../../../assets/walltext.png")).unwrap()
 });
 
 pub static ATLAS_MONSTER: Lazy<Vec<TextureSampler>> = Lazy::new(|| {
-    TextureSampler::from_tiles(64, 64, 0, include_bytes!("../../../assets/monsters.png")).unwrap()
+    TextureSampler::from_tiles(4, 1, 0, include_bytes!("../../../assets/monsters.png")).unwrap()
 });
 
 pub static TEX_TEST1: Lazy<TextureSampler> = Lazy::new(|| {

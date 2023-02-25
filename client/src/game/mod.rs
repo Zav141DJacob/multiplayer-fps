@@ -1,32 +1,30 @@
 mod controls;
 mod ecs;
-mod enemy;
 mod minimap;
-mod pixels;
 mod raycast;
-mod textures;
+mod texture;
 
 use crate::game::controls::*;
-use crate::game::enemy::*;
 use crate::game::minimap::Minimap;
-use crate::game::pixels::Pixels;
 use crate::game::raycast::*;
-use crate::game::textures::Texture;
 use crate::program::state::ProgramState;
-use common::map::{Map, Wall};
+use common::map::Map;
 use hecs::Entity;
 use notan::app::{App, Color, Graphics, Plugins};
 
-use notan::draw::{CreateDraw, DrawImages, DrawTransform};
+use notan::draw::{CreateDraw, DrawImages};
 use notan::prelude::*;
-use std::f32::consts::PI;
 use std::fmt::{Display, Formatter};
 
-use notan::egui::{DragValue, EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
+
+use notan::egui::{EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
 // use notan::prelude::{Assets, Texture, KeyCode};
 
 use fps_counter::FPSCounter;
 use glam::f32::Vec2;
+use crate::game::raycast::sprites::{default_sprites, Sprite};
+use crate::game::texture::draw_column::Perspective;
+use crate::game::texture::pixels::Pixels;
 
 const PLAYER_SPEED: f32 = 0.1;
 const CAMERA_SENSITIVITY: f32 = 0.08; // rad
@@ -37,13 +35,14 @@ pub struct Game {
 
     pixels: Pixels,
     minimap: Minimap,
+    ray_caster: RayCaster,
 
     player: Entity,
-    texture: Texture,
-    enemy_texture: Texture,
-    enemies: Vec<enemy::Sprite>,
+    sprites: Vec<Sprite>,
 
     fps: FPSCounter,
+
+    profiler: bool,
 }
 
 #[derive(Debug)]
@@ -80,13 +79,11 @@ impl Game {
             },
         ));
 
-        let enemies = add_enemies();
-
-        let texture = Texture::new(include_bytes!("../../assets/walltext.png")).unwrap();
-
-        let enemy_texture = Texture::new(include_bytes!("../../assets/monsters.png")).unwrap();
+        let sprites = default_sprites();
 
         let fps = FPSCounter::new();
+
+        let ray_caster = RayCaster::new(width, height);
 
         Game {
             world,
@@ -94,10 +91,10 @@ impl Game {
             player,
             pixels,
             minimap,
-            texture,
-            enemies,
-            enemy_texture,
+            ray_caster,
+            sprites,
             fps,
+            profiler: false,
         }
     }
 }
@@ -109,7 +106,7 @@ impl Display for Game {
 }
 
 impl ProgramState for Game {
-    fn update(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins) {
+    fn update(&mut self, app: &mut App, _assets: &mut Assets, _plugins: &mut Plugins) {
         let p = self
             .world
             .query_one_mut::<(&mut Position, &mut Direction)>(self.player)
@@ -121,49 +118,45 @@ impl ProgramState for Game {
 
     fn draw(
         &mut self,
-        app: &mut App,
-        assets: &mut Assets,
+        _app: &mut App,
+        _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
     ) {
-        let mut query = self
+        self.pixels.clear(Color::BLACK);
+
+        let p = self
             .world
-            .query_one::<(&Position, &Direction)>(self.player)
+            .query_one_mut::<(&Position, &Direction)>(self.player)
             .unwrap();
-        let p = query.get().unwrap();
 
         // Draw canvas background
         let (width, height) = self.pixels.dimensions();
 
+        let up_down_angle = -10.0_f32.to_radians();
+        let perspective = Perspective::new(up_down_angle, 0.6, 0.0);
+
+        self.ray_caster.draw_walls(
+            &mut self.pixels,
+            p.0.xy,
+            p.1.xy,
+            perspective,
+            &self.map,
+        );
+
+        self.ray_caster.draw_sprites(
+            &mut self.pixels,
+            p.0.xy,
+            p.1.xy,
+            perspective,
+            &mut self.sprites,
+        );
+
         let mut draw = gfx.create_draw();
-        draw.image(self.pixels.texture()).scale(1.0, 1.0);
 
-        let mut minimap_rays = Vec::new();
-
-        // Vector (distance from player to walls)
-        let mut depth_map = vec![0.; width];
-        draw_walls(
-            &mut self.pixels,
-            width,
-            height,
-            p,
-            self.map.clone(),
-            &self.texture,
-            &mut minimap_rays,
-            &mut depth_map,
-        );
-        draw_enemies(
-            &mut self.pixels,
-            width,
-            height,
-            p,
-            &self.enemies,
-            &self.enemy_texture,
-            &mut depth_map,
-        );
         // Render pixels
         self.pixels.flush(gfx);
-        self.pixels.clear(Color::BLACK);
+        draw.image(self.pixels.texture());
 
         // Drawing minimap
         self.minimap.draw(&mut draw, width, height);
@@ -174,50 +167,61 @@ impl ProgramState for Game {
             height,
             p.0.xy,
             Color::new(0.2, 0.2, 0.2, 1.0),
-            minimap_rays,
+            self.ray_caster.minimap_rays(),
         );
 
         self.minimap
             .render_player_location(&mut draw, width, height, p.0.xy, Color::RED);
 
         // Draw enemies on map
-        for enemy in self.enemies.iter() {
+        for sprite in self.sprites.iter() {
             self.minimap.render_entity_location(
                 &mut draw,
                 width,
                 height,
-                enemy.position.xy,
-                Color::WHITE,
+                sprite.position,
+                sprite.texture.dominant().into(),
             );
         }
 
         gfx.render(&draw);
 
-        drop(query);
+
+
         // Render egui
-        let out = plugins.egui(|ctx| {
-            Window::new("Debug")
-                .collapsible(true)
-                .resizable(false)
-                .show(ctx, |ui| self.debug_ui(ui));
-        });
+        {
+            puffin::profile_scope!("render egui");
 
-        gfx.render(&out);
+            let out = plugins.egui(|ctx| {
+                Window::new("Debug")
+                    .collapsible(true)
+                    .resizable(false)
+                    .show(ctx, |ui| self.debug_ui(ui));
 
-        let fps_counter = plugins.egui(|ctx| {
-            notan::egui::Area::new("fps-counter")
-                .fixed_pos(notan::egui::pos2(0.0, 0.0))
-                .show(ctx, |ui| {
-                    ui.label("FPS: ".to_owned() + &self.fps.tick().to_string())
-                });
-        });
+                if self.profiler {
+                    puffin_egui::profiler_window(ctx);
+                }
 
-        gfx.render(&fps_counter);
+                notan::egui::Area::new("fps-counter")
+                    .fixed_pos(notan::egui::pos2(0.0, 0.0))
+                    .show(ctx, |ui| {
+                        ui.label(format!("FPS: {}", self.fps.tick()));
+                    });
+            });
+
+            gfx.render(&out);
+        }
+
+
     }
 }
 
 impl Game {
     fn debug_ui(&mut self, ui: &mut Ui) {
+        if ui.checkbox(&mut self.profiler, "Profiler").changed() {
+            puffin::set_scopes_on(self.profiler);
+        };
+
         Grid::new("debug_grid_1").show(ui, |ui| {
             let p = self
                 .world

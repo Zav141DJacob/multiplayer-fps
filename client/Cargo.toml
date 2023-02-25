@@ -10,6 +10,7 @@ thiserror = "1.0.38"
 anyhow = "1.0.68"
 #enum_dispatch = "0.3"
 itertools = "0.10.5"
+ordered-float = "3.4.0"
 
 # Logging
 tracing = "0.1"
@@ -24,6 +25,7 @@ fps_counter = "2.0"
 notan = { version = "0.9", features = ["egui"] }
 #egui = "0.20.1"
 color-thief = "0.2.2"
+transpose = "0.2.2"
 
 # CLI Arguments
 clap = { version = "4.1.4", features = ["derive"] }
@@ -35,10 +37,17 @@ resources = "1.1.0"
 common = { path = "../common" }
 
 # Math
-glam = "0.22.0"
+glam = "0.23.0"
 
 # Networking
 message-io = "0.14.6"
 tokio = { version = "1.25.0", features = ["full"] }
-stb_image = "0.2.4"
 image = "0.24.5"
+
+# Diagnostic
+puffin = "0.14.3"
+puffin_egui = "=0.19.2"
+
+[features]
+semitransparency = []
+transposed_pixels = []
