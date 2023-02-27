@@ -57,9 +57,9 @@ impl RayCaster {
             let set_color_fn = |current: &mut [u8; 4], new: [u8; 4]|  {
                 *current = if matches!(hit.side, HitSide::Left | HitSide::Right) {
                     [
-                        (new[0] as u16 * 200 / 255) as u8,
-                        (new[1] as u16 * 200 / 255) as u8,
-                        (new[2] as u16 * 200 / 255) as u8,
+                        (new[0] as u16 * 200 / 256) as u8,
+                        (new[1] as u16 * 200 / 256) as u8,
+                        (new[2] as u16 * 200 / 256) as u8,
                         new[3]
                     ]
                 } else {
