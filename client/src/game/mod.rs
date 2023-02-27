@@ -24,7 +24,6 @@ use glam::f32::Vec2;
 use crate::game::raycast::sprites::{default_sprites, Sprite};
 use crate::game::texture::pixels::Pixels;
 
-const PLAYER_SPEED: f32 = 0.1;
 const CAMERA_SENSITIVITY: f32 = 0.08; // rad
 const FOV: f32 = 70.0;
 const CEILING_COLOR: [u8; 4] = [100, 100, 170, 255];

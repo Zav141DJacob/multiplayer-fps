@@ -1,4 +1,3 @@
-use bincode::Error;
 use ecs::components::EcsProtocol;
 use map::Map;
 use message_io::{network::Endpoint, node::NodeHandler};
@@ -28,7 +27,7 @@ pub enum FromServerMessage {
 }
 
 impl FromServerMessage {
-    pub fn construct(&self) -> Result<ConstructedMessage, Error> {
+    pub fn construct(&self) -> Result<ConstructedMessage, bincode::Error> {
         Ok(ConstructedMessage(bincode::serialize(self)?))
     }
 }

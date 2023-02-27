@@ -22,8 +22,8 @@ pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs, player_id: u64) -> En
     ))
 }
 
-pub fn spawn_player(map: &Map, ecs: &mut ServerEcs, player: u64) -> (Position, Entity) {
-    let pos = map.random_empty_spot();
+pub fn spawn_player(ecs: &mut ServerEcs, player: u64) -> (Position, Entity) {
+    let pos = ecs.resources.get::<Map>().unwrap().random_empty_spot();
 
     (pos, spawn_player_at(pos, ecs, player))
 }

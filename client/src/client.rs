@@ -8,7 +8,7 @@ use message_io::{
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
 enum Signal {
-    Greet, // TODO: remove greet in the future
+    Ping, // TODO: remove ping in the future
     Stop,
 }
 
@@ -66,11 +66,11 @@ impl Client {
 
         tokio::spawn(async move {
             while let Some(message) = from_client_reciever.recv().await {
+                let output_data = bincode::serialize(&message).unwrap();
+                handler.network().send(server_id, &output_data);
+
                 if let FromClientMessage::Leave = message {
                     break;
-                } else {
-                    let output_data = bincode::serialize(&message).unwrap();
-                    handler.network().send(server_id, &output_data);
                 }
             }
 
@@ -90,7 +90,7 @@ impl Client {
                         if established {
                             println!("Connected to server at {}", server_id.addr(),);
                             println!("Client identified by local port: {}", local_addr.port());
-                            handler.signals().send(Signal::Greet);
+                            handler.signals().send(Signal::Ping);
                         } else {
                             println!("Cant connect to server")
                         }
@@ -107,13 +107,17 @@ impl Client {
                     }
                 },
                 NodeEvent::Signal(signal) => match signal {
-                    Signal::Greet => { // TODO: remove greet in the future
+                    Signal::Ping => { // TODO: remove greet in the future
+                        if from_client_sender2.is_closed() {
+                            return
+                        }
+
                         let message = FromClientMessage::Ping;
                         let output_data = bincode::serialize(&message).unwrap();
                         handler.network().send(server_id, &output_data);
                         handler
                             .signals()
-                            .send_with_timer(Signal::Greet, Duration::from_secs(1));
+                            .send_with_timer(Signal::Ping, Duration::from_secs(1));
                     }
                     Signal::Stop => {
                         // Should never give an error but if it does it doesn't matter as its part of close process anyway
