@@ -23,7 +23,7 @@ pub struct Minimap {
 
 impl Minimap {
     pub fn new(map: Map, gfx: &mut Graphics) -> Self {
-        let border_size = 2;
+        let border_size = 3;
         let border_color = Color::GRAY;
 
         let map_ratio = 10;
@@ -130,8 +130,8 @@ impl Minimap {
 
         let minimap_translate = Vec2::new(
             (width as f32 - (self.get_width() as f32 * self.minimap_scale.x))
-                - (self.minimap_pos.x),
-            self.minimap_pos.y,
+                - (self.minimap_pos.x) - self.border_size as f32,
+            self.minimap_pos.y + self.border_size as f32,
         );
 
         draw.rect(
@@ -144,7 +144,7 @@ impl Minimap {
                 self.minimap_scale.y * self.get_height() as f32 + (self.border_size * 2) as f32,
             ),
         )
-        .color(self.border_color);
+        .color(self.border_color).corner_radius(2.0);
 
         draw.image(self.get_map_texture())
             .translate(minimap_translate.x, minimap_translate.y)
@@ -163,8 +163,8 @@ impl Minimap {
         // Render vision form given rays
         let minimap_translate = Vec2::new(
             (width as f32 - (self.get_width() as f32 * self.minimap_scale.x))
-                - (self.minimap_pos.x),
-            self.minimap_pos.y,
+                - (self.minimap_pos.x) - self.border_size as f32,
+            self.minimap_pos.y + self.border_size as f32,
         );
 
         let ray_start = minimap_translate + self.conver_ray_to_minimap_size(Vec2::new(vision_origin.x, vision_origin.y));
@@ -220,8 +220,8 @@ impl Minimap {
         // Render entities onto minimap
         let minimap_translate = Vec2::new(
             (width as f32 - (self.get_width() as f32 * self.minimap_scale.x))
-                - (self.minimap_pos.x),
-            self.minimap_pos.y,
+                - (self.minimap_pos.x) - self.border_size as f32,
+            self.minimap_pos.y + self.border_size as f32,
         );
 
         let entity_size = Vec2::new(1.0, 1.0) * self.minimap_scale;
