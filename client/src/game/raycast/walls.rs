@@ -1,8 +1,8 @@
 use glam::{IVec2, Vec2};
 use notan::prelude::Color;
 use common::map::{Map, MapCell, Wall};
-use crate::game::raycast::{MAX_VIEW_DISTANCE, RayCaster};
-use crate::game::texture::draw_column::{DrawColumn, Perspective};
+use crate::game::raycast::{MAX_VIEW_DISTANCE, Perspective, RayCaster};
+use crate::game::texture::draw_column::DrawColumn;
 use crate::game::texture::get_wall_texture;
 use crate::game::texture::pixels::Pixels;
 

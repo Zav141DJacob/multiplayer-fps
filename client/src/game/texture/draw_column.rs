@@ -1,31 +1,7 @@
 use notan::prelude::Color;
+use crate::game::raycast::Perspective;
 use crate::game::texture::pixels::Pixels;
 use crate::game::texture::sampler::TextureSampler;
-
-#[derive(Debug, Clone, Copy)]
-pub struct Perspective {
-    y_offset: f32,
-    horizon_height: f32,
-}
-
-impl Perspective {
-    pub fn new(angle: f32, camera_height: f32, subject_height: f32) -> Self {
-        let y_offset = angle.tan();
-        let horizon_height = camera_height - subject_height;
-
-        Self { y_offset, horizon_height }
-    }
-
-    pub fn offset_camera(mut self, by: f32) -> Self {
-        self.horizon_height += by;
-        self
-    }
-
-    pub fn offset_subject(mut self, by: f32) -> Self {
-        self.horizon_height -= by;
-        self
-    }
-}
 
 pub trait DrawColumn {
     fn draw_column(

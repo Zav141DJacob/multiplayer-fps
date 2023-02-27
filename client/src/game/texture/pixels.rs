@@ -37,11 +37,18 @@ impl Pixels {
         pixels
     }
 
-    fn get_i(&self, x: usize, y: usize) -> usize {
+    fn xy_to_i(&self, x: usize, y: usize) -> usize {
         #[cfg(feature = "transposed_pixels")]
         return (x * self.height + y) * 4;
         #[cfg(not(feature = "transposed_pixels"))]
         return (y * self.width + x) * 4;
+    }
+
+    fn i_to_xy(&self, i: usize) -> (usize, usize) {
+        #[cfg(feature = "transposed_pixels")]
+        return (i / (self.height * 4), i % (self.height * 4));
+        #[cfg(not(feature = "transposed_pixels"))]
+        return (i % (self.width * 4), i / (self.width * 4));
     }
 
     /// Set the color of a single pixel.
@@ -54,7 +61,7 @@ impl Pixels {
         debug_assert!(x < self.width, "x: {}, width: {}", x, self.width);
         debug_assert!(y < self.height, "y: {}, height: {}", y, self.height);
 
-        let i = self.get_i(x, y);
+        let i = self.xy_to_i(x, y);
         self.buffer[i..i + 4].copy_from_slice(&color)
     }
 
@@ -80,12 +87,12 @@ impl Pixels {
     }
 
     pub fn get_color_u8(&self, x: usize, y: usize) -> [u8; 4] {
-        let i = self.get_i(x, y);
+        let i = self.xy_to_i(x, y);
         self.buffer[i..i + 4].try_into().unwrap()
     }
 
     pub fn get_color_u8_mut(&mut self, x: usize, y: usize) -> &mut [u8; 4] {
-        let i = self.get_i(x, y);
+        let i = self.xy_to_i(x, y);
         // Should be safe since we're always gonna get a slice with length 4
         unsafe { u8_to_rgba_one_mut(&mut self.buffer[i..i + 4]) }
     }
@@ -97,6 +104,17 @@ impl Pixels {
         let mut i = 0;
         while i <= self.buffer.len() - 4 {
             self.buffer[i..i + 4].copy_from_slice(&rgba);
+            i += 4;
+        }
+    }
+
+    pub fn clear_with(&mut self, mut f: impl FnMut(usize, usize) -> [u8; 4]) {
+        puffin::profile_function!();
+        let mut i = 0;
+        while i <= self.buffer.len() - 4 {
+            let (x, y) = self.i_to_xy(i);
+            let color = f(x, y);
+            self.buffer[i..i + 4].copy_from_slice(&color);
             i += 4;
         }
     }

@@ -18,16 +18,17 @@ use std::fmt::{Display, Formatter};
 
 
 use notan::egui::{EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
-// use notan::prelude::{Assets, Texture, KeyCode};
 
 use fps_counter::FPSCounter;
 use glam::f32::Vec2;
 use crate::game::raycast::sprites::{default_sprites, Sprite};
-use crate::game::texture::draw_column::Perspective;
 use crate::game::texture::pixels::Pixels;
 
 const PLAYER_SPEED: f32 = 0.1;
 const CAMERA_SENSITIVITY: f32 = 0.08; // rad
+const FOV: f32 = 60.0;
+const CEILING_COLOR: [u8; 4] = [100, 100, 170, 255];
+const FLOOR_COLOR: [u8; 4] = [60, 120, 60, 255];
 
 pub struct Game {
     world: hecs::World,
@@ -39,6 +40,7 @@ pub struct Game {
 
     player: Entity,
     sprites: Vec<Sprite>,
+    look_up_down: f32,
 
     fps: FPSCounter,
 
@@ -66,6 +68,7 @@ impl Game {
 
         let pixels = Pixels::new(width, height, gfx);
         let mut minimap = Minimap::new(map.clone(), gfx);
+        minimap.set_floor_color(FLOOR_COLOR.into());
         minimap.render_map(gfx);
 
         let mut world = hecs::World::new();
@@ -83,7 +86,7 @@ impl Game {
 
         let fps = FPSCounter::new();
 
-        let ray_caster = RayCaster::new(width, height);
+        let ray_caster = RayCaster::new(width, height, FOV);
 
         Game {
             world,
@@ -93,6 +96,7 @@ impl Game {
             minimap,
             ray_caster,
             sprites,
+            look_up_down: 0.0,
             fps,
             profiler: false,
         }
@@ -113,7 +117,7 @@ impl ProgramState for Game {
             .unwrap();
         let w = self.map.get_width() as f32;
         let h = self.map.get_height() as f32;
-        handle_keyboard_input(app, w, h, p);
+        handle_keyboard_input(app, w, h, p, &mut self.look_up_down);
     }
 
     fn draw(
@@ -123,7 +127,16 @@ impl ProgramState for Game {
         gfx: &mut Graphics,
         plugins: &mut Plugins,
     ) {
-        self.pixels.clear(Color::BLACK);
+        let perspective = self.ray_caster.perspective(self.look_up_down, 0.6, 0.0);
+        let horizon = (0.5 * self.pixels.height() as f32 + perspective.y_offset) as usize;
+
+        self.pixels.clear_with(|_, y| {
+            if y <= horizon {
+                CEILING_COLOR
+            } else {
+                FLOOR_COLOR
+            }
+        });
 
         let p = self
             .world
@@ -133,8 +146,6 @@ impl ProgramState for Game {
         // Draw canvas background
         let (width, height) = self.pixels.dimensions();
 
-        let up_down_angle = -10.0_f32.to_radians();
-        let perspective = Perspective::new(up_down_angle, 0.6, 0.0);
 
         self.ray_caster.draw_walls(
             &mut self.pixels,

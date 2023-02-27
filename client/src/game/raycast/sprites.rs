@@ -1,9 +1,9 @@
 use std::cmp::Reverse;
 use glam::Vec2;
 use ordered_float::OrderedFloat;
-use crate::game::raycast::RayCaster;
+use crate::game::raycast::{Perspective, RayCaster};
 use crate::game::texture::ATLAS_MONSTER;
-use crate::game::texture::draw_column::{DrawColumn, Perspective};
+use crate::game::texture::draw_column::DrawColumn;
 use crate::game::texture::pixels::{blend_color_u8, Pixels};
 use crate::game::texture::sampler::TextureSampler;
 use crate::profile_scope_chain;
