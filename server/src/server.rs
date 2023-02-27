@@ -1,7 +1,9 @@
 use common::defaults::{MAP_HEIGHT, MAP_WIDTH};
-use common::ecs::components::{Player, Position};
+use common::ecs::components::{Player, Position, EcsProtocol};
 use common::map::Map;
+use tokio::time::interval;
 
+use std::time::Duration;
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
     hash::{Hash, Hasher},
@@ -9,7 +11,7 @@ use std::{
     net::SocketAddr,
 };
 
-use common::FromClientMessage;
+use common::{FromClientMessage, FromServerMessage};
 use message_io::{
     network::{Endpoint, NetEvent, Transport},
     node::{self, NodeHandler, NodeListener},
@@ -115,11 +117,59 @@ impl Server {
         })
     }
 
+    pub fn handle_ticks(&mut self) {
+            self.ecs.tick(0.0);
+
+            let protocols = self.ecs
+            .observer
+            .drain_reliable()
+            .collect::<Vec<EcsProtocol>>();
+
+
+            if protocols.len() != 0 {
+                FromServerMessage::EcsChanges(
+                    protocols
+                )
+                .construct()
+                .unwrap()
+                .send_all(&self.handler, self.registered_clients.get_all_endpoints());
+
+            }
+    }
+
+
+    // {
+                
+    //     self.ecs.tick(0.0);
+
+    //     let stuff = self.ecs
+    //     .observer
+    //     .drain_reliable()
+    //     .collect::<Vec<EcsProtocol>>();
+
+
+    //     FromServerMessage::EcsChanges(
+    //         stuff
+    //     )
+    //     .construct()
+    //     .unwrap()
+    //     .send_all(&self.handler, self.registered_clients.get_all_endpoints());
+    // }
     pub fn run(&mut self) {
+        // self.handle_ticks();
+
         let listener = self.listener.take().unwrap();
 
+        // handler.network().send(server_id, &output_data);
+        // self.handler
+        // .network()
+        //     .send_with_timer(FromServerMessage::Pong, Duration::from_secs(1));
+    
+            
         listener.for_each(move |event| match event.network() {
+            
             NetEvent::Message(endpoint, input_data) => {
+
                 let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
 
                 let requester_info = ClientIdentificationInfo {
@@ -127,16 +177,17 @@ impl Server {
                     endpoint,
                 };
                 let requester_id = requester_info.get_id();
-
+                self.handle_ticks();
+                
                 println!("Event: {message:?}");
                 match message {
                     FromClientMessage::Ping => events::ping::execute(&self.handler, endpoint),
-                    FromClientMessage::Move(direction) => {
-                        events::r#move::execute(self, direction, requester_id)
-                    }
                     FromClientMessage::Leave => events::leave::execute(self, requester_id),
                     FromClientMessage::Join => {
                         events::join::execute(self, requester_id, requester_info).unwrap();
+                    },
+                    FromClientMessage::UpdateInputs(updated_input_state) => {
+                        events::r#update_inputs::execute(self,  updated_input_state, requester_id).unwrap();
                     }
                 }
             }
@@ -145,6 +196,7 @@ impl Server {
                 unreachable!();
             }
         });
+
     }
 
     pub fn is_registered(&self, name: u64) -> bool {
