@@ -12,8 +12,8 @@ use notan::{
 
 
 pub struct GameUI {
-    pub player_hp_max: usize,
-    pub player_hp: usize,
+    player_hp_max: usize,
+    player_hp: usize,
     max_ammo: usize, 
     ammo: usize, 
     weapon_name: String,
