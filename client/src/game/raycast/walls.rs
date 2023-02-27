@@ -56,10 +56,11 @@ impl RayCaster {
 
             let set_color_fn = |current: &mut [u8; 4], new: [u8; 4]|  {
                 *current = if matches!(hit.side, HitSide::Left | HitSide::Right) {
+                    const DARKEN: u16 = (0.8 * 256.0) as u16;
                     [
-                        (new[0] as u16 * 200 / 256) as u8,
-                        (new[1] as u16 * 200 / 256) as u8,
-                        (new[2] as u16 * 200 / 256) as u8,
+                        (new[0] as u16 * DARKEN / 256) as u8,
+                        (new[1] as u16 * DARKEN / 256) as u8,
+                        (new[2] as u16 * DARKEN / 256) as u8,
                         new[3]
                     ]
                 } else {
