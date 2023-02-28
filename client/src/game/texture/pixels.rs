@@ -1,4 +1,5 @@
 use std::ops::{Deref, DerefMut};
+
 use notan::draw::{Draw, DrawImages, DrawTransform};
 use notan::prelude::{Color, Graphics, Texture};
 
@@ -63,7 +64,7 @@ impl Pixels {
 
 
     /// Returns a closure that modifies a color before blending it.
-    pub fn blend_color_u8_with(mut f: impl FnMut([u8; 4])->[u8; 4]) -> impl FnMut(&mut Self, usize, usize, [u8; 4]) {
+    pub fn blend_color_u8_with(mut f: impl FnMut([u8; 4]) -> [u8; 4]) -> impl FnMut(&mut Self, usize, usize, [u8; 4]) {
         move |this, x, y, color| {
             let color = f(color);
             this.blend_color_u8(x, y, color)
@@ -87,13 +88,8 @@ impl Pixels {
 
     /// Clears the pixel buffer with a single color
     pub fn clear(&mut self, color: Color) {
-        puffin::profile_function!();
         let rgba = color.rgba_u8();
-        let mut i = 0;
-        while i <= self.buffer.len() - 4 {
-            self.buffer[i..i + 4].copy_from_slice(&rgba);
-            i += 4;
-        }
+        self.clear_with(|_, _| rgba)
     }
 
     pub fn clear_with(&mut self, mut f: impl FnMut(usize, usize) -> [u8; 4]) {
@@ -136,6 +132,7 @@ impl Pixels {
 }
 
 type DrawBuilder<'a> = notan::draw::DrawBuilder<'a, notan::draw::Image<'a>>;
+
 pub struct PixelsDraw<'a> (DrawBuilder<'a>);
 
 impl<'a> Drop for PixelsDraw<'a> {
@@ -202,11 +199,10 @@ unsafe fn u8_to_rgba_one_mut(slice_u8: &mut [u8]) -> &mut [u8; 4] {
 }
 
 
-
 #[cfg(not(feature = "semitransparency"))]
 pub fn blend_color_u8(back: &mut [u8; 4], front: [u8; 4]) {
     if front[3] == 0 {
-        return
+        return;
     }
 
     *back = front
@@ -215,12 +211,12 @@ pub fn blend_color_u8(back: &mut [u8; 4], front: [u8; 4]) {
 #[cfg(feature = "semitransparency")]
 pub fn blend_color_u8(back: &mut [u8; 4], front: [u8; 4]) {
     if front[3] == 0 {
-        return
+        return;
     }
 
     if front[3] == 255 {
         *back = front;
-        return
+        return;
     }
 
     fn lerp(start: u8, end: u8, t: u8) -> u8 {
