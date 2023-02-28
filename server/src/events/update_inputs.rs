@@ -1,9 +1,21 @@
-use common::{FromServerMessage, ecs::components::InputState};
-use message_io::{network::Endpoint, node::NodeHandler};
+use common::{ecs::components::{InputState, Player, Input}};
 
-pub fn execute(handler: &NodeHandler<()>, endpoint: Endpoint, input_state: InputState, requester_id: u64) {
-    println!("Ping from {}", endpoint.addr());
+use crate::server::Server;
+
+pub fn execute(server: &mut Server, updated_input_state: InputState, requester_id: u64) {
     
+    let (entity, (_, input_state)) = server
+            .ecs
+            .world
+            .query_mut::<(&Player, &mut Input)>()
+            .into_iter()
+            .find(|(_, (&player, _))| {
+                player.id == requester_id
+            })
+            .unwrap();
+
+    *server.ecs.observer.observe_component(entity, input_state) = Input(updated_input_state);
+    server.ecs.observer.drain_reliable();
 
 
     // TODO: handle errors better

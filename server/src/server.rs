@@ -1,9 +1,7 @@
 use common::defaults::{MAP_HEIGHT, MAP_WIDTH};
 use common::ecs::components::{Player, Position, EcsProtocol};
 use common::map::Map;
-use tokio::time::interval;
 
-use std::time::Duration;
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
     hash::{Hash, Hasher},
@@ -137,34 +135,11 @@ impl Server {
             }
     }
 
-
-    // {
-                
-    //     self.ecs.tick(0.0);
-
-    //     let stuff = self.ecs
-    //     .observer
-    //     .drain_reliable()
-    //     .collect::<Vec<EcsProtocol>>();
-
-
-    //     FromServerMessage::EcsChanges(
-    //         stuff
-    //     )
-    //     .construct()
-    //     .unwrap()
-    //     .send_all(&self.handler, self.registered_clients.get_all_endpoints());
-    // }
     pub fn run(&mut self) {
         // self.handle_ticks();
 
         let listener = self.listener.take().unwrap();
 
-        // handler.network().send(server_id, &output_data);
-        // self.handler
-        // .network()
-        //     .send_with_timer(FromServerMessage::Pong, Duration::from_secs(1));
-    
             
         listener.for_each(move |event| match event.network() {
             
@@ -187,7 +162,7 @@ impl Server {
                         events::join::execute(self, requester_id, requester_info).unwrap();
                     },
                     FromClientMessage::UpdateInputs(updated_input_state) => {
-                        events::r#update_inputs::execute(self,  updated_input_state, requester_id).unwrap();
+                        events::r#update_inputs::execute(self,  updated_input_state, requester_id);
                     }
                 }
             }

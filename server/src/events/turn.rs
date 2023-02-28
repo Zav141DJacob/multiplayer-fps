@@ -1,7 +1,7 @@
-use common::{Direction, ecs::components::{LookDirection, Position, Player, EcsProtocol}, map::Map, FromServerMessage, defaults::PLAYER_SPEED};
+use common::{Direction, ecs::components::{LookDirection, Player}};
 use glam::Vec2;
 
-use crate::{server::Server, ecs::ServerEcs};
+use crate::ecs::ServerEcs;
 
 
 const CAMERA_SENSITIVITY: f32 = 0.08; // rad

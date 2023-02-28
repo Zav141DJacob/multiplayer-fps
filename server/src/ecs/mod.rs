@@ -1,4 +1,3 @@
-use common::ConstructedMessage;
 use common::ecs::components::{EcsProtocol, InsertComponent};
 use hecs::World;
 use resources::Resources;
