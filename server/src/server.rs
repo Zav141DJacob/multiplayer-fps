@@ -19,33 +19,25 @@ use crate::ecs::ServerEcs;
 use crate::events;
 
 #[derive(Hash)]
-pub struct ClientIdentificationInfo {
+pub struct ClientInfo {
     pub addr: SocketAddr,
     pub endpoint: Endpoint,
 }
 
-impl ClientIdentificationInfo {
+impl ClientInfo {
     pub fn get_id(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.hash(&mut hasher);
 
         hasher.finish()
     }
-}
 
-pub struct ClientInfo {
-    pub id: ClientIdentificationInfo,
-}
-
-impl ClientInfo {
     pub fn new(addr: SocketAddr, endpoint: Endpoint) -> Self {
-        ClientInfo {
-            id: ClientIdentificationInfo { addr, endpoint },
-        }
+        ClientInfo { addr, endpoint }
     }
 
     fn set_position(&mut self, ecs: &mut ServerEcs, new_pos: Position) {
-        let id = self.id.get_id();
+        let id = self.get_id();
 
         // TODO: better error handling
         let (entity, (_, position)) = ecs
@@ -59,7 +51,7 @@ impl ClientInfo {
     }
 
     fn get_position(&self, ecs: &ServerEcs) -> Position {
-        let id = self.id.get_id();
+        let id = self.get_id();
 
         // TODO: better error handling
         *ecs.world
@@ -93,7 +85,7 @@ impl RegisteredClients {
     pub fn get_all_endpoints(&self) -> Vec<Endpoint> {
         self.clients
             .values()
-            .map(|client| client.id.endpoint)
+            .map(|client| client.endpoint)
             .collect()
     }
 }
@@ -141,7 +133,7 @@ impl Server {
             if let NetEvent::Message(endpoint, input_data) = event.network() {
                 let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
 
-                let requester_info = ClientIdentificationInfo {
+                let requester_info = ClientInfo {
                     addr: endpoint.addr(),
                     endpoint,
                 };

@@ -4,7 +4,7 @@ use common::{ecs::components::EcsProtocol, map::Map, FromServerMessage};
 use resources::CantGetResource;
 
 use crate::{
-    server::{ClientIdentificationInfo, ClientInfo, Server},
+    server::{ClientInfo, Server},
     utils::spawn_player,
 };
 
@@ -40,7 +40,7 @@ impl Display for JoinError {
 pub fn execute(
     server: &mut Server,
     requester_id: u64,
-    requester_info: ClientIdentificationInfo,
+    requester_info: ClientInfo,
 ) -> Result<(), JoinError> {
     if !server.is_registered(requester_id) {
         // Add player to the server clients
@@ -61,7 +61,9 @@ pub fn execute(
             .send(&server.handler, requester_info.endpoint);
 
         // Sends ECS history to the newly joined user
-        FromServerMessage::EcsChanges(server.ecs.init_client()).construct()?.send(&server.handler, requester_info.endpoint);
+        FromServerMessage::EcsChanges(server.ecs.init_client())
+            .construct()?
+            .send(&server.handler, requester_info.endpoint);
 
         // Spawns player
         spawn_player(&mut server.ecs, requester_id);
@@ -79,7 +81,6 @@ pub fn execute(
             &server.handler,
             server.registered_clients.get_all_endpoints(),
         );
-
     } else {
         println!("Participant with name '{requester_id}' already exists");
     }
