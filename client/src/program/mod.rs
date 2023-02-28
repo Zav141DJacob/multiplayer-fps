@@ -39,6 +39,8 @@ impl Program {
     ) {
         let span = debug_span!("update", state = %this.state);
         let _guard = span.enter();
+        puffin::GlobalProfiler::lock().new_frame();
+        puffin::profile_scope!("update");
 
         this.state.update(app, assets, plugins);
     }
@@ -52,10 +54,11 @@ impl Program {
     ) {
         let span = debug_span!("draw", state = %this.state);
         let _guard = span.enter();
+        puffin::profile_scope!("draw");
 
         this.state.draw(app, assets, gfx, plugins);
 
-        // Do state switching here so we have access to Graphics (for creating textures and stuff)
+        // Do state switching here so we have access to Graphics (for creating texture and stuff)
         if let Some(next_state) = this.state.change_state(app, assets, gfx, plugins) {
             info!("Switched to state: {}", next_state);
             this.state = next_state;
@@ -71,6 +74,7 @@ impl Program {
     ) {
         let span = debug_span!("event", state = %this.state);
         let _guard = span.enter();
+        puffin::profile_scope!("event");
 
         this.state.event(app, assets, plugins, event);
     }
