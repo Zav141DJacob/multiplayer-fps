@@ -25,6 +25,7 @@ register_shared_components! {
     Size,
     Health,
     Player,
+    Input,
 }
 
 // This macro simply adds derives for all these structs.
@@ -36,8 +37,37 @@ bulk_attribute! {
     pub struct LookDirection (pub Vec2);
     pub struct Size (pub Vec2);
     pub struct Health (pub i32);
-
+    pub struct Input(pub InputState);
+    
     pub struct Player {
         pub id: u64,
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct InputState {
+    pub forward: bool,
+    pub backward: bool,
+    pub left: bool,
+    pub right: bool,
+
+    pub look_left: bool,
+    pub look_right: bool,
+    
+    pub shoot: bool,
+} 
+
+impl Default for InputState {
+    fn default() -> Self {
+        InputState { 
+            forward: true, 
+            backward: false, 
+            left: false, 
+            right: false, 
+            look_left: true, 
+            look_right: false, 
+            shoot: false 
+        }
+
     }
 }

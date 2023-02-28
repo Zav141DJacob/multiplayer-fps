@@ -1,11 +1,12 @@
-use super::{pixels::Pixels, Player};
 use common::map::{Map, Wall};
-use notan::draw::{DrawImages, DrawTransform};
+use notan::draw::DrawTransform;
 use notan::{
     draw::DrawShapes,
-    prelude::{Color, Graphics, Texture},
+    prelude::{Color, Graphics},
 };
 use glam::Vec2;
+use crate::game::texture::get_wall_texture;
+use crate::game::texture::pixels::Pixels;
 
 pub struct Minimap {
     border_size: usize,
@@ -23,7 +24,7 @@ pub struct Minimap {
 
 impl Minimap {
     pub fn new(map: Map, gfx: &mut Graphics) -> Self {
-        let border_size = 2;
+        let border_size = 3;
         let border_color = Color::GRAY;
 
         let map_ratio = 10;
@@ -54,10 +55,6 @@ impl Minimap {
         }
     }
 
-    pub fn get_map_texture(&self) -> &Texture {
-        self.map_pixels.texture()
-    }
-
     pub fn render_map(&mut self, gfx: &mut Graphics) {
         // Generate the texture for the map
         self.map_pixels.clear(self.floor_color);
@@ -72,8 +69,8 @@ impl Minimap {
                     common::map::MapCell::Wall(Wall::SolidColor(wall_color)) => {
                         Some(wall_color.into())
                     }
-                    common::map::MapCell::Wall(Wall::Textured(_)) => {
-                        Some(Color::new(1.0, 0.0, 1.0, 1.0))
+                    common::map::MapCell::Wall(Wall::Textured(wall_type)) => {
+                        Some(get_wall_texture(wall_type).dominant().into())
                     }
                 };
 
@@ -126,12 +123,13 @@ impl Minimap {
     }
 
     pub fn draw(&self, draw: &mut notan::draw::Draw, width: usize, _height: usize) {
+        puffin::profile_function!();
         // Draw the border and map
 
         let minimap_translate = Vec2::new(
             (width as f32 - (self.get_width() as f32 * self.minimap_scale.x))
-                - (self.minimap_pos.x),
-            self.minimap_pos.y,
+                - (self.minimap_pos.x) - self.border_size as f32,
+            self.minimap_pos.y + self.border_size as f32,
         );
 
         draw.rect(
@@ -144,9 +142,9 @@ impl Minimap {
                 self.minimap_scale.y * self.get_height() as f32 + (self.border_size * 2) as f32,
             ),
         )
-        .color(self.border_color);
+        .color(self.border_color).corner_radius(2.0);
 
-        draw.image(self.get_map_texture())
+        self.map_pixels.draw(draw)
             .translate(minimap_translate.x, minimap_translate.y)
             .scale(self.minimap_scale.x, self.minimap_scale.y);
     }
@@ -158,21 +156,24 @@ impl Minimap {
         _height: usize,
         vision_origin: Vec2,
         mut vision_color: Color,
-        rays: Vec<Vec2>,
+        rays: &[Vec2],
     ) {
+        puffin::profile_function!();
+        if rays.is_empty() {
+            return
+        }
+
         // Render vision form given rays
         let minimap_translate = Vec2::new(
             (width as f32 - (self.get_width() as f32 * self.minimap_scale.x))
-                - (self.minimap_pos.x),
-            self.minimap_pos.y,
+                - (self.minimap_pos.x) - self.border_size as f32,
+            self.minimap_pos.y + self.border_size as f32,
         );
 
         let ray_start = minimap_translate + self.conver_ray_to_minimap_size(Vec2::new(vision_origin.x, vision_origin.y));
         let ray_middle = self.conver_ray_to_minimap_size(rays[rays.len()/2]) + minimap_translate;
-        for (i, mut ray_end) in rays.clone().into_iter().enumerate() {
-            ray_end = self.conver_ray_to_minimap_size(ray_end);
-
-            ray_end = minimap_translate + ray_end;
+        for (i, &ray_end) in rays.iter().enumerate() {
+            let ray_end = minimap_translate + self.conver_ray_to_minimap_size(ray_end);
 
             if i < (rays.len() / 2) {
                 vision_color.a = i as f32 / (rays.len() as f32);
@@ -217,11 +218,12 @@ impl Minimap {
         entity_pos: Vec2,
         entity_color: Color,
     ) {
+        puffin::profile_function!();
         // Render entities onto minimap
         let minimap_translate = Vec2::new(
             (width as f32 - (self.get_width() as f32 * self.minimap_scale.x))
-                - (self.minimap_pos.x),
-            self.minimap_pos.y,
+                - (self.minimap_pos.x) - self.border_size as f32,
+            self.minimap_pos.y + self.border_size as f32,
         );
 
         let entity_size = Vec2::new(1.0, 1.0) * self.minimap_scale;
