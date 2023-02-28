@@ -3,7 +3,8 @@ use itertools::Itertools;
 
 use notan::draw::{Draw, DrawImages, DrawTransform};
 use notan::prelude::{Color, Graphics, Texture};
-use crate::helpers::FlatArrays;
+
+use crate::helpers::{AsArrays, FlatArrays};
 
 pub struct Pixels {
     width: usize,
@@ -115,6 +116,16 @@ impl Pixels {
             let i = self.xy_to_i(x, 0);
             self.buffer[i..i + len].copy_from_slice(column);
         });
+    }
+
+    pub fn column_mut(&mut self, x: usize) -> &mut [[u8; 4]] {
+        let i = self.xy_to_i(x, 0);
+        self.buffer[i..i + self.height * 4].as_arrays_mut()
+    }
+
+    pub fn column_iter_mut(&mut self) -> impl Iterator<Item=&mut [[u8; 4]]> {
+        let buffer = self.buffer.as_arrays_mut::<4>();
+        buffer.chunks_exact_mut(self.height)
     }
 
     /// Flushes pixel buffer to texture. Should only be done once per frame.

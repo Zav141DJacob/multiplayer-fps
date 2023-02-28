@@ -1,13 +1,11 @@
 use notan::prelude::Color;
 use crate::game::raycast::Perspective;
-use crate::game::texture::pixels::Pixels;
 use crate::game::texture::sampler::TextureSampler;
 
 pub trait DrawColumn {
     fn draw_column(
         &self,
-        pixels: &mut Pixels,
-        screen_x: usize,
+        column: &mut [[u8; 4]],
         column_height: f32,
         tex_x: f32,
         perspective: Perspective,
@@ -15,8 +13,9 @@ pub trait DrawColumn {
     );
 }
 
-fn calculate_perspective(screen_height: usize, column_height: f32, perspective: Perspective) -> (usize, usize, f32, f32) {
+fn calculate_perspective(column: &mut [[u8; 4]], column_height: f32, perspective: Perspective) -> (&mut [[u8; 4]], f32, f32) {
     puffin::profile_function!();
+    let screen_height = column.len();
     let screen_middle = screen_height as f32 / 2.0;
     let horizon_height = perspective.horizon_height;
     let y_offset = perspective.y_offset;
@@ -31,34 +30,30 @@ fn calculate_perspective(screen_height: usize, column_height: f32, perspective: 
     let column_start = (column_start.round() as usize).min(screen_height);
     let column_end = (column_end.round() as usize).min(screen_height);
 
-    let column_height = column_end - column_start;
+    let column_part = &mut column[column_start..column_end];
 
-    (column_height, column_start, tex_v_start, tex_v_end)
+    (column_part, tex_v_start, tex_v_end)
 }
 
 impl DrawColumn for TextureSampler {
     fn draw_column(
         &self,
-        pixels: &mut Pixels,
-        screen_x: usize,
+        column: &mut [[u8; 4]],
         tex_x: f32,
         column_height: f32,
         perspective: Perspective,
         mut draw_callback: impl FnMut(&mut [u8; 4], [u8; 4]),
     ) {
         puffin::profile_function!();
-        let screen_height = pixels.height();
 
-        let (column_height, column_start, tex_v_start, tex_v_end) =
-            calculate_perspective(screen_height, column_height, perspective);
+        let (column_part, tex_v_start, tex_v_end) =
+            calculate_perspective(column, column_height, perspective);
 
-        let sampled_colors = self.sample_column(tex_x, tex_v_start..tex_v_end, column_height);
+        let sampled_colors = self.sample_column(tex_x, tex_v_start..tex_v_end, column_part.len());
 
         puffin::profile_scope!("write pixels");
-        let mut draw_y = column_start;
-        for color in sampled_colors {
-            draw_callback(pixels.get_color_u8_mut(screen_x, draw_y), color);
-            draw_y += 1;
+        for (new, current) in sampled_colors.zip(column_part) {
+            draw_callback(current, new);
         }
     }
 }
@@ -66,39 +61,33 @@ impl DrawColumn for TextureSampler {
 impl DrawColumn for Color {
     fn draw_column(
         &self,
-        pixels: &mut Pixels,
-        screen_x: usize,
+        column: &mut [[u8; 4]],
         tex_x: f32,
         column_height: f32,
         perspective: Perspective,
         draw_callback: impl FnMut(&mut [u8; 4], [u8; 4]),
     ) {
-        self.rgba_u8().draw_column(pixels, screen_x, tex_x, column_height, perspective, draw_callback)
+        self.rgba_u8().draw_column(column, tex_x, column_height, perspective, draw_callback)
     }
 }
 
 impl DrawColumn for [u8; 4] {
     fn draw_column(
         &self,
-        pixels: &mut Pixels,
-        screen_x: usize,
+        column: &mut [[u8; 4]],
         _tex_x: f32,
         column_height: f32,
         perspective: Perspective,
         mut draw_callback: impl FnMut(&mut [u8; 4], [u8; 4]),
     ) {
         puffin::profile_function!();
-        let screen_height = pixels.height();
 
-        let (column_height, column_start, _, _) =
-            calculate_perspective(screen_height, column_height, perspective);
-
-        let draw_y_start = column_start;
-        let draw_y_end = column_start + column_height;
+        let (column_part, _, _) =
+            calculate_perspective(column, column_height, perspective);
 
         puffin::profile_scope!("write pixels");
-        for y in draw_y_start..draw_y_end {
-            draw_callback(pixels.get_color_u8_mut(screen_x, y), *self);
+        for px in column_part {
+            draw_callback(px, *self);
         }
     }
 }

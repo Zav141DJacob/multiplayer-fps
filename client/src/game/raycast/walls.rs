@@ -34,7 +34,7 @@ impl RayCaster {
         self.depth_map.clear();
 
         // DRAW FOV RAYCAST
-        for (screen_x, ray_dir) in self.ray_gen.iter(camera_dir).enumerate() {
+        for (ray_dir, column) in self.ray_gen.iter(camera_dir).zip(pixels.column_iter_mut()) {
 
             let hit = match ray_algorithm(camera_pos, ray_dir, map) {
                 None => {
@@ -77,8 +77,7 @@ impl RayCaster {
                 Wall::SolidColor(wall_color) => {
                     Color::from(wall_color)
                         .draw_column(
-                            pixels,
-                            screen_x,
+                            column,
                             0.0,
                             wall_height,
                             perspective,
@@ -97,8 +96,7 @@ impl RayCaster {
                     };
 
                     texture.draw_column(
-                        pixels,
-                        screen_x,
+                        column,
                         wall_x,
                         wall_height,
                         perspective,
@@ -194,7 +192,7 @@ fn ray_algorithm(
             pos,
             cell,
             side,
-        })
+        });
     }
 
     None

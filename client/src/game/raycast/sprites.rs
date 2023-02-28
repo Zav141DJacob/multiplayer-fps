@@ -135,14 +135,14 @@ impl RayCaster {
             let perspective = perspective.offset_subject(sprite.height_offset);
 
             profile_scope_chain!(start _a, "iterate visible angles");
-            for (draw_x, angle) in (left_most_i..right_most_i).zip(valid_angles) {
+            for (screen_x, angle) in (left_most_i..right_most_i).zip(valid_angles) {
                 // Rotate angle to a perspective where to_sprite_dir is (1, 0)
                 let angle_rot = inverse_to_sprite_dir.rotate(*angle);
                 // This is how long the ray to this particular point on the sprite is
                 let this_angle_len = to_sprite_axis_aligned.x / angle_rot.x;
 
                 // Check occlusion
-                if this_angle_len > self.depth_map[draw_x] {
+                if this_angle_len > self.depth_map[screen_x] {
                     continue
                 }
 
@@ -154,8 +154,7 @@ impl RayCaster {
                 let tex_x = hit_y / sprite.scale.x + 0.5;
 
                 sprite.texture.draw_column(
-                    pixels,
-                    draw_x,
+                    pixels.column_mut(screen_x),
                     tex_x,
                     column_height,
                     perspective,
