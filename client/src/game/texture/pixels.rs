@@ -3,7 +3,7 @@ use itertools::Itertools;
 
 use notan::draw::{Draw, DrawImages, DrawTransform};
 use notan::prelude::{Color, Graphics, Texture};
-use crate::helpers::AsArrays;
+use crate::helpers::FlatArrays;
 
 pub struct Pixels {
     width: usize,
@@ -93,6 +93,7 @@ impl Pixels {
         self.clear_with(|_, _| rgba)
     }
 
+    /// Clear the pixels with a function that has access to each pixel's X and Y coordinate.
     pub fn clear_with(&mut self, mut f: impl FnMut(usize, usize) -> [u8; 4]) {
         puffin::profile_function!();
 
@@ -100,6 +101,20 @@ impl Pixels {
             .for_each(|(x, y)| {
                 *self.get_color_u8_mut(x, y) = f(x, y)
             });
+    }
+
+    /// Calculate a single column and clear the rest of the pixels with it. The function receives the Y coordinate.
+    pub fn clear_with_column(&mut self, f: impl FnMut(usize) -> [u8; 4]) {
+        puffin::profile_function!();
+
+        let column: Vec<_> = (0..self.height).map(f).collect();
+        let column = column.flat_arrays();
+        let len = column.len();
+
+        (0..self.width).for_each(|x| {
+            let i = self.xy_to_i(x, 0);
+            self.buffer[i..i + len].copy_from_slice(column);
+        });
     }
 
     /// Flushes pixel buffer to texture. Should only be done once per frame.

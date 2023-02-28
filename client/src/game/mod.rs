@@ -129,7 +129,7 @@ impl ProgramState for Game {
         let perspective = self.ray_caster.perspective(self.look_up_down, 0.6, 0.0);
         let horizon = (0.5 * self.pixels.height() as f32 + perspective.y_offset) as usize;
 
-        self.pixels.clear_with(|_, y| {
+        self.pixels.clear_with_column(|y| {
             if y <= horizon {
                 CEILING_COLOR
             } else {
