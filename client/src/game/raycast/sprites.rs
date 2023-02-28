@@ -131,9 +131,6 @@ impl RayCaster {
             let inverse_to_sprite_dir = Vec2::new(to_sprite_dir.x, -to_sprite_dir.y);
             // This is equal to (to_sprite.length(), 0)
             let to_sprite_axis_aligned = inverse_to_sprite_dir.rotate(to_sprite);
-            // With to_sprite_dir at (1, 0), how big or small can the y component be while still hitting the sprite
-            let max_hit_y = sprite.scale.x * 0.5;
-            let min_hit_y = -max_hit_y;
 
             let perspective = perspective.offset_subject(sprite.height_offset);
 
@@ -153,8 +150,8 @@ impl RayCaster {
 
                 // This is what this angle's hit Y component would be if to_sprite_dir is at (1, 0)
                 let hit_y = angle_rot.y * this_angle_len;
-                // Inverse lerp
-                let tex_x = (hit_y - min_hit_y) / (max_hit_y - min_hit_y);
+                // Adjust hit_y to -0.5..0.5 and add 0.5
+                let tex_x = hit_y / sprite.scale.x + 0.5;
 
                 sprite.texture.draw_column(
                     pixels,
