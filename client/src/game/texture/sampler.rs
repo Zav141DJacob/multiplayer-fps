@@ -2,8 +2,7 @@ use std::ops::Range;
 
 use anyhow::bail;
 use image::{GenericImageView, imageops, RgbaImage};
-
-use crate::game::texture::pixels::u8_to_rgba;
+use crate::helpers::AsArrays;
 
 pub struct TextureSampler {
     /// IMPORTANT: This is a transposed version of the original image.
@@ -164,7 +163,7 @@ impl TextureSampler {
         let col_start = (x * self.height * 4) as usize;
         let col_end = col_start + self.height as usize * 4;
         let column = &self.image.as_raw()[col_start..col_end];
-        let column = u8_to_rgba(column);
+        let column = column.as_arrays::<4>();
         debug_assert_eq!(column.len(), self.height as usize);
 
         // Make y_start 0..self.height

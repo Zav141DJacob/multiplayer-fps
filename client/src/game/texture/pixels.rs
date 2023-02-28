@@ -82,8 +82,7 @@ impl Pixels {
 
     pub fn get_color_u8_mut(&mut self, x: usize, y: usize) -> &mut [u8; 4] {
         let i = self.xy_to_i(x, y);
-        // Should be safe since we're always gonna get a slice with length 4
-        unsafe { u8_to_rgba_one_mut(&mut self.buffer[i..i + 4]) }
+        (&mut self.buffer[i..i + 4]).try_into().unwrap()
     }
 
     /// Clears the pixel buffer with a single color
@@ -156,46 +155,6 @@ impl<'a> DerefMut for PixelsDraw<'a> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
-}
-
-
-// TODO: Move some of the stuff below here into another file maybe?
-
-// SAFETY: These should be safe to use because both types are stored the same way in memory and are aligned to 1 byte.
-// Worst case, u8_to_rgba will return a shorter slice if length is not 4 byte aligned.
-pub fn u8_to_rgba_mut(slice_u8: &mut [u8]) -> &mut [[u8; 4]] {
-    unsafe {
-        use std::slice;
-        slice::from_raw_parts_mut(slice_u8.as_mut_ptr() as *mut [u8; 4], slice_u8.len() / 4)
-    }
-}
-
-pub fn u8_to_rgba(slice_u8: &[u8]) -> &[[u8; 4]] {
-    unsafe {
-        use std::slice;
-        slice::from_raw_parts(slice_u8.as_ptr() as *const [u8; 4], slice_u8.len() / 4)
-    }
-}
-
-pub fn rgba_to_u8(slice_rgba: &[[u8; 4]]) -> &[u8] {
-    unsafe {
-        use std::slice;
-        slice::from_raw_parts(slice_rgba.as_ptr() as *const u8, slice_rgba.len() * 4)
-    }
-}
-
-pub fn rgba_to_u8_mut(slice_rgba: &mut [[u8; 4]]) -> &mut [u8] {
-    unsafe {
-        use std::slice;
-        slice::from_raw_parts_mut(slice_rgba.as_mut_ptr() as *mut u8, slice_rgba.len() * 4)
-    }
-}
-
-/// SAFETY: Only safe if slice is 4 long.
-unsafe fn u8_to_rgba_one_mut(slice_u8: &mut [u8]) -> &mut [u8; 4] {
-    debug_assert!(slice_u8.len() == 4);
-    let ptr = slice_u8.as_mut_ptr() as *mut [u8; 4];
-    &mut *ptr
 }
 
 

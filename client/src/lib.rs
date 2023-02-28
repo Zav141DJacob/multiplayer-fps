@@ -6,6 +6,7 @@ mod game;
 mod menu;
 mod net_test;
 pub mod program;
+mod helpers;
 
 /// Like [puffin::profile_scope], but allows chaining multiple scopes after each other, instead of inside another.
 #[macro_export]
