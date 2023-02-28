@@ -74,6 +74,8 @@ pub fn execute(
             .construct()?
             .send(&server.handler, requester_info.endpoint);
 
+        FromServerMessage::EcsChanges(server.ecs.init_client()).construct()?.send(&server.handler, requester_info.endpoint);
+
         // spawns player
         spawn_player(&mut server.ecs, requester_id);
 
@@ -89,6 +91,7 @@ pub fn execute(
             &server.handler,
             server.registered_clients.get_all_endpoints(),
         );
+
     } else {
         println!("Participant with name '{requester_id}' already exists");
     }

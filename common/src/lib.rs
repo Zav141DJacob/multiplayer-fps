@@ -1,4 +1,4 @@
-use ecs::components::EcsProtocol;
+use ecs::components::{EcsProtocol, InputState};
 use map::Map;
 use message_io::{network::Endpoint, node::NodeHandler};
 use serde::{Deserialize, Serialize};
@@ -10,9 +10,10 @@ pub mod map;
 #[derive(Debug, Serialize, Deserialize)]
 pub enum FromClientMessage {
     Ping,
-    Move(Direction),
+    // Move(Direction),
     Leave,
     Join,
+    UpdateInputs(InputState)
 }
 
 pub type UserID = u64;
@@ -53,3 +54,5 @@ pub enum Direction {
     Left,
     Right,
 }
+
+

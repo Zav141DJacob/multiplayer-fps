@@ -1,23 +1,24 @@
 use common::{Direction, ecs::components::{LookDirection, Position, Player, EcsProtocol}, map::Map, FromServerMessage, defaults::PLAYER_SPEED};
 
-use crate::server::Server;
+use crate::{server::Server, ecs::ServerEcs};
 
-pub fn execute(server: &mut Server, direction: Direction, requester_id: u64) {
-    if server.is_registered(requester_id) {
+pub fn execute(server: &mut ServerEcs, direction: Direction, requester_id: u64) {
+    // if server.is_registered(requester_id) {
         println!("move {direction:?}");
 
         let (entity, (_, look_direction, position)) = server
-            .ecs
             .world
             .query_mut::<(&Player, &mut LookDirection, &mut Position)>()
             .into_iter()
-            .find(|(_, (&player, _, _))| player.id == requester_id)
+            .find(|(_, (&player, _, _))| {
+                player.id == requester_id
+            })
             .unwrap();
 
         let mut pos = *position;
         let dir = *look_direction;
 
-        let map = server.ecs.resources.get::<Map>().unwrap();
+        let map = server.resources.get::<Map>().unwrap();
         let w = map.get_width() as f32;
         let h = map.get_height() as f32;
 
@@ -92,17 +93,11 @@ pub fn execute(server: &mut Server, direction: Direction, requester_id: u64) {
             }
         };
 
-        *server.ecs.observer.observe_component(entity, position) = pos;
-        *server.ecs.observer.observe_component(entity, look_direction) = dir;
+        println!("Player position: {:?}", pos);
 
-        FromServerMessage::EcsChanges(
-            server.ecs
-                .observer
-                .drain_reliable()
-                .collect::<Vec<EcsProtocol>>(),
-        )
-        .construct()
-        .unwrap()
-        .send_all(&server.handler, server.registered_clients.get_all_endpoints());
-    }
+        *server.observer.observe_component(entity, position) = pos;
+        // *server.observer.observe_component(entity, look_direction) = dir;
+
+        
+    // }
 }
