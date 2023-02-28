@@ -1,5 +1,5 @@
 use common::defaults::{MAP_HEIGHT, MAP_WIDTH};
-use common::ecs::components::{Player, Position, EcsProtocol};
+use common::ecs::components::{EcsProtocol, Player, Position};
 use common::map::Map;
 
 use std::{
@@ -116,23 +116,20 @@ impl Server {
     }
 
     pub fn handle_ticks(&mut self) {
-            self.ecs.tick(0.0);
+        self.ecs.tick(0.0);
 
-            let protocols = self.ecs
+        let protocols = self
+            .ecs
             .observer
             .drain_reliable()
             .collect::<Vec<EcsProtocol>>();
 
-
-            if protocols.len() != 0 {
-                FromServerMessage::EcsChanges(
-                    protocols
-                )
+        if !protocols.is_empty() {
+            FromServerMessage::EcsChanges(protocols)
                 .construct()
                 .unwrap()
                 .send_all(&self.handler, self.registered_clients.get_all_endpoints());
-
-            }
+        }
     }
 
     pub fn run(&mut self) {
@@ -140,11 +137,8 @@ impl Server {
 
         let listener = self.listener.take().unwrap();
 
-            
-        listener.for_each(move |event| match event.network() {
-            
-            NetEvent::Message(endpoint, input_data) => {
-
+        listener.for_each(move |event| {
+            if let NetEvent::Message(endpoint, input_data) = event.network() {
                 let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
 
                 let requester_info = ClientIdentificationInfo {
@@ -153,25 +147,20 @@ impl Server {
                 };
                 let requester_id = requester_info.get_id();
                 self.handle_ticks();
-                
+
                 println!("Event: {message:?}");
                 match message {
                     FromClientMessage::Ping => events::ping::execute(&self.handler, endpoint),
                     FromClientMessage::Leave => events::leave::execute(self, requester_id),
                     FromClientMessage::Join => {
                         events::join::execute(self, requester_id, requester_info).unwrap();
-                    },
+                    }
                     FromClientMessage::UpdateInputs(updated_input_state) => {
-                        events::r#update_inputs::execute(self,  updated_input_state, requester_id);
+                        events::r#update_inputs::execute(self, updated_input_state, requester_id);
                     }
                 }
             }
-            _ => {
-                // This will never get called since we aren't using websocket
-                unreachable!();
-            }
         });
-
     }
 
     pub fn is_registered(&self, name: u64) -> bool {
