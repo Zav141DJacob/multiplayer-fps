@@ -171,16 +171,12 @@ impl TextureSampler {
         let y_start = y_start + y_offset * self.height as f32;
         let y_end = y_end + y_offset * self.height as f32;
 
-
         (0..height).map(move |h| {
             let fraction = h as f32 / height as f32;
-            let y = lerp(y_start, y_end, fraction) as u32;
-            let y = y % self.height; // y < self.height
+            let y = lerp(y_start, y_end, fraction) as usize;
+            let y = y % self.height as usize; // y < self.height
 
-            // SAFETY: This should be safe because the column has to be of length self.height and y < self.height
-            unsafe { *column.get_unchecked(y as usize) }
-            // column[y as usize]
-            // unsafe { self.sample_exact_unchecked(x, y) }
+            column[y]
         })
     }
 }
