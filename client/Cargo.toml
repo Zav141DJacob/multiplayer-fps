@@ -25,7 +25,6 @@ fps_counter = "2.0"
 notan = { version = "0.9", features = ["egui"] }
 #egui = "0.20.1"
 color-thief = "0.2.2"
-transpose = "0.2.2"
 
 # CLI Arguments
 clap = { version = "4.1.4", features = ["derive"] }
@@ -49,5 +48,5 @@ puffin = "0.14.3"
 puffin_egui = "=0.19.2"
 
 [features]
+default = []
 semitransparency = []
-transposed_pixels = []

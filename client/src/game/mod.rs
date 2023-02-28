@@ -12,7 +12,7 @@ use common::map::Map;
 use hecs::Entity;
 use notan::app::{App, Color, Graphics, Plugins};
 
-use notan::draw::{CreateDraw, DrawImages};
+use notan::draw::CreateDraw;
 use notan::prelude::*;
 use std::fmt::{Display, Formatter};
 
@@ -166,7 +166,7 @@ impl ProgramState for Game {
 
         // Render pixels
         self.pixels.flush(gfx);
-        draw.image(self.pixels.texture());
+        self.pixels.draw(&mut draw);
 
         // Drawing minimap
         self.minimap.draw(&mut draw, width, height);

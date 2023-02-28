@@ -1,8 +1,8 @@
 use common::map::{Map, Wall};
-use notan::draw::{DrawImages, DrawTransform};
+use notan::draw::DrawTransform;
 use notan::{
     draw::DrawShapes,
-    prelude::{Color, Graphics, Texture},
+    prelude::{Color, Graphics},
 };
 use glam::Vec2;
 use crate::game::texture::get_wall_texture;
@@ -53,10 +53,6 @@ impl Minimap {
 
             map,
         }
-    }
-
-    pub fn get_map_texture(&self) -> &Texture {
-        self.map_pixels.texture()
     }
 
     pub fn render_map(&mut self, gfx: &mut Graphics) {
@@ -148,7 +144,7 @@ impl Minimap {
         )
         .color(self.border_color);
 
-        draw.image(self.get_map_texture())
+        self.map_pixels.draw(draw)
             .translate(minimap_translate.x, minimap_translate.y)
             .scale(self.minimap_scale.x, self.minimap_scale.y);
     }

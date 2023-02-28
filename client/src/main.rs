@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use glam::{Mat3, Vec3};
 use notan::draw::DrawConfig;
 use notan::egui::EguiConfig;
 use notan::prelude::WindowConfig;

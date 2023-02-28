@@ -1,12 +1,11 @@
-
+use std::ops::{Deref, DerefMut};
+use notan::draw::{Draw, DrawImages, DrawTransform};
 use notan::prelude::{Color, Graphics, Texture};
 
 pub struct Pixels {
     width: usize,
     height: usize,
     buffer: Vec<u8>,
-    #[cfg(feature = "transposed_pixels")]
-    buffer_final: Vec<u8>,
     texture: Texture,
 }
 
@@ -14,12 +13,9 @@ impl Pixels {
     pub fn new(width: usize, height: usize, gfx: &mut Graphics) -> Self {
         let buffer = vec![0; width * height * 4];
 
-        #[cfg(feature = "transposed_pixels")]
-        let buffer_final = vec![0; buffer.len()];
-
         let texture = gfx
             .create_texture()
-            .from_bytes(&buffer, width as i32, height as i32)
+            .from_bytes(&buffer, height as i32, width as i32)
             .build()
             .expect("couldn't create pixels texture");
 
@@ -27,8 +23,6 @@ impl Pixels {
             width,
             height,
             buffer,
-            #[cfg(feature = "transposed_pixels")]
-            buffer_final,
             texture,
         };
 
@@ -38,17 +32,11 @@ impl Pixels {
     }
 
     fn xy_to_i(&self, x: usize, y: usize) -> usize {
-        #[cfg(feature = "transposed_pixels")]
-        return (x * self.height + y) * 4;
-        #[cfg(not(feature = "transposed_pixels"))]
-        return (y * self.width + x) * 4;
+        (x * self.height + y) * 4
     }
 
     fn i_to_xy(&self, i: usize) -> (usize, usize) {
-        #[cfg(feature = "transposed_pixels")]
-        return (i / (self.height * 4), i % (self.height * 4));
-        #[cfg(not(feature = "transposed_pixels"))]
-        return (i % (self.width * 4), i / (self.width * 4));
+        (i / (self.height * 4), i % (self.height * 4) / 4)
     }
 
     /// Set the color of a single pixel.
@@ -123,32 +111,10 @@ impl Pixels {
     pub fn flush(&mut self, gfx: &mut Graphics) {
         puffin::profile_function!();
 
-        let data;
-
-        #[cfg(feature = "transposed_pixels")]
-        {
-            crate::profile_scope_chain!(start _a, "transpose buffer");
-            let buffer = u8_to_rgba(&self.buffer);
-            let buffer_final = u8_to_rgba_mut(&mut self.buffer_final);
-            transpose::transpose(buffer, buffer_final, self.height, self.width);
-            crate::profile_scope_chain!(end _a);
-            data = &self.buffer_final;
-        }
-
-        #[cfg(not(feature = "transposed_pixels"))]
-        {
-            data = &self.buffer;
-        }
-
         gfx.update_texture(&mut self.texture)
-            .with_data(data)
+            .with_data(&self.buffer)
             .update()
             .expect("couldn't update render texture");
-    }
-
-    /// Get the texture for rendering
-    pub fn texture(&self) -> &Texture {
-        &self.texture
     }
 
     pub fn width(&self) -> usize {
@@ -162,6 +128,36 @@ impl Pixels {
     /// Returns (width, height)
     pub fn dimensions(&self) -> (usize, usize) {
         (self.width, self.height)
+    }
+
+    pub fn draw<'a>(&'a self, draw: &'a mut Draw) -> PixelsDraw<'a> {
+        PixelsDraw(draw.image(&self.texture))
+    }
+}
+
+type DrawBuilder<'a> = notan::draw::DrawBuilder<'a, notan::draw::Image<'a>>;
+pub struct PixelsDraw<'a> (DrawBuilder<'a>);
+
+impl<'a> Drop for PixelsDraw<'a> {
+    fn drop(&mut self) {
+        use notan::math::{Mat3, Vec3};
+        let transpose_mat = Mat3::from_cols(Vec3::Y, Vec3::X, Vec3::Z);
+        let old = self.0.matrix().unwrap_or(Mat3::IDENTITY);
+        self.0.matrix().replace(old * transpose_mat);
+    }
+}
+
+impl<'a> Deref for PixelsDraw<'a> {
+    type Target = DrawBuilder<'a>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'a> DerefMut for PixelsDraw<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
