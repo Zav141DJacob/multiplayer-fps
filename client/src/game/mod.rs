@@ -40,6 +40,7 @@ pub struct Game {
     player: Entity,
     sprites: Vec<Sprite>,
     look_up_down: f32,
+    player_height: f32,
 
     fps: FPSCounter,
 
@@ -96,6 +97,7 @@ impl Game {
             ray_caster,
             sprites,
             look_up_down: 0.0,
+            player_height: 0.6,
             fps,
             profiler: false,
         }
@@ -116,7 +118,7 @@ impl ProgramState for Game {
             .unwrap();
         let w = self.map.get_width() as f32;
         let h = self.map.get_height() as f32;
-        handle_keyboard_input(app, w, h, p, &mut self.look_up_down);
+        handle_keyboard_input(app, w, h, p, &mut self.look_up_down, &mut self.player_height);
     }
 
     fn draw(
@@ -126,7 +128,7 @@ impl ProgramState for Game {
         gfx: &mut Graphics,
         plugins: &mut Plugins,
     ) {
-        let perspective = self.ray_caster.perspective(self.look_up_down, 0.6, 0.0);
+        let perspective = self.ray_caster.perspective(self.look_up_down, self.player_height, 0.0);
         let horizon = (0.5 * self.pixels.height() as f32 + perspective.y_offset) as usize;
 
         self.pixels.clear_with_column(|y| {
