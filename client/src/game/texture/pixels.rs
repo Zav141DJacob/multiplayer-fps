@@ -1,7 +1,9 @@
 use std::ops::{Deref, DerefMut};
+use itertools::Itertools;
 
 use notan::draw::{Draw, DrawImages, DrawTransform};
 use notan::prelude::{Color, Graphics, Texture};
+use crate::helpers::AsArrays;
 
 pub struct Pixels {
     width: usize,
@@ -93,13 +95,11 @@ impl Pixels {
 
     pub fn clear_with(&mut self, mut f: impl FnMut(usize, usize) -> [u8; 4]) {
         puffin::profile_function!();
-        let mut i = 0;
-        while i <= self.buffer.len() - 4 {
-            let (x, y) = self.i_to_xy(i);
-            let color = f(x, y);
-            self.buffer[i..i + 4].copy_from_slice(&color);
-            i += 4;
-        }
+
+        (0..self.width).cartesian_product(0..self.height)
+            .for_each(|(x, y)| {
+                *self.get_color_u8_mut(x, y) = f(x, y)
+            });
     }
 
     /// Flushes pixel buffer to texture. Should only be done once per frame.

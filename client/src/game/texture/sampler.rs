@@ -2,6 +2,7 @@ use std::ops::Range;
 
 use anyhow::bail;
 use image::{GenericImageView, imageops, RgbaImage};
+use itertools::Itertools;
 use crate::helpers::AsArrays;
 
 pub struct TextureSampler {
@@ -72,10 +73,11 @@ impl TextureSampler {
         let tile_width = big_image.width() / tiles_x;
         let tile_height = big_image.height() / tiles_y;
 
-        let res = (0..(big_image.height() / tile_height)).flat_map(|y| {
-            (0..(big_image.width() / tile_width)).map(move |x| (x, y))
-        })
-            .map(|(tile_x, tile_y)| {
+        let tile_x_range = 0..(big_image.width() / tile_width);
+        let tile_y_range = 0..(big_image.height() / tile_height);
+
+        let res = tile_y_range.cartesian_product(tile_x_range)
+            .map(|(tile_y, tile_x)| {
                 let x = tile_x * (tile_width + gap);
                 let y = tile_y * (tile_height + gap);
                 imageops::crop_imm(&big_image, x, y, tile_width, tile_height).to_image()
