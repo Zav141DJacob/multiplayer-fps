@@ -8,27 +8,30 @@ pub fn execute(menu: &mut Menu, ui: &mut Ui) {
         ui.heading("Join Server");
         ui.add_space(10.0);
 
-        // TODO: Center properly
-        ui.horizontal(|ui| {
-            ui.label("Server ip and port:");
+        ui.vertical_centered(|ui| {
+            ui.set_width(ui.available_width() / 4.0);
+            ui.horizontal(|ui| {
+                ui.label("Server ip and port:");
 
-            let response = ui.text_edit_singleline(&mut menu.ip);
+                let response = ui.text_edit_singleline(&mut menu.ip);
 
-            // TODO: input validation
-            if response.changed() {
-                println!("input debug: {}", menu.port);
-            }
+                // TODO: input validation
+                if response.changed() {
+                    println!("input debug: {}", menu.port);
+                }
 
-            // When you press enter it submits
-            if response.lost_focus() && ui.input().key_pressed(egui::Key::Enter) {
-                menu.next_state = Some(super::NextState::Game);
-            }
+                // When you press enter it submits
+                if response.lost_focus() && ui.input().key_pressed(egui::Key::Enter) {
+                    menu.next_state = Some(super::NextState::Game);
+                }
+
+                if ui.button("Join").clicked() {
+                    menu.next_state = Some(super::NextState::Game);
+                }
+            })
         });
 
-        if ui.button("Join").clicked() {
-            menu.next_state = Some(super::NextState::Game);
-        }
-
+        ui.add_space(5.0);
         if ui.button("Back").clicked() {
             menu.menu_state = SubMenu::Menu;
         }

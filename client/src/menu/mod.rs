@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use common::defaults::PORT;
 use notan::app::{App, Graphics, Plugins};
-use notan::egui::{self, EguiPluginSugar};
+use notan::egui::{self, EguiPluginSugar, Ui};
 use notan::prelude::{Assets, Color};
 
 use crate::game::Game;
@@ -52,6 +52,10 @@ impl Display for Menu {
     }
 }
 
+fn egui_center_width(ui: &Ui) -> f32 {
+    ui.available_width() / 6.0
+}
+
 impl ProgramState for Menu {
     fn draw(
         &mut self,
@@ -60,41 +64,65 @@ impl ProgramState for Menu {
         gfx: &mut Graphics,
         plugins: &mut Plugins,
     ) {
-        let mut output = plugins.egui(|ctx| {
-            egui::CentralPanel::default().show(ctx, |ui| {
-                match self.menu_state {
-                    SubMenu::Menu => {
-                        ui.vertical_centered(|ui| {
-                            ui.heading("Multiplayer FPS");
-                            ui.add_space(10.0);
+        let button_size = [100.0, 20.0];
 
-                            // TODO: Center properly
+        let mut output = plugins.egui(|ctx| {
+            egui::CentralPanel::default().show(ctx, |ui| match self.menu_state {
+                SubMenu::Menu => {
+                    ui.vertical_centered(|ui| {
+                        ui.heading("Multiplayer FPS");
+                        ui.add_space(10.0);
+
+                        ui.vertical_centered(|ui| {
+                            ui.set_width(egui_center_width(ui));
                             ui.horizontal(|ui| {
-                                if ui.button("Quick Play").clicked() {
+                                if ui
+                                    .add_sized(button_size, egui::Button::new("Quick Play"))
+                                    .clicked()
+                                {
                                     self.next_state = Some(NextState::Game)
                                 }
 
-                                if ui.button("Join Server").clicked() {
+                                if ui
+                                    .add_sized(button_size, egui::Button::new("Join Server"))
+                                    .clicked()
+                                {
                                     self.menu_state = SubMenu::ServerSelection;
                                 }
-                            });
-
-                            if ui.button("Host Server").clicked() {
-                                self.menu_state = SubMenu::HostingMenu;
-                            }
-
-                            if ui.button("Network Test").clicked() {
-                                self.next_state = Some(NextState::NetworkTest)
-                            }
-
-                            if ui.button("Quit").clicked() {
-                                app.exit()
-                            }
+                            })
                         });
-                    }
-                    SubMenu::ServerSelection => server_selection::execute(self, ui),
-                    SubMenu::HostingMenu => hosting::execute(self, ui),
+
+                        ui.vertical_centered(|ui| {
+                            ui.set_width(egui_center_width(ui));
+                            ui.horizontal(|ui| {
+                                if ui
+                                    .add_sized(button_size, egui::Button::new("Host Server"))
+                                    .clicked()
+                                {
+                                    self.menu_state = SubMenu::HostingMenu;
+                                }
+
+                                if ui
+                                    .add_sized(button_size, egui::Button::new("Network Test"))
+                                    .clicked()
+                                {
+                                    self.next_state = Some(NextState::NetworkTest)
+                                }
+                            })
+                        });
+
+                        ui.add_space(5.0);
+
+                        if ui
+                            .add_sized(button_size, egui::Button::new("Quit"))
+                            .clicked()
+                        {
+                            app.exit()
+                        }
+                    });
                 }
+                SubMenu::ServerSelection => server_selection::execute(self, ui),
+                SubMenu::HostingMenu => hosting::execute(self, ui),
             });
         });
 
