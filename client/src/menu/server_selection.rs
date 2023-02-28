@@ -2,6 +2,7 @@ use notan::egui::{self, Ui};
 
 use super::{Menu, SubMenu};
 
+// TODO: make game use specified connection settings
 pub fn execute(menu: &mut Menu, ui: &mut Ui) {
     ui.vertical_centered(|ui| {
         ui.heading("Join Server");
@@ -13,17 +14,19 @@ pub fn execute(menu: &mut Menu, ui: &mut Ui) {
 
             let response = ui.text_edit_singleline(&mut menu.ip);
 
+            // TODO: input validation
             if response.changed() {
                 println!("input debug: {}", menu.port);
             }
 
+            // When you press enter it submits
             if response.lost_focus() && ui.input().key_pressed(egui::Key::Enter) {
-                todo!()
+                menu.next_state = Some(super::NextState::Game);
             }
         });
 
         if ui.button("Join").clicked() {
-            todo!()
+            menu.next_state = Some(super::NextState::Game);
         }
 
         if ui.button("Back").clicked() {
