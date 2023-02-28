@@ -25,7 +25,7 @@ use glam::f32::Vec2;
 use crate::game::raycast::sprites::{default_sprites, Sprite};
 use crate::game::texture::pixels::Pixels;
 
-use self::gameui::GameUI;
+use self::gameui::{GameUI, GameUiState};
 
 const CAMERA_SENSITIVITY: f32 = 0.08; // rad
 const FOV: f32 = 70.0;
@@ -91,8 +91,16 @@ impl Game {
         let fps = FPSCounter::new();
 
         let ray_caster = RayCaster::new(width, height, FOV);
+        
+        let ui_game_state = GameUiState {
+            player_hp_max: 100,
+            player_hp: 100,
+            weapon_name: "SCAR".to_string(),
+            max_ammo: 25,
+            ammo: 15,
+        };
 
-        let ui = GameUI::new(100, 100, 25, 15, "SCAR".to_string(), gfx);
+        let ui = GameUI::new(ui_game_state, gfx);
 
 
         Game {
