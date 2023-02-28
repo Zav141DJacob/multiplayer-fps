@@ -43,20 +43,6 @@ pub fn execute(
     requester_info: ClientIdentificationInfo,
 ) -> Result<(), JoinError> {
     if !server.is_registered(requester_id) {
-        // Sends player list to the newly joined player
-        FromServerMessage::LobbyMembers(
-            server.registered_clients.clients.keys().copied().collect(),
-        )
-        .construct()?
-        .send(&server.handler, requester_info.endpoint);
-
-        // Notify other players about this new player joining the game server
-        println!("Notifying players about new player");
-        FromServerMessage::Join(requester_id).construct()?.send_all(
-            &server.handler,
-            server.registered_clients.get_all_endpoints(),
-        );
-
         // Add player to the server clients
         println!(
             "Added participant '{requester_id}' with ip {}",
@@ -74,11 +60,13 @@ pub fn execute(
             .construct()?
             .send(&server.handler, requester_info.endpoint);
 
+        // Sends ECS history to the newly joined user
         FromServerMessage::EcsChanges(server.ecs.init_client()).construct()?.send(&server.handler, requester_info.endpoint);
 
-        // spawns player
+        // Spawns player
         spawn_player(&mut server.ecs, requester_id);
 
+        // Sends new player info to all clients
         FromServerMessage::EcsChanges(
             server
                 .ecs

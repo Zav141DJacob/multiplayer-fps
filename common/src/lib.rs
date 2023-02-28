@@ -20,8 +20,6 @@ pub type UserID = u64;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum FromServerMessage {
-    Join(UserID), // TODO: look into if this is still needed in the future
-    LobbyMembers(Vec<UserID>), // TODO: look into if this is still needed in the future
     SendMap(Map),
     Pong,
     EcsChanges(Vec<EcsProtocol>)
