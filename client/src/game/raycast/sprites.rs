@@ -18,10 +18,7 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn new(texture: &'static TextureSampler, position: Vec2, scale: Vec2, mut height_offset: f32) -> Self {
-        height_offset += (scale.y - 1.0) / 2.0;
-        height_offset /= scale.y;
-
+    pub fn new(texture: &'static TextureSampler, position: Vec2, scale: Vec2, height_offset: f32) -> Self {
         Self {
             texture,
             position,
@@ -132,7 +129,7 @@ impl RayCaster {
             // This is equal to (to_sprite.length(), 0)
             let to_sprite_axis_aligned = inverse_to_sprite_dir.rotate(to_sprite);
 
-            let perspective = perspective.offset_subject(sprite.height_offset);
+            let perspective = perspective.offset_subject(sprite.height_offset, sprite.scale.y);
 
             profile_scope_chain!(start _a, "iterate visible angles");
             for (screen_x, angle) in (left_most_i..right_most_i).zip(valid_angles) {

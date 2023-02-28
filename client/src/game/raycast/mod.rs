@@ -64,8 +64,9 @@ impl Perspective {
         self
     }
 
-    pub fn offset_subject(mut self, by: f32) -> Self {
-        self.horizon_height -= by;
+    pub fn offset_subject(mut self, by: f32, scale: f32) -> Self {
+        self.horizon_height -= by / scale;
+        self.horizon_height /= scale;
         self
     }
 }
