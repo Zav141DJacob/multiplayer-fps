@@ -175,9 +175,9 @@ impl SenderWidget {
                 ui.selectable_value(direction, Direction::Left, "Left");
                 ui.selectable_value(direction, Direction::Right, "Right");
             });
-        if ui.button("Move").clicked() {
-            self.sender.send(FromClientMessage::Move(*direction))?
-        }
+        // if ui.button("Move").clicked() {
+        //     self.sender.send(FromClientMessage::Move(*direction))?
+        // }
 
         Ok(())
     }
