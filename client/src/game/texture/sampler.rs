@@ -2,6 +2,7 @@ use std::ops::Range;
 
 use anyhow::bail;
 use image::{GenericImageView, imageops, RgbaImage};
+
 use crate::game::texture::pixels::u8_to_rgba;
 
 pub struct TextureSampler {
@@ -171,9 +172,12 @@ impl TextureSampler {
         let y_start = y_start + y_offset * self.height as f32;
         let y_end = y_end + y_offset * self.height as f32;
 
-        (0..height).map(move |h| {
-            let fraction = h as f32 / height as f32;
-            let y = lerp(y_start, y_end, fraction) as usize;
+        let mut y_tex = y_start;
+        let step = (y_end - y_start) / height as f32;
+
+        (0..height).map(move |_| {
+            let y = y_tex as usize;
+            y_tex += step;
             let y = y % self.height as usize; // y < self.height
 
             column[y]
