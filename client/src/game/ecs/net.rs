@@ -10,9 +10,8 @@ use crate::game::ecs::ClientEcs;
 impl ClientEcs {
     /// Retrieves a mapped entity or reserves a new one
     fn map_entity(&mut self, entity_id: NonZeroU64) -> Entity {
-        self.entity_map.entry(entity_id)
+        *self.entity_map.entry(entity_id)
             .or_insert_with_key(|_| self.world.reserve_entity())
-            .clone()
     }
 
     /// Handle an [EcsProtocol] message from the server
