@@ -14,7 +14,7 @@ pub struct Sprite {
     pub position: Vec2,
     pub scale: Vec2,
     pub height_offset: f32,
-    pub distance: f32,
+    pub distance_2: f32,
 }
 
 impl Sprite {
@@ -27,7 +27,7 @@ impl Sprite {
             position,
             scale,
             height_offset,
-            distance: f32::NAN, // Gets overwritten when rendering
+            distance_2: f32::NAN, // Gets overwritten when rendering
         }
     }
 
@@ -61,19 +61,20 @@ impl RayCaster {
         profile_scope_chain!(start _a, "update distances");
         // Update sprite distances
         sprites.iter_mut().for_each(|sprite| {
-            sprite.distance = (sprite.position - camera_pos).length()
+            sprite.distance_2 = (sprite.position - camera_pos).length_squared()
         });
 
         profile_scope_chain!(_a, "sort by distances");
         // Sort so further sprites are first (for painter's algorithm)
-        sprites.sort_unstable_by_key(|sprite| Reverse(OrderedFloat(sprite.distance)));
+        sprites.sort_unstable_by_key(|sprite| Reverse(OrderedFloat(sprite.distance_2)));
         profile_scope_chain!(end _a);
 
         // We can ignore sprites that are beyond this
-        let max_depth = self.depth_map.iter()
+        let max_depth_2 = self.depth_map.iter()
             .copied()
             .max_by(|a, b| a.total_cmp(b))
-            .expect("Depth map not initialized. Try running draw_walls before draw_sprites?");
+            .expect("Depth map not initialized. Try running draw_walls before draw_sprites?")
+            .powi(2);
 
         // This is used to rotate the perspective so that the camera is facing (1, 0)
         let inverse_camera_rotate = Vec2::new(camera_dir.x, -camera_dir.y);
@@ -81,12 +82,12 @@ impl RayCaster {
         // These are the corresponding directions for every screen column with camera_dir at (1, 0)
         let angles = self.ray_gen.raw_angles();
 
-        for sprite in sprites.iter().skip_while(|&sprite| sprite.distance > max_depth) {
+        for sprite in sprites.iter().skip_while(|&sprite| sprite.distance_2 > max_depth_2) {
             puffin::profile_scope!("show sprite");
 
             let to_sprite = sprite.position - camera_pos;
             let to_sprite = inverse_camera_rotate.rotate(to_sprite);
-            let to_sprite_dir = to_sprite / sprite.distance;
+            let to_sprite_dir = to_sprite / sprite.distance_2.sqrt();
 
             // Calculate where the sprite's left and right points are relative to the camera
             let perp_norm = to_sprite_dir.perp();
