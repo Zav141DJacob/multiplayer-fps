@@ -7,7 +7,7 @@ impl ClientSystems {
     pub fn apply_velocity(ecs: &mut ClientEcs, dt: f32) {
         ecs.world.query_mut::<(&Velocity, &mut Position)>()
             .into_iter()
-            .for_each(|(entity, (vel, pos))| {
+            .for_each(|(_entity, (vel, pos))| {
                 // Unwrap component inner types
                 let pos = &mut pos.0;
                 let vel = vel.0;
