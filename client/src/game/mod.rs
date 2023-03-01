@@ -3,6 +3,7 @@ mod ecs;
 mod minimap;
 mod raycast;
 mod texture;
+mod gameui;
 
 use crate::game::controls::*;
 use crate::game::minimap::Minimap;
@@ -24,6 +25,8 @@ use glam::f32::Vec2;
 use crate::game::raycast::sprites::{default_sprites, Sprite};
 use crate::game::texture::pixels::Pixels;
 
+use self::gameui::{GameUI, GameUiState};
+
 const CAMERA_SENSITIVITY: f32 = 0.08; // rad
 const FOV: f32 = 70.0;
 const CEILING_COLOR: [u8; 4] = [100, 100, 170, 255];
@@ -44,6 +47,7 @@ pub struct Game {
 
     fps: FPSCounter,
 
+    ui: GameUI,
     profiler: bool,
 }
 
@@ -87,6 +91,17 @@ impl Game {
         let fps = FPSCounter::new();
 
         let ray_caster = RayCaster::new(width, height, FOV);
+        
+        let ui_game_state = GameUiState {
+            player_hp_max: 100,
+            player_hp: 100,
+            weapon_name: "SCAR".to_string(),
+            max_ammo: 25,
+            ammo: 15,
+        };
+
+        let ui = GameUI::new(ui_game_state, gfx);
+
 
         Game {
             world,
@@ -99,6 +114,7 @@ impl Game {
             look_up_down: 0.0,
             player_height: 0.6,
             fps,
+            ui,
             profiler: false,
         }
     }
@@ -169,6 +185,10 @@ impl ProgramState for Game {
         // Render pixels
         self.pixels.flush(gfx);
         self.pixels.draw(&mut draw);
+
+        // Draw UI
+        self.ui.draw_health(&mut draw, width, height);
+        self.ui.draw_weapon_stats(&mut draw, width, height);
 
         // Drawing minimap
         self.minimap.draw(&mut draw, width, height);

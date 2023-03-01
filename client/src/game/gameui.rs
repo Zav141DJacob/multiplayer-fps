@@ -1,44 +1,43 @@
-use super::{pixels::Pixels, Player};
-use common::map::{Map, Wall};
-use glam::{Vec2, Vec4, Vec3};
-use itertools::Position;
-use notan::draw::{DrawImages, DrawTransform};
+use glam::{Vec2, Vec3};
+use notan::draw::{DrawTextSection, Font, CreateFont, DrawShapes};
 use notan::{
-    draw::DrawShapes,
-    prelude::{Color, Graphics, Texture},
+    prelude::{Color, Graphics},
 };
 
 
 
 
 pub struct GameUI {
-    player_hp_max: usize,
-    player_hp: usize,
-    max_ammo: usize, 
-    ammo: usize, 
-    weapon_name: String,
+    game_state: GameUiState,
     scale: Vec2,
     padding: Vec2,
     size: Vec2,
-    border_size: Vec2
+    border_size: Vec2,
+    font: Font,
+}
+
+pub struct GameUiState {
+    pub player_hp_max: usize,
+    pub player_hp: usize,
+    pub weapon_name: String,
+    pub max_ammo: usize, 
+    pub ammo: usize, 
 }
 
 
-
-
 impl GameUI {
-    pub fn new(player_hp: usize, player_hp_max: usize, max_ammo: usize, ammo: usize, weapon_name: String) -> Self {
-    
+    pub fn new(game_state: GameUiState, gfx: &mut Graphics) -> Self {
+        let font = gfx.create_font(include_bytes!("../../assets/Ubuntu-B.ttf")).unwrap();
+        
+
+
         Self {
-            player_hp_max,
-            player_hp,
-            max_ammo,
-            ammo,
-            weapon_name,
+            game_state,
             scale: Vec2::new(2.0, 2.0),
             padding: Vec2::new(10.0, 10.0),
             size: Vec2::new(150.0, 10.0),
-            border_size: Vec2::splat(4.0)
+            border_size: Vec2::splat(4.0),
+            font,
         }
     }
 
@@ -54,18 +53,14 @@ impl GameUI {
         self.padding = padding;
     }
 
-    pub fn set_health(&mut self, player_hp: usize) {
-        self.player_hp = player_hp;
+    pub fn set_game_state(&mut self, game_state: GameUiState){
+        self.game_state = game_state
     }
 
-    pub fn set_max_health(&mut self, player_hp_max: usize) {
-        self.player_hp_max = player_hp_max;
-    }
-
-    pub fn draw_health(&self, draw: &mut notan::draw::Draw, width: usize, height: usize) {
+    pub fn draw_health(&self, draw: &mut notan::draw::Draw, _width: usize, height: usize) {
         let mut healt_color = Color::GREEN;
 
-        let proc = (self.player_hp as f32) / (self.player_hp_max as f32);
+        let proc = (self.game_state.player_hp as f32) / (self.game_state.player_hp_max as f32);
         if proc > 0.5 {
             healt_color = health_to_color_gradient((proc-0.5) / 0.5, Color::YELLOW, Color::GREEN);
         } else {
@@ -75,7 +70,7 @@ impl GameUI {
         let health_size = Vec2::new(self.size.x * proc, self.size.y);
 
         let position = Vec2::new(
-            ((self.padding.x + self.border_size.x)  * self.scale.x),
+            (self.padding.x + self.border_size.x)  * self.scale.x,
             (height as f32) - ((self.padding.y + self.size.y+ self.border_size.y) * self.scale.y) );
 
 
@@ -120,7 +115,65 @@ impl GameUI {
 
 
     }
+
+
+
+    pub fn draw_weapon_stats(&self, draw: &mut notan::draw::Draw, width: usize, height: usize) {
+        let position = Vec2::new(
+            (width as f32 - (200.0 ) ) as f32,
+            (height as f32 - (50.0 )) as f32,
+        );
+
+        let ammo_text = format!("{:0>3} / {:0>3}", self.game_state.ammo, self.game_state.max_ammo );
+
+        draw.text(&self.font, &self.game_state.weapon_name).position(position.x, position.y);
+        draw.text(&self.font, &ammo_text).position(position.x + 120.0, position.y);
+
+        let  padding = 10.0 / self.game_state.max_ammo as f32;
+        let bullet_bar_size = Vec2::new(170.0 / self.game_state.max_ammo as f32, 5.0);
+
+        for i in 0..self.game_state.max_ammo {
+            let mut color = Color::WHITE;
+
+            if (self.game_state.ammo) as f32 <= ((self.game_state.max_ammo as f32) * 0.25) {
+                color = Color::RED
+            } else if (self.game_state.ammo) as f32 <= ((self.game_state.max_ammo as f32) * 0.6) {
+                color = Color::ORANGE
+            }
+
+            if  self.game_state.max_ammo - i > self.game_state.ammo {
+                color = Color::GRAY; 
+            }
+
+            draw.rect(
+                (position.x + (bullet_bar_size.x + padding )* i as f32 , position.y + 20.0), 
+                 bullet_bar_size.into()
+            ).color(color).corner_radius(2.0);
+
+        }
+
+
+    }
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
