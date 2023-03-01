@@ -43,6 +43,11 @@ pub fn execute(
     requester_info: ClientInfo,
 ) -> Result<(), JoinError> {
     if !server.is_registered(requester_id) {
+        FromServerMessage::OwnId(requester_id).construct()?.send(
+            &server.handler,
+            requester_info.endpoint,
+        );
+
         // Add player to the server clients
         println!(
             "Added participant '{requester_id}' with ip {}",

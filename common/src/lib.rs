@@ -20,6 +20,7 @@ pub type UserID = u64;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum FromServerMessage {
+    OwnId(UserID),
     SendMap(Map),
     Pong,
     EcsChanges(Vec<EcsProtocol>)

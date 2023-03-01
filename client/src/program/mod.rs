@@ -1,7 +1,8 @@
 use notan::log::info;
 use notan::prelude::{App, Assets, Graphics, Plugins};
 use notan::{AppState, Event};
-use tracing::debug_span;
+use tracing::{debug_span, error};
+use crate::error::ErrorState;
 
 use crate::menu::Menu;
 use crate::program::state::ProgramState;
@@ -42,7 +43,10 @@ impl Program {
         puffin::GlobalProfiler::lock().new_frame();
         puffin::profile_scope!("update");
 
-        this.state.update(app, assets, plugins);
+        if let Err(err) = this.state.update(app, assets, plugins) {
+            error!("{}", err);
+            this.state = ErrorState::from(&*err).into();
+        }
     }
 
     pub fn notan_draw(
@@ -56,7 +60,10 @@ impl Program {
         let _guard = span.enter();
         puffin::profile_scope!("draw");
 
-        this.state.draw(app, assets, gfx, plugins);
+        if let Err(err) = this.state.draw(app, assets, gfx, plugins) {
+            error!("{}", err);
+            this.state = ErrorState::from(&*err).into();
+        }
 
         // Do state switching here so we have access to Graphics (for creating texture and stuff)
         if let Some(next_state) = this.state.change_state(app, assets, gfx, plugins) {
@@ -76,6 +83,9 @@ impl Program {
         let _guard = span.enter();
         puffin::profile_scope!("event");
 
-        this.state.event(app, assets, plugins, event);
+        if let Err(err) = this.state.event(app, assets, plugins, event) {
+            error!("{}", err);
+            this.state = ErrorState::from(&*err).into();
+        }
     }
 }

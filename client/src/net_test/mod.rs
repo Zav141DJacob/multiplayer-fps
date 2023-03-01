@@ -67,7 +67,7 @@ impl ProgramState for NetworkTest {
         _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
-    ) {
+    ) -> anyhow::Result<()> {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 let text = self.log.iter().rev().join("\n");
@@ -133,6 +133,8 @@ impl ProgramState for NetworkTest {
 
         output.clear_color(Color::BLACK);
         gfx.render(&output);
+
+        Ok(())
     }
 }
 
