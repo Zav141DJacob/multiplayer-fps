@@ -59,13 +59,13 @@ impl ProgramState for Connecting {
         };
 
         match message {
-            FromServerMessage::Join(my_id) => {
-                info!("Received Join");
+            FromServerMessage::OwnId(my_id) => {
+                info!("Received OwnId");
                 self.my_id = Some(my_id);
             }
             FromServerMessage::LobbyMembers(_) => {
                 // TODO: Do something with members
-                info!("Received SendMap");
+                info!("Received LobbyMembers");
             }
             FromServerMessage::SendMap(map) => {
                 info!("Received SendMap");
@@ -80,6 +80,7 @@ impl ProgramState for Connecting {
                     self.ecs.as_mut().unwrap().handle_protocol(change)?;
                 }
             }
+            _ => {}
         }
 
         Ok(())
