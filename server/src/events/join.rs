@@ -50,6 +50,13 @@ pub fn execute(
         .construct()?
         .send(&server.handler, requester_info.endpoint);
 
+
+        FromServerMessage::OwnId(requester_id).construct()?.send(
+            &server.handler,
+            requester_info.endpoint,
+        );
+
+
         // Notify other players about this new player joining the game server
         println!("Notifying players about new player");
         FromServerMessage::Join(requester_id).construct()?.send_all(

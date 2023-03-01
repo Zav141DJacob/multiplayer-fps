@@ -1,9 +1,14 @@
 use std::fmt::{Display, Formatter};
 
+use anyhow::anyhow;
 use notan::app::{App, Graphics, Plugins};
 use notan::egui::{self, EguiPluginSugar};
 use notan::prelude::{Assets, Color};
 
+use common::defaults::{IP, PORT};
+
+use crate::connecting::Connecting;
+use crate::error::ErrorState;
 use crate::game::Game;
 use crate::net_test::NetworkTest;
 use crate::program::state::ProgramState;
@@ -28,10 +33,10 @@ impl ProgramState for Menu {
     fn draw(
         &mut self,
         app: &mut App,
-        _assets: &mut Assets,
+        assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
-    ) {
+    ) -> anyhow::Result<()> {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
@@ -58,6 +63,8 @@ impl ProgramState for Menu {
         if output.needs_repaint() {
             gfx.render(&output);
         }
+
+        Ok(())
     }
 
     fn change_state(
@@ -68,7 +75,14 @@ impl ProgramState for Menu {
         _plugins: &mut Plugins,
     ) -> Option<Box<dyn ProgramState>> {
         match self.next_state.take()? {
-            NextState::Game => Some(Game::new(gfx).into()),
+            NextState::Game => {
+                let state = Connecting::new(IP, PORT)
+                    .map(|v| v.into())
+                    .unwrap_or_else(|err| {
+                        ErrorState::from(&*err).into()
+                    });
+                Some(state)
+            }
             NextState::NetworkTest => Some(NetworkTest::new().into()),
         }
     }

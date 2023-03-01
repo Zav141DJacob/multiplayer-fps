@@ -1,6 +1,7 @@
+pub(crate) mod ecs;
 mod controls;
-mod ecs;
 mod minimap;
+pub(crate) mod net;
 mod raycast;
 mod texture;
 mod gameui;
@@ -9,20 +10,28 @@ use crate::game::controls::*;
 use crate::game::minimap::Minimap;
 use crate::game::raycast::*;
 use crate::program::state::ProgramState;
-use common::map::Map;
-use hecs::Entity;
 use notan::app::{App, Color, Graphics, Plugins};
 
 use notan::draw::CreateDraw;
 use notan::prelude::*;
 use std::fmt::{Display, Formatter};
+use anyhow::{anyhow, Context};
 
 
 use notan::egui::{EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
 
 use fps_counter::FPSCounter;
-use glam::f32::Vec2;
-use crate::game::raycast::sprites::{default_sprites, Sprite};
+use glam::Vec2;
+use hecs::Entity;
+use itertools::Itertools;
+use common::ecs::components::{LookDirection, Player, Position};
+use common::{Direction, FromServerMessage};
+use common::map::Map;
+use crate::error::ErrorState;
+use crate::game::ecs::ClientEcs;
+use crate::game::net::Connection;
+use crate::game::raycast::sprites::Sprite;
+use crate::game::texture::ATLAS_MONSTER;
 use crate::game::texture::pixels::Pixels;
 
 use self::gameui::{GameUI, GameUiState};
@@ -33,17 +42,13 @@ const CEILING_COLOR: [u8; 4] = [100, 100, 170, 255];
 const FLOOR_COLOR: [u8; 4] = [60, 120, 60, 255];
 
 pub struct Game {
-    world: hecs::World,
-    map: Map,
+    ecs: ClientEcs,
+    connection: Connection,
+    my_entity: Entity,
 
     pixels: Pixels,
     minimap: Minimap,
     ray_caster: RayCaster,
-
-    player: Entity,
-    sprites: Vec<Sprite>,
-    look_up_down: f32,
-    player_height: f32,
 
     fps: FPSCounter,
 
@@ -51,42 +56,15 @@ pub struct Game {
     profiler: bool,
 }
 
-#[derive(Debug)]
-pub struct Player;
-
-#[derive(Debug, Clone, Copy)]
-pub struct Position {
-    xy: Vec2,
-}
-
-pub struct Direction {
-    xy: Vec2,
-}
-
 impl Game {
-    pub fn new(gfx: &mut Graphics) -> Self {
+    pub fn new(gfx: &mut Graphics, ecs: ClientEcs, connection: Connection, my_entity: Entity) -> Self {
         let (width, height) = gfx.size();
         let (width, height) = (width as usize, height as usize);
 
-        let map = Map::default();
-
         let pixels = Pixels::new(width, height, gfx);
-        let mut minimap = Minimap::new(map.clone(), gfx);
+        let mut minimap = Minimap::new(ecs.resources.get::<Map>().unwrap().clone(), gfx);
         minimap.set_floor_color(FLOOR_COLOR.into());
         minimap.render_map(gfx);
-
-        let mut world = hecs::World::new();
-        let player = world.spawn((
-            Player,
-            Position {
-                xy: Vec2::new(1.5, 1.5),
-            },
-            Direction {
-                xy: Vec2::new(0.0, 1.0),
-            },
-        ));
-
-        let sprites = default_sprites();
 
         let fps = FPSCounter::new();
 
@@ -104,15 +82,14 @@ impl Game {
 
 
         Game {
-            world,
-            map,
-            player,
+            ecs,
+            connection,
+            my_entity,
+
             pixels,
             minimap,
+
             ray_caster,
-            sprites,
-            look_up_down: 0.0,
-            player_height: 0.6,
             fps,
             ui,
             profiler: false,
@@ -127,14 +104,21 @@ impl Display for Game {
 }
 
 impl ProgramState for Game {
-    fn update(&mut self, app: &mut App, _assets: &mut Assets, _plugins: &mut Plugins) {
-        let p = self
-            .world
-            .query_one_mut::<(&mut Position, &mut Direction)>(self.player)
-            .unwrap();
-        let w = self.map.get_width() as f32;
-        let h = self.map.get_height() as f32;
-        handle_keyboard_input(app, w, h, p, &mut self.look_up_down, &mut self.player_height);
+    fn update(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins) -> anyhow::Result<()> {
+        let message = self.connection.receive()?;
+
+        if let Some(message) = message {
+            match message {
+                FromServerMessage::EcsChanges(changes) => {
+                    for change in changes {
+                        self.ecs.handle_protocol(change)?;
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        Ok(())
     }
 
     fn draw(
@@ -143,8 +127,8 @@ impl ProgramState for Game {
         _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
-    ) {
-        let perspective = self.ray_caster.perspective(self.look_up_down, self.player_height, 0.0);
+    ) -> anyhow::Result<()> {
+        let perspective = self.ray_caster.perspective(0.0, 0.6, 0.0);
         let horizon = (0.5 * self.pixels.height() as f32 + perspective.y_offset) as usize;
 
         self.pixels.clear_with_column(|y| {
@@ -155,29 +139,36 @@ impl ProgramState for Game {
             }
         });
 
-        let p = self
-            .world
-            .query_one_mut::<(&Position, &Direction)>(self.player)
-            .unwrap();
-
         // Draw canvas background
         let (width, height) = self.pixels.dimensions();
+
+        let (my_pos, my_dir) = self.ecs.world.query_one_mut::<(&Position, &LookDirection)>(self.my_entity)
+            .context("Couldn't query for own player entity")?;
+        let (my_pos, my_dir) = (my_pos.0, my_dir.0);
 
 
         self.ray_caster.draw_walls(
             &mut self.pixels,
-            p.0.xy,
-            p.1.xy,
+            my_pos,
+            my_dir,
             perspective,
-            &self.map,
+            &*self.ecs.resources.get::<Map>()?,
         );
+
+
+        let mut sprites = self.ecs.world.query_mut::<&Position>().with::<&Player>()
+            .into_iter()
+            .filter(|(entity, pos)| self.my_entity == *entity)
+            .map(|(entity, pos)| pos.0)
+            .map(|pos| Sprite::new(&ATLAS_MONSTER[0], pos, Vec2::ONE, 0.0))
+            .collect_vec();
 
         self.ray_caster.draw_sprites(
             &mut self.pixels,
-            p.0.xy,
-            p.1.xy,
+            my_pos,
+            my_dir,
             perspective,
-            &mut self.sprites,
+            &mut sprites,
         );
 
         let mut draw = gfx.create_draw();
@@ -197,16 +188,16 @@ impl ProgramState for Game {
             &mut draw,
             width,
             height,
-            p.0.xy,
+            my_pos,
             Color::new(0.2, 0.2, 0.2, 1.0),
             self.ray_caster.minimap_rays(),
         );
 
         self.minimap
-            .render_player_location(&mut draw, width, height, p.0.xy, Color::RED);
+            .render_player_location(&mut draw, width, height, my_pos, Color::RED);
 
         // Draw enemies on map
-        for sprite in self.sprites.iter() {
+        for sprite in sprites.iter() {
             self.minimap.render_entity_location(
                 &mut draw,
                 width,
@@ -217,7 +208,6 @@ impl ProgramState for Game {
         }
 
         gfx.render(&draw);
-
 
 
         // Render egui
@@ -244,7 +234,11 @@ impl ProgramState for Game {
             gfx.render(&out);
         }
 
+        Ok(())
+    }
 
+    fn change_state(&mut self, app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) -> Option<Box<dyn ProgramState>> {
+        None
     }
 }
 
@@ -255,20 +249,7 @@ impl Game {
         };
 
         Grid::new("debug_grid_1").show(ui, |ui| {
-            let p = self
-                .world
-                .query_one_mut::<&mut Position>(self.player)
-                .unwrap();
-            let height = self.map.get_height();
-            let width = self.map.get_width();
 
-            ui.label("X");
-            Slider::new(&mut p.xy.x, 0.0..=width as f32 - 1.0).ui(ui);
-            ui.end_row();
-
-            ui.label("Y");
-            Slider::new(&mut p.xy.y, 0.0..=height as f32 - 1.0).ui(ui);
-            ui.end_row();
         });
     }
 }

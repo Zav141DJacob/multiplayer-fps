@@ -5,19 +5,17 @@ use notan::Event;
 
 #[allow(unused_variables)]
 pub trait ProgramState: Display {
-    /// Return Some(ProgramState) to switch to that state
-    fn update(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins) {}
-
-    fn draw(
-        &mut self,
-        app: &mut App,
-        assets: &mut Assets,
-        gfx: &mut Graphics,
-        plugins: &mut Plugins,
-    ) {
+    fn update(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins) -> anyhow::Result<()> {
+        Ok(())
     }
 
-    fn event(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins, event: Event) {}
+    fn draw(&mut self,app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    fn event(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins, event: Event) -> anyhow::Result<()> {
+        Ok(())
+    }
 
     fn change_state(
         &mut self,

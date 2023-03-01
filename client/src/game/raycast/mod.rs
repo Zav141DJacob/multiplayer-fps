@@ -2,7 +2,7 @@ mod ray_gen;
 mod walls;
 pub mod sprites;
 
-use crate::game::*;
+use glam::Vec2;
 use crate::game::raycast::ray_gen::RayGenerator;
 
 const MAX_VIEW_DISTANCE: f32 = 20.0;
