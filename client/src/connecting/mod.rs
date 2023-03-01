@@ -4,7 +4,6 @@ use std::time::Instant;
 use anyhow::bail;
 
 use notan::app::{App, Graphics, Plugins};
-use notan::draw::CreateDraw;
 use notan::egui::{self, Align2, EguiPluginSugar};
 use notan::prelude::{Assets, Color};
 use tracing::info;
@@ -49,7 +48,7 @@ impl Connecting {
 }
 
 impl ProgramState for Connecting {
-    fn update(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins) -> anyhow::Result<()> {
+    fn update(&mut self, _app: &mut App, _assets: &mut Assets, _plugins: &mut Plugins) -> anyhow::Result<()> {
         let message = match self.connection.as_mut().unwrap().receive() {
             Ok(Some(message)) => message,
             Ok(None) => return Ok(()),
@@ -86,7 +85,7 @@ impl ProgramState for Connecting {
         Ok(())
     }
 
-    fn draw(&mut self, app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) -> anyhow::Result<()> {
+    fn draw(&mut self, _app: &mut App, _assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) -> anyhow::Result<()> {
         let mut err = None;
 
         let mut output = plugins.egui(|ctx| {

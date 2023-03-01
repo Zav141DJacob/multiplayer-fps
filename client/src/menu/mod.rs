@@ -1,6 +1,5 @@
 use std::fmt::{Display, Formatter};
 
-use anyhow::anyhow;
 use notan::app::{App, Graphics, Plugins};
 use notan::egui::{self, EguiPluginSugar};
 use notan::prelude::{Assets, Color};
@@ -9,7 +8,6 @@ use common::defaults::{IP, PORT};
 
 use crate::connecting::Connecting;
 use crate::error::ErrorState;
-use crate::game::Game;
 use crate::net_test::NetworkTest;
 use crate::program::state::ProgramState;
 
@@ -33,7 +31,7 @@ impl ProgramState for Menu {
     fn draw(
         &mut self,
         app: &mut App,
-        assets: &mut Assets,
+        _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
     ) -> anyhow::Result<()> {
@@ -71,7 +69,7 @@ impl ProgramState for Menu {
         &mut self,
         _app: &mut App,
         _assets: &mut Assets,
-        gfx: &mut Graphics,
+        _gfx: &mut Graphics,
         _plugins: &mut Plugins,
     ) -> Option<Box<dyn ProgramState>> {
         match self.next_state.take()? {

@@ -41,8 +41,8 @@ where E: Error {
 impl ProgramState for ErrorState {
     fn draw(
         &mut self,
-        app: &mut App,
-        assets: &mut Assets,
+        _app: &mut App,
+        _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
     ) -> anyhow::Result<()> {

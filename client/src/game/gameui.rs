@@ -58,14 +58,12 @@ impl GameUI {
     }
 
     pub fn draw_health(&self, draw: &mut notan::draw::Draw, _width: usize, height: usize) {
-        let mut healt_color = Color::GREEN;
-
         let proc = (self.game_state.player_hp as f32) / (self.game_state.player_hp_max as f32);
-        if proc > 0.5 {
-            healt_color = health_to_color_gradient((proc-0.5) / 0.5, Color::YELLOW, Color::GREEN);
+        let health_color = if proc > 0.5 {
+            health_to_color_gradient((proc-0.5) / 0.5, Color::YELLOW, Color::GREEN)
         } else {
-            healt_color = health_to_color_gradient((proc) / 0.5, Color::RED, Color::YELLOW);
-        }
+            health_to_color_gradient((proc) / 0.5, Color::RED, Color::YELLOW)
+        };
 
         let health_size = Vec2::new(self.size.x * proc, self.size.y);
 
@@ -78,7 +76,7 @@ impl GameUI {
             position.into(),
             (health_size * self.scale).into())
 
-            .color(healt_color)
+            .color(health_color)
             .corner_radius(0.0);
 
 
@@ -98,8 +96,7 @@ impl GameUI {
             (health_size * self.scale / Vec2::new(1.0, 3.0)).into())
 
             .color(Color::new(1.0, 1.0, 1.0, 0.2))
-            .corner_radius(0.0)
-;
+            .corner_radius(0.0);
 
 
         draw.rect( // Draw border
@@ -120,8 +117,8 @@ impl GameUI {
 
     pub fn draw_weapon_stats(&self, draw: &mut notan::draw::Draw, width: usize, height: usize) {
         let position = Vec2::new(
-            (width as f32 - (200.0 ) ) as f32,
-            (height as f32 - (50.0 )) as f32,
+            width as f32 - 200.0,
+            height as f32 - 50.0,
         );
 
         let ammo_text = format!("{:0>3} / {:0>3}", self.game_state.ammo, self.game_state.max_ammo );
