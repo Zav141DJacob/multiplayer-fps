@@ -7,7 +7,7 @@ use notan::{
     AppState,
 };
 use server::server::Server;
-use tokio::{sync::mpsc::UnboundedReceiver, task::JoinHandle};
+use tokio::sync::mpsc::UnboundedReceiver;
 
 #[derive(AppState)]
 pub struct Program {
@@ -19,7 +19,6 @@ pub struct Program {
     messages: Vec<String>,
 
     should_exit_on_server_closing: bool,
-    server_open: bool,
 }
 
 pub fn notan_setup(
@@ -43,7 +42,6 @@ pub fn notan_setup(
             messages: Vec::new(),
             server_handler,
             should_exit_on_server_closing,
-            server_open: true,
         }
     })
 }
@@ -56,11 +54,7 @@ impl Program {
         plugins: &mut Plugins,
         this: &mut Self,
     ) {
-        if !this.server_handler.is_running() {
-            this.server_open = false;
-        }
-
-        if !this.server_open && this.should_exit_on_server_closing {
+        if !this.server_handler.is_running() && this.should_exit_on_server_closing {
             app.exit()
         }
 
@@ -77,12 +71,11 @@ impl Program {
                     ui.heading("Admin console");
                     ui.add_space(10.0);
 
-                    if this.server_open {
+                    if this.server_handler.is_running() {
                         ui.label(format!("Server running on {}:{}", this.ip, this.port));
 
                         if ui.button("Stop server").clicked() {
                             this.server_handler.stop();
-                            this.server_open = false;
                         }
                     } else {
                         ui.label("Server is not currently running");
