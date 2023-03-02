@@ -1,7 +1,9 @@
-use common::defaults::{MAP_HEIGHT, MAP_WIDTH};
+use common::defaults::{MAP_HEIGHT, MAP_WIDTH, TICKS_PER_SECOND};
 use common::ecs::components::{EcsProtocol, Player, Position};
 use common::map::Map;
+use message_io::node::NodeEvent;
 
+use std::time::Duration;
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
     hash::{Hash, Hasher},
@@ -9,7 +11,7 @@ use std::{
     net::SocketAddr,
 };
 
-use common::{FromClientMessage, FromServerMessage};
+use common::{FromClientMessage, FromServerMessage, Signal};
 use message_io::{
     network::{Endpoint, NetEvent, Transport},
     node::{self, NodeHandler, NodeListener},
@@ -17,6 +19,7 @@ use message_io::{
 
 use crate::ecs::ServerEcs;
 use crate::events;
+
 
 #[derive(Hash)]
 pub struct ClientInfo {
@@ -63,9 +66,10 @@ impl ClientInfo {
              .0
     }
 }
+
 pub struct Server {
-    pub handler: NodeHandler<()>,
-    listener: Option<NodeListener<()>>,
+    pub handler: NodeHandler<Signal>,
+    listener: Option<NodeListener<Signal>>,
 
     pub registered_clients: RegisteredClients,
     pub ecs: ServerEcs,
@@ -92,7 +96,7 @@ impl RegisteredClients {
 
 impl Server {
     pub fn new(addr: SocketAddr) -> io::Result<Self> {
-        let (handler, listener) = node::split::<()>();
+        let (handler, listener) = node::split::<Signal>();
 
         handler.network().listen(Transport::Udp, addr)?;
 
@@ -122,35 +126,55 @@ impl Server {
                 .unwrap()
                 .send_all(&self.handler, self.registered_clients.get_all_endpoints());
         }
+        self.handler
+            .signals()
+            .send_with_timer(Signal::Tick, Duration::from_millis(1000 / TICKS_PER_SECOND));
     }
 
     pub fn run(&mut self) {
-        // self.handle_ticks();
+        self.handle_ticks();
 
         let listener = self.listener.take().unwrap();
 
         listener.for_each(move |event| {
-            if let NetEvent::Message(endpoint, input_data) = event.network() {
-                let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
 
-                let requester_info = ClientInfo {
-                    addr: endpoint.addr(),
-                    endpoint,
-                };
-                let requester_id = requester_info.get_id();
-                self.handle_ticks();
-
-                println!("Event: {message:?}");
-                match message {
-                    FromClientMessage::Ping => events::ping::execute(&self.handler, endpoint),
-                    FromClientMessage::Leave => events::leave::execute(self, requester_id),
-                    FromClientMessage::Join => {
-                        events::join::execute(self, requester_id, requester_info).unwrap();
-                    }
-                    FromClientMessage::UpdateInputs(updated_input_state) => {
-                        events::r#update_inputs::execute(self, updated_input_state, requester_id);
+            match event {
+                NodeEvent::Signal(signal) => match signal {
+                    Signal::Tick => {
+                        self.handle_ticks();
+                    }, 
+                    _ => ()
+                    // I put the Signal enum inside common, so I would like some input on 
+                    // if we should merge Signals from client as well
+                },
+                NodeEvent::Network(net_event) => {
+                    match net_event {
+                        NetEvent::Message(endpoint, input_data) => {
+                            let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
+        
+                            let requester_info = ClientInfo {
+                                addr: endpoint.addr(),
+                                endpoint,
+                            };
+                            let requester_id = requester_info.get_id();
+        
+                            println!("Event: {message:?}");
+                            match message {
+                                FromClientMessage::Ping => events::ping::execute(&self.handler, endpoint),
+                                FromClientMessage::Leave => events::leave::execute(self, requester_id),
+                                FromClientMessage::Join => {
+                                    events::join::execute(self, requester_id, requester_info).unwrap();
+                                }
+                                FromClientMessage::UpdateInputs(updated_input_state) => {
+                                    events::r#update_inputs::execute(self, updated_input_state, requester_id);
+                                }
+                            }
+                        },
+                        _ => ()
                     }
                 }
+                
+                
             }
         });
     }

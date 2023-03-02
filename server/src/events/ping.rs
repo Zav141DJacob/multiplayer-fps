@@ -1,8 +1,8 @@
-use common::FromServerMessage;
+use common::{FromServerMessage, Signal};
 use message_io::{network::Endpoint, node::NodeHandler};
 
-pub fn execute(handler: &NodeHandler<()>, endpoint: Endpoint) {
-    println!("Ping from {}", endpoint.addr());
+pub fn execute(handler: &NodeHandler<Signal>, endpoint: Endpoint) {
+    // println!("Ping from {}", endpoint.addr());
 
     // TODO: handle errors better
     FromServerMessage::Pong

@@ -31,15 +31,17 @@ impl FromServerMessage {
         Ok(ConstructedMessage(bincode::serialize(self)?))
     }
 }
-
+pub enum Signal {
+    Tick
+}
 pub struct ConstructedMessage(Vec<u8>);
 
 impl ConstructedMessage {
-    pub fn send(&self, handler: &NodeHandler<()>, endpoint: Endpoint) {
+    pub fn send(&self, handler: &NodeHandler<Signal>, endpoint: Endpoint) {
         handler.network().send(endpoint, &self.0);
     }
 
-    pub fn send_all(&self, handler: &NodeHandler<()>, endpoints: Vec<Endpoint>) {
+    pub fn send_all(&self, handler: &NodeHandler<Signal>, endpoints: Vec<Endpoint>) {
         for endpoint in endpoints {
             self.send(handler, endpoint)
         }
