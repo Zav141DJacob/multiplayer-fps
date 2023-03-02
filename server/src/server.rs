@@ -96,8 +96,8 @@ impl Logger {
     pub fn log<T: Display>(&self, message: T) {
         let msg = format!("Server: {message}");
 
-        if self.enable_channels {
-            self.sender.send(msg.clone()).unwrap();
+        if self.enable_channels && self.sender.send(msg.clone()).is_err() {
+            println!("Warning: failed to send message to channel");
         }
 
         println!("{msg}");

@@ -4,10 +4,10 @@ use std::{
     num::ParseIntError,
 };
 
-use admin_client::run_admin_client;
+use admin_client::program::Program;
 use common::defaults::PORT;
 use notan::{
-    egui::{self, EguiPluginSugar, Id},
+    egui::{self, EguiPluginSugar, Id, Ui},
     prelude::{App, Assets, Color, Graphics, Plugins},
 };
 
@@ -15,8 +15,10 @@ use crate::{connecting::Connecting, error::ErrorState, program::state::ProgramSt
 
 use super::Menu;
 
-pub fn host_server(port: u16) {
-    tokio::spawn(async move { run_admin_client("127.0.0.1".parse().unwrap(), port) });
+// TODO: finish integrating server host UI
+pub fn host_server(app: &mut App, ui: &mut Ui, port: u16) {
+    let mut p = Program::new("127.0.0.1".parse().unwrap(), port, false);
+    // p.draw(ui, app);
 }
 
 enum NextState {
@@ -86,7 +88,7 @@ impl HostingMenu {
 impl ProgramState for HostingMenu {
     fn draw(
         &mut self,
-        _app: &mut App,
+        app: &mut App,
         _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
@@ -123,7 +125,8 @@ impl ProgramState for HostingMenu {
                             return;
                         }
 
-                        host_server(self.processed_port.unwrap());
+                        host_server(app, ui, self.processed_port.unwrap());
+
                         self.next_state = Some(NextState::Game);
                     }
 
@@ -136,7 +139,7 @@ impl ProgramState for HostingMenu {
                                     return;
                                 }
 
-                                host_server(self.processed_port.unwrap());
+                                host_server(app, ui, self.processed_port.unwrap());
                                 self.next_state = Some(NextState::Game);
                             }
                             if ui.button("Back").clicked() {
