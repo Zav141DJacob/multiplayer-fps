@@ -63,6 +63,10 @@ impl ProgramState for Connecting {
         };
 
         match message {
+            FromServerMessage::OwnId(my_id) => {
+                info!("Received OwnId");
+                self.my_id = Some(my_id);
+            }
             FromServerMessage::SendMap(map) => {
                 info!("Received SendMap");
                 self.ecs.as_mut().unwrap().resources.insert(map);
@@ -76,10 +80,7 @@ impl ProgramState for Connecting {
                     self.ecs.as_mut().unwrap().handle_protocol(change)?;
                 }
             }
-            FromServerMessage::OwnId(id) => {
-                info!("Received OwnId");
-                self.my_id = Some(id);
-            }
+            _ => {}
         }
 
         Ok(())

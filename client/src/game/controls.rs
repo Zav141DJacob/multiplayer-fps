@@ -1,7 +1,3 @@
-use common::defaults::PLAYER_SPEED;
-
-use crate::game::*;
-
 // pub fn handle_keyboard_input(app: &App, w: f32, h: f32, p: (&mut Position, &mut Direction), up_down_angle: &mut f32, player_height: &mut f32) {
 //     if app.keyboard.is_down(KeyCode::W) {
 //         if (p.0.xy + p.1.xy * PLAYER_SPEED).x < 0.0 {

@@ -6,7 +6,6 @@ mod raycast;
 mod texture;
 mod gameui;
 
-use crate::game::controls::*;
 use crate::game::minimap::Minimap;
 use crate::game::raycast::*;
 use crate::program::state::ProgramState;
@@ -15,19 +14,18 @@ use notan::app::{App, Color, Graphics, Plugins};
 use notan::draw::CreateDraw;
 use notan::prelude::*;
 use std::fmt::{Display, Formatter};
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 
 
-use notan::egui::{EguiPluginSugar, Grid, Slider, Ui, Widget, Window};
+use notan::egui::{EguiPluginSugar, Grid, Ui, Window};
 
 use fps_counter::FPSCounter;
 use glam::Vec2;
 use hecs::Entity;
 use itertools::Itertools;
 use common::ecs::components::{LookDirection, Player, Position};
-use common::{Direction, FromServerMessage};
+use common::{FromServerMessage};
 use common::map::Map;
-use crate::error::ErrorState;
 use crate::game::ecs::ClientEcs;
 use crate::game::net::Connection;
 use crate::game::raycast::sprites::Sprite;
@@ -104,17 +102,12 @@ impl Display for Game {
 }
 
 impl ProgramState for Game {
-    fn update(&mut self, app: &mut App, assets: &mut Assets, plugins: &mut Plugins) -> anyhow::Result<()> {
+    fn update(&mut self, _app: &mut App, _assets: &mut Assets, _plugins: &mut Plugins) -> anyhow::Result<()> {
         let message = self.connection.receive()?;
 
-        if let Some(message) = message {
-            match message {
-                FromServerMessage::EcsChanges(changes) => {
-                    for change in changes {
-                        self.ecs.handle_protocol(change)?;
-                    }
-                }
-                _ => {}
+        if let Some(FromServerMessage::EcsChanges(changes)) = message {
+            for change in changes {
+                self.ecs.handle_protocol(change)?;
             }
         }
 
@@ -158,8 +151,8 @@ impl ProgramState for Game {
 
         let mut sprites = self.ecs.world.query_mut::<&Position>().with::<&Player>()
             .into_iter()
-            .filter(|(entity, pos)| self.my_entity == *entity)
-            .map(|(entity, pos)| pos.0)
+            .filter(|(entity, _)| self.my_entity == *entity)
+            .map(|(_, pos)| pos.0)
             .map(|pos| Sprite::new(&ATLAS_MONSTER[0], pos, Vec2::ONE, 0.0))
             .collect_vec();
 
@@ -236,10 +229,6 @@ impl ProgramState for Game {
 
         Ok(())
     }
-
-    fn change_state(&mut self, app: &mut App, assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) -> Option<Box<dyn ProgramState>> {
-        None
-    }
 }
 
 impl Game {
@@ -248,7 +237,7 @@ impl Game {
             puffin::set_scopes_on(self.profiler);
         };
 
-        Grid::new("debug_grid_1").show(ui, |ui| {
+        Grid::new("debug_grid_1").show(ui, |_ui| {
 
         });
     }
