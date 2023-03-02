@@ -30,6 +30,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "common",
+ "message-io",
  "notan",
  "server",
  "tokio",
@@ -312,6 +313,7 @@ dependencies = [
 name = "client"
 version = "0.1.0"
 dependencies = [
+ "admin-client",
  "anyhow",
  "bincode",
  "clap",

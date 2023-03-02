@@ -14,11 +14,10 @@ pub fn run_admin_client(ip: IpAddr, port: u16) -> Result<(), String> {
         .resizable(false)
         .size(640, 360);
 
-    notan::init_with(notan_setup(ip, port))
+    notan::init_with(notan_setup(ip, port, false))
         .add_config(win)
         .add_config(EguiConfig)
         .add_config(DrawConfig)
         .draw(Program::notan_draw)
-        .add_config(DrawConfig)
         .build()
 }
