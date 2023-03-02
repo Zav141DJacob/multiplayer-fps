@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use notan::app::{App, Graphics, Plugins};
-use notan::egui::{self, EguiPluginSugar};
+use notan::egui::{self, EguiPluginSugar, Ui};
 use notan::prelude::{Assets, Color};
 
 use common::defaults::{IP, PORT};
@@ -11,20 +11,38 @@ use crate::error::ErrorState;
 use crate::net_test::NetworkTest;
 use crate::program::state::ProgramState;
 
+use self::hosting::HostingMenu;
+use self::server_selection::ServerSelectionMenu;
+
+pub mod hosting;
+pub mod server_selection;
+
 #[derive(Default)]
 pub struct Menu {
     next_state: Option<NextState>,
 }
 
+impl Menu {
+    pub fn new() -> Menu {
+        Menu { next_state: None }
+    }
+}
+
 enum NextState {
     Game,
     NetworkTest,
+    HostingMenu,
+    ServerSelectionMenu,
 }
 
 impl Display for Menu {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Menu")
     }
+}
+
+fn egui_center_width(ui: &Ui) -> f32 {
+    ui.available_width() / 6.0
 }
 
 impl ProgramState for Menu {
@@ -35,21 +53,58 @@ impl ProgramState for Menu {
         gfx: &mut Graphics,
         plugins: &mut Plugins,
     ) -> anyhow::Result<()> {
+        let button_size = [100.0, 20.0];
+
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.heading("Multiplayer FPS");
                     ui.add_space(10.0);
 
-                    if ui.button("Start").clicked() {
-                        self.next_state = Some(NextState::Game)
-                    }
+                    ui.vertical_centered(|ui| {
+                        ui.set_width(egui_center_width(ui));
+                        ui.horizontal(|ui| {
+                            if ui
+                                .add_sized(button_size, egui::Button::new("Quick Play"))
+                                .clicked()
+                            {
+                                self.next_state = Some(NextState::Game)
+                            }
 
-                    if ui.button("Network Test").clicked() {
-                        self.next_state = Some(NextState::NetworkTest)
-                    }
+                            if ui
+                                .add_sized(button_size, egui::Button::new("Join Server"))
+                                .clicked()
+                            {
+                                self.next_state = Some(NextState::ServerSelectionMenu);
+                            }
+                        })
+                    });
 
-                    if ui.button("Quit").clicked() {
+                    ui.vertical_centered(|ui| {
+                        ui.set_width(egui_center_width(ui));
+                        ui.horizontal(|ui| {
+                            if ui
+                                .add_sized(button_size, egui::Button::new("Host Server"))
+                                .clicked()
+                            {
+                                self.next_state = Some(NextState::HostingMenu);
+                            }
+
+                            if ui
+                                .add_sized(button_size, egui::Button::new("Network Test"))
+                                .clicked()
+                            {
+                                self.next_state = Some(NextState::NetworkTest)
+                            }
+                        })
+                    });
+
+                    ui.add_space(5.0);
+
+                    if ui
+                        .add_sized(button_size, egui::Button::new("Quit"))
+                        .clicked()
+                    {
                         app.exit()
                     }
                 });
@@ -76,12 +131,12 @@ impl ProgramState for Menu {
             NextState::Game => {
                 let state = Connecting::new(IP, PORT)
                     .map(|v| v.into())
-                    .unwrap_or_else(|err| {
-                        ErrorState::from(&*err).into()
-                    });
+                    .unwrap_or_else(|err| ErrorState::from(&*err).into());
                 Some(state)
             }
             NextState::NetworkTest => Some(NetworkTest::new().into()),
+            NextState::HostingMenu => Some(HostingMenu::new().into()),
+            NextState::ServerSelectionMenu => Some(ServerSelectionMenu::new().into()),
         }
     }
 }

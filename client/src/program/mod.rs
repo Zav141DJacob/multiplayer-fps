@@ -17,7 +17,7 @@ pub struct Program {
 impl Default for Program {
     fn default() -> Self {
         Self {
-            state: Menu::default().into(),
+            state: Menu::new().into(),
         }
     }
 }

@@ -7,7 +7,13 @@ use crate::server::Server;
 
 pub fn execute(server: &mut Server, requester_id: u64) {
     if server.is_registered(requester_id) {
-        let requester_info = server.registered_clients.clients.remove(&requester_id).expect(&format!("Can not unregister an non-existent participant with name '{requester_id}'"));
+        let requester_info = server
+            .registered_clients
+            .clients
+            .remove(&requester_id)
+            .expect(&format!(
+                "Can not unregister an non-existent participant with name '{requester_id}'"
+            ));
 
         // Notifies other participants about this removed participant
         let player_entity = server
@@ -36,7 +42,7 @@ pub fn execute(server: &mut Server, requester_id: u64) {
 
         println!(
             "Unregistered participant '{requester_id}' with ip {}",
-            requester_info.id.addr
+            requester_info.addr
         );
     }
 }

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{ecs::systems::ServerSystems, events};
 use crate::ecs::ServerEcs;
+use crate::{ecs::systems::ServerSystems, events};
+use common::ecs::components::{Input, InputState, Player};
 use common::Direction;
-use common::ecs::components::{Position, Velocity, InputState, Player, Input};
 
 impl ServerSystems {
     /// Move all entities with a position and velocity
@@ -20,16 +20,10 @@ impl ServerSystems {
     }
 
     pub fn get_input_states(ecs: &ServerEcs) -> HashMap<u64, InputState> {
-        let mut return_map: HashMap<u64, InputState> = HashMap::new();
         ecs.world
             .query::<(&Player, &Input)>()
             .into_iter()
-            .for_each(|(entity, (player, input_state))| {
-                dbg!(player);
-                return_map.insert(player.id, input_state.0);
-            });
-        return_map
+            .map(|(_, (player, input_state))| (player.id, input_state.0))
+            .collect()
     }
-
-    
 }

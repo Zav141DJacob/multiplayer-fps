@@ -1,11 +1,11 @@
 use std::io;
-use std::net::{IpAddr, SocketAddr};
+use std::net::IpAddr;
 
 use common::defaults::IP;
 use common::defaults::PORT;
 
 use clap::Parser;
-use server::server::Server;
+use server::run_server;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -22,11 +22,8 @@ struct Args {
 #[tokio::main]
 async fn main() -> io::Result<()> {
     let args = Args::parse();
-    let addr: SocketAddr = SocketAddr::new(args.ip, args.port);
 
-    println!("Starting server on {addr}");
-    let mut server = Server::new(addr)?;
-    server.run();
+    run_server(args.ip, args.port)?;
 
     Ok(())
 }

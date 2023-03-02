@@ -1,19 +1,19 @@
+use anyhow::bail;
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
 use std::time::Instant;
-use anyhow::bail;
 
+use crate::game::ecs::ClientEcs;
+use crate::game::net::Connection;
+use crate::game::Game;
+use crate::menu::Menu;
+use common::ecs::components::Player;
+use common::map::Map;
+use common::{FromClientMessage, FromServerMessage};
 use notan::app::{App, Graphics, Plugins};
 use notan::egui::{self, Align2, EguiPluginSugar};
 use notan::prelude::{Assets, Color};
 use tracing::info;
-use common::ecs::components::Player;
-use common::{FromClientMessage, FromServerMessage};
-use common::map::Map;
-use crate::game::ecs::ClientEcs;
-use crate::game::Game;
-use crate::game::net::Connection;
-use crate::menu::Menu;
 
 use crate::program::state::ProgramState;
 
@@ -23,7 +23,7 @@ pub struct Connecting {
     ecs: Option<ClientEcs>,
     my_id: Option<u64>,
 
-    exit: bool
+    exit: bool,
 }
 
 impl Display for Connecting {
@@ -48,23 +48,24 @@ impl Connecting {
 }
 
 impl ProgramState for Connecting {
-    fn update(&mut self, _app: &mut App, _assets: &mut Assets, _plugins: &mut Plugins) -> anyhow::Result<()> {
+    fn update(
+        &mut self,
+        app: &mut App,
+        assets: &mut Assets,
+        plugins: &mut Plugins,
+    ) -> anyhow::Result<()> {
         let message = match self.connection.as_mut().unwrap().receive() {
             Ok(Some(message)) => message,
             Ok(None) => return Ok(()),
             Err(err) => {
                 bail!(err);
-            },
+            }
         };
 
         match message {
             FromServerMessage::OwnId(my_id) => {
                 info!("Received OwnId");
                 self.my_id = Some(my_id);
-            }
-            FromServerMessage::LobbyMembers(_) => {
-                // TODO: Do something with members
-                info!("Received LobbyMembers");
             }
             FromServerMessage::SendMap(map) => {
                 info!("Received SendMap");
@@ -85,7 +86,13 @@ impl ProgramState for Connecting {
         Ok(())
     }
 
-    fn draw(&mut self, _app: &mut App, _assets: &mut Assets, gfx: &mut Graphics, plugins: &mut Plugins) -> anyhow::Result<()> {
+    fn draw(
+        &mut self,
+        app: &mut App,
+        assets: &mut Assets,
+        gfx: &mut Graphics,
+        plugins: &mut Plugins,
+    ) -> anyhow::Result<()> {
         let mut err = None;
 
         let mut output = plugins.egui(|ctx| {
@@ -94,15 +101,22 @@ impl ProgramState for Connecting {
                 .collapsible(false)
                 .anchor(Align2::CENTER_CENTER, [0.0, 0.0]);
 
-            window.show(ctx, |ui| ui.vertical_centered(|ui| {
-                if ui.button("Ping").clicked() {
-                    err = self.connection.as_mut().unwrap().send(FromClientMessage::Ping).err();
-                }
+            window.show(ctx, |ui| {
+                ui.vertical_centered(|ui| {
+                    if ui.button("Ping").clicked() {
+                        err = self
+                            .connection
+                            .as_mut()
+                            .unwrap()
+                            .send(FromClientMessage::Ping)
+                            .err();
+                    }
 
-                if ui.button("Return").clicked() {
-                    self.exit = true;
-                }
-            }));
+                    if ui.button("Return").clicked() {
+                        self.exit = true;
+                    }
+                })
+            });
         });
 
         output.clear_color(Color::BLACK);
@@ -135,7 +149,7 @@ impl ProgramState for Connecting {
         let my_player_entity = self.my_id.and_then(|id| {
             for (entity, player) in self.ecs.as_mut()?.world.query_mut::<&Player>() {
                 if player.id == id {
-                    return Some(entity)
+                    return Some(entity);
                 }
             }
             None

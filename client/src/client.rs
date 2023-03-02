@@ -107,7 +107,7 @@ impl Client {
                     }
                 },
                 NodeEvent::Signal(signal) => match signal {
-                    Signal::Ping => { // TODO: remove greet in the future
+                    Signal::Ping => { // TODO: remove ping in the future
                         if from_client_sender2.is_closed() {
                             return
                         }
