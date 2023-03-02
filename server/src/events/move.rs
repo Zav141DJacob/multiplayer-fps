@@ -5,13 +5,13 @@ use common::{
     Direction,
 };
 
-use crate::ecs::ServerEcs;
+use crate::{ecs::ServerEcs, server::Logger};
 
-pub fn execute(server: &mut ServerEcs, direction: Direction, requester_id: u64) {
-    // if server.is_registered(requester_id) {
-    println!("move {direction:?}");
+pub fn execute(ecs: &mut ServerEcs, direction: Direction, requester_id: u64) {
+    let logger = ecs.resources.get::<Logger>().unwrap();
+    logger.log(format!("move {direction:?}"));
 
-    let (entity, (_, look_direction, position)) = server
+    let (entity, (_, look_direction, position)) = ecs
         .world
         .query_mut::<(&Player, &mut LookDirection, &mut Position)>()
         .into_iter()
@@ -21,7 +21,7 @@ pub fn execute(server: &mut ServerEcs, direction: Direction, requester_id: u64) 
     let mut pos = *position;
     let dir = *look_direction;
 
-    let map = server.resources.get::<Map>().unwrap();
+    let map = ecs.resources.get::<Map>().unwrap();
     let w = map.get_width() as f32;
     let h = map.get_height() as f32;
 
@@ -96,7 +96,7 @@ pub fn execute(server: &mut ServerEcs, direction: Direction, requester_id: u64) 
         }
     };
 
-    println!("Player position: {pos:?}");
+    logger.log(format!("Player position: {pos:?}"));
 
-    *server.observer.observe_component(entity, position) = pos;
+    *ecs.observer.observe_component(entity, position) = pos;
 }

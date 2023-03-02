@@ -4,7 +4,7 @@ use common::{ecs::components::EcsProtocol, map::Map, FromServerMessage};
 use resources::CantGetResource;
 
 use crate::{
-    server::{ClientInfo, Server},
+    server::{ClientInfo, Logger, Server},
     utils::spawn_player,
 };
 
@@ -42,17 +42,19 @@ pub fn execute(
     requester_id: u64,
     requester_info: ClientInfo,
 ) -> Result<(), JoinError> {
+    let logger = server.ecs.resources.get::<Logger>().unwrap().clone();
+
     if !server.is_registered(requester_id) {
-        FromServerMessage::OwnId(requester_id).construct()?.send(
-            &server.handler,
-            requester_info.endpoint,
-        );
+        FromServerMessage::OwnId(requester_id)
+            .construct()?
+            .send(&server.handler, requester_info.endpoint);
 
         // Add player to the server clients
-        println!(
+        logger.log(format!(
             "Added participant '{requester_id}' with ip {}",
             requester_info.addr
-        );
+        ));
+
         server.registered_clients.clients.insert(
             requester_id,
             ClientInfo::new(requester_info.addr, requester_info.endpoint),
@@ -60,7 +62,8 @@ pub fn execute(
 
         // Sending initial map to player
         // TODO: handle errors better
-        println!("Sending map to '{requester_id}'");
+        logger.log(format!("Sending map to '{requester_id}'"));
+
         FromServerMessage::SendMap(server.ecs.resources.get::<Map>()?.clone())
             .construct()?
             .send(&server.handler, requester_info.endpoint);
@@ -87,7 +90,9 @@ pub fn execute(
             server.registered_clients.get_all_endpoints(),
         );
     } else {
-        println!("Participant with name '{requester_id}' already exists");
+        logger.log(format!(
+            "Participant with name '{requester_id}' already exists"
+        ));
     }
 
     Ok(())
