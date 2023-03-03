@@ -9,26 +9,27 @@ pub struct ServerSystems;
 
 impl ServerSystems {
     pub fn run(ecs: &mut ServerEcs, dt: f32) {
-
         let players = ServerSystems::get_input_states(ecs);
-        // dbg!(k, v);
 
         for (k, v) in players {
             dbg!(k, v);
+
+            let mut velocity = |d: Direction| ServerSystems::apply_velocity(ecs, d, k);
+
             if v.forward {
-                ServerSystems::apply_velocity(ecs, Direction::Forward, k);
+                velocity(Direction::Forward);
             }
-            
+
             if v.backward {
-                ServerSystems::apply_velocity(ecs, Direction::Backward, k);
+                velocity(Direction::Backward);
             }
-            
+
             if v.left {
-                ServerSystems::apply_velocity(ecs, Direction::Left, k);
+                velocity(Direction::Left);
             }
-            
+
             if v.right {
-                ServerSystems::apply_velocity(ecs, Direction::Right, k);
+                velocity(Direction::Right);
             }
 
             if v.look_left {
@@ -38,7 +39,7 @@ impl ServerSystems {
             if v.look_right {
                 ServerSystems::apply_turning(ecs, Direction::Right, k);
             }
-            
+
             if v.shoot {
                 ServerSystems::apply_shoot(ecs, k);
             }
@@ -52,6 +53,4 @@ impl ServerSystems {
     //         .into_iter()
     //         .find(|(_, (&player, _, _, _))| player.id == name)
     //         .unwrap();
-
-    
 }

@@ -10,10 +10,11 @@ pub mod events;
 pub mod server;
 pub mod utils;
 
+
 pub fn run_server(ip: IpAddr, port: u16) -> io::Result<()> {
     let addr = SocketAddr::new(ip, port);
     println!("Starting server on {addr}");
-    let mut server = Server::new(addr)?;
+    let (mut server, _) = Server::new(addr, false)?;
     server.run();
 
     Ok(())

@@ -2,8 +2,8 @@ use common::{ecs::components::{InputState, Player, Input}};
 
 use crate::server::Server;
 
+// TODO: handle errors better
 pub fn execute(server: &mut Server, updated_input_state: InputState, requester_id: u64) {
-    
     let (entity, (_, input_state)) = server
             .ecs
             .world
@@ -16,8 +16,4 @@ pub fn execute(server: &mut Server, updated_input_state: InputState, requester_i
 
     *server.ecs.observer.observe_component(entity, input_state) = Input(updated_input_state);
     server.ecs.observer.drain_reliable();
-
-
-    // TODO: handle errors better
-
 }

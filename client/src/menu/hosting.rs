@@ -1,11 +1,13 @@
 use std::{
     fmt::{Display, Formatter},
-    num::ParseIntError, net::{IpAddr, Ipv4Addr},
+    net::{IpAddr, Ipv4Addr},
+    num::ParseIntError,
 };
 
-use common::defaults::{IP, PORT};
+use admin_client::program::Program;
+use common::defaults::PORT;
 use notan::{
-    egui::{self, EguiPluginSugar, Id},
+    egui::{self, EguiPluginSugar, Id, Ui},
     prelude::{App, Assets, Color, Graphics, Plugins},
 };
 
@@ -13,11 +15,10 @@ use crate::{connecting::Connecting, error::ErrorState, program::state::ProgramSt
 
 use super::Menu;
 
-pub fn host_server(port: &str) {
-    // TODO: complete server hosting part
-    // cargo run --release --bin server --port 1337
-    // server::run_server("127.0.0.1".parse().unwrap(), port.parse().unwrap()).unwrap()
-    todo!()
+// TODO: finish integrating server host UI
+pub fn host_server(app: &mut App, ui: &mut Ui, port: u16) {
+    let mut p = Program::new("127.0.0.1".parse().unwrap(), port, false);
+    // p.draw(ui, app);
 }
 
 enum NextState {
@@ -87,7 +88,7 @@ impl HostingMenu {
 impl ProgramState for HostingMenu {
     fn draw(
         &mut self,
-        _app: &mut App,
+        app: &mut App,
         _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
@@ -124,7 +125,8 @@ impl ProgramState for HostingMenu {
                             return;
                         }
 
-                        host_server(&self.port);
+                        host_server(app, ui, self.processed_port.unwrap());
+
                         self.next_state = Some(NextState::Game);
                     }
 
@@ -137,7 +139,7 @@ impl ProgramState for HostingMenu {
                                     return;
                                 }
 
-                                host_server(&self.port);
+                                host_server(app, ui, self.processed_port.unwrap());
                                 self.next_state = Some(NextState::Game);
                             }
                             if ui.button("Back").clicked() {
