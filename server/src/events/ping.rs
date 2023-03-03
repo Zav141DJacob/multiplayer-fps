@@ -1,11 +1,11 @@
-use common::FromServerMessage;
+use common::{FromServerMessage, Signal};
 use message_io::{network::Endpoint, node::NodeHandler};
 
 use crate::server::Logger;
 
 pub fn execute(
     logger: &Logger,
-    handler: &NodeHandler<()>,
+    handler: &NodeHandler<Signal>,
     endpoint: Endpoint,
 ) -> Result<(), bincode::Error> {
     logger.log(format!("Ping from {}", endpoint.addr()));

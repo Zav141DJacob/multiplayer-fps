@@ -1,5 +1,6 @@
 use std::net::{IpAddr, SocketAddr};
 
+use common::Signal;
 use message_io::node::NodeHandler;
 use notan::{
     egui::{self, EguiPluginSugar, ScrollArea, Ui},
@@ -12,7 +13,7 @@ use tokio::sync::mpsc::UnboundedReceiver;
 #[derive(AppState)]
 pub struct Program {
     logger_reciever: UnboundedReceiver<String>,
-    server_handler: NodeHandler<()>,
+    server_handler: NodeHandler<Signal>,
 
     ip: IpAddr,
     port: u16,
