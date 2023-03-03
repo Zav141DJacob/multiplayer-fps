@@ -184,8 +184,8 @@ impl Server {
                     _ => (), // I put the Signal enum inside common, so I would like some input on
                              // if we should merge Signals from client as well
                 },
-                NodeEvent::Network(net_event) => match net_event {
-                    NetEvent::Message(endpoint, input_data) => {
+                NodeEvent::Network(net_event) => {
+                    if let NetEvent::Message(endpoint, input_data) = net_event {
                         let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
 
                         let requester_info = ClientInfo {
@@ -198,7 +198,7 @@ impl Server {
 
                         match message {
                             FromClientMessage::Ping => {
-                                events::ping::execute(&logger, &self.handler).unwrap()
+                                events::ping::execute(&logger, &self.handler, endpoint).unwrap()
                             }
                             FromClientMessage::Leave => {
                                 events::leave::execute(self, requester_id).unwrap()
@@ -215,8 +215,7 @@ impl Server {
                             }
                         }
                     }
-                    _ => (),
-                },
+                }
             }
         });
     }
