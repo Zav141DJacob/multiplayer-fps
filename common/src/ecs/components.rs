@@ -5,7 +5,7 @@ use std::num::NonZeroU64;
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
 
-use crate::{register_shared_components, bulk_attribute};
+use crate::{register_shared_components, bulk_attribute, UserID};
 
 /// Describes the instructions the server can give to the client ECS.
 /// The contained NonZeroU64 is the entity ID.
@@ -25,7 +25,6 @@ register_shared_components! {
     Size,
     Health,
     Player,
-    InputState,
 }
 
 // This macro simply adds derives for all these structs.
@@ -39,7 +38,7 @@ bulk_attribute! {
     pub struct Health (pub i32);
     
     pub struct Player {
-        pub id: u64,
+        pub id: UserID,
     }
 }
 
@@ -61,7 +60,7 @@ impl Default for InputState {
             forward: true, 
             backward: false, 
             left: false, 
-            right: false,
+            right: true,
             look_angle: 0.0,
             shoot: false 
         }
