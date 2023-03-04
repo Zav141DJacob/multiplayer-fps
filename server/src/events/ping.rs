@@ -1,5 +1,6 @@
 use common::{FromServerMessage, Signal};
 use message_io::{network::Endpoint, node::NodeHandler};
+use crate::constructed_message::ConstructMessage;
 
 use crate::server::Logger;
 

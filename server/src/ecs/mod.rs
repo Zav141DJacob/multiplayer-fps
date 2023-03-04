@@ -8,6 +8,7 @@ use crate::ecs::systems::ServerSystems;
 pub mod components;
 pub mod observer;
 pub mod systems;
+pub mod spawn;
 
 #[derive(Default)]
 pub struct ServerEcs {

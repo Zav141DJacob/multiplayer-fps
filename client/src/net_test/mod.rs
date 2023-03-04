@@ -4,13 +4,13 @@ use std::net::{IpAddr, SocketAddr};
 
 use itertools::Itertools;
 use message_io::network::RemoteAddr;
-use notan::egui::{self, ComboBox, EguiPluginSugar, ScrollArea, TextEdit, Ui};
+use notan::egui::{self, EguiPluginSugar, ScrollArea, TextEdit, Ui};
 use notan::prelude::{App, Assets, Color, Graphics, Plugins};
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tracing::error;
 
-use common::{Direction, FromClientMessage, FromServerMessage};
+use common::{FromClientMessage, FromServerMessage};
 
 use crate::args::ARGS;
 use crate::client::Client;
@@ -140,14 +140,12 @@ impl ProgramState for NetworkTest {
 
 struct SenderWidget {
     sender: UnboundedSender<FromClientMessage>,
-    mov_dir: Direction,
 }
 
 impl SenderWidget {
     fn new(sender: UnboundedSender<FromClientMessage>) -> Self {
         Self {
             sender,
-            mov_dir: Direction::Forward,
         }
     }
 
@@ -167,16 +165,6 @@ impl SenderWidget {
             self.sender.send(FromClientMessage::Leave)?
         }
 
-        ui.separator();
-        let direction = &mut self.mov_dir;
-        ComboBox::from_label("Direction")
-            .selected_text(format!("{direction:?}"))
-            .show_ui(ui, |ui| {
-                ui.selectable_value(direction, Direction::Forward, "Forward");
-                ui.selectable_value(direction, Direction::Backward, "Backward");
-                ui.selectable_value(direction, Direction::Left, "Left");
-                ui.selectable_value(direction, Direction::Right, "Right");
-            });
         // if ui.button("Move").clicked() {
         //     self.sender.send(FromClientMessage::Move(*direction))?
         // }
