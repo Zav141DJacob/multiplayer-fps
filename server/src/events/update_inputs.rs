@@ -1,19 +1,15 @@
-use common::{ecs::components::{InputState, Player, Input}};
+use message_io::network::Endpoint;
+use common::{ecs::components::InputState};
 
 use crate::server::Server;
 
 // TODO: handle errors better
-pub fn execute(server: &mut Server, updated_input_state: InputState, requester_id: u64) {
-    let (entity, (_, input_state)) = server
-            .ecs
-            .world
-            .query_mut::<(&Player, &mut Input)>()
-            .into_iter()
-            .find(|(_, (&player, _))| {
-                player.id == requester_id
-            })
-            .unwrap();
+pub fn execute(server: &mut Server, updated_input_state: InputState, endpoint: Endpoint) {
+    let entity = *server.registered_clients.get(&endpoint)
+        .expect("tried to update input for unregistered client");
 
-    *server.ecs.observer.observe_component(entity, input_state) = Input(updated_input_state);
-    server.ecs.observer.drain_reliable();
+    let input = server.ecs.world.query_one_mut::<&mut InputState>(entity)
+        .expect("client is registered but not found in ecs");
+
+    *input = updated_input_state;
 }

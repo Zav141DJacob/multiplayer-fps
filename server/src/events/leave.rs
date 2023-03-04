@@ -1,10 +1,7 @@
 use std::{error::Error, fmt::Display};
 
-use common::{
-    ecs::components::{EcsProtocol, Player},
-    FromServerMessage,
-};
 use hecs::NoSuchEntity;
+use message_io::network::Endpoint;
 
 use crate::server::{Logger, Server};
 
@@ -43,41 +40,18 @@ impl Display for LeaveErrors {
 
 impl Error for LeaveErrors {}
 
-pub fn execute(server: &mut Server, requester_id: u64) -> Result<(), LeaveErrors> {
-    if server.is_registered(requester_id) {
-        let requester_info = server
+pub fn execute(server: &mut Server, endpoint: Endpoint) -> Result<(), LeaveErrors> {
+    if server.is_registered(endpoint) {
+        let player_entity = server
             .registered_clients
-            .clients
-            .remove(&requester_id)
+            .remove(&endpoint)
             .ok_or(LeaveErrors::FailedToRemoveFromHashMap)?;
 
-        // Notifies other participants about this removed participant
-        let player_entity = server
-            .ecs
-            .world
-            .query::<&Player>()
-            .iter()
-            .find(|(_, &player)| player.id == requester_id)
-            .ok_or(LeaveErrors::FailedToFindPlayer)?
-            .0;
         server.ecs.observed_world().despawn(player_entity)?;
 
-        FromServerMessage::EcsChanges(
-            server
-                .ecs
-                .observer
-                .drain_reliable()
-                .collect::<Vec<EcsProtocol>>(),
-        )
-        .construct()?
-        .send_all(
-            &server.handler,
-            server.registered_clients.get_all_endpoints(),
-        );
-
         server.ecs.resources.get::<Logger>().unwrap().log(format!(
-            "Unregistered participant '{requester_id}' with ip {}",
-            requester_info.addr
+            "Unregistered participant with ip {}",
+            endpoint.addr()
         ));
     }
 

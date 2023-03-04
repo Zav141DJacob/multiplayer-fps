@@ -1,12 +1,12 @@
 use std::{error::Error, fmt::Display};
+use message_io::network::Endpoint;
 
-use common::{ecs::components::EcsProtocol, map::Map, FromServerMessage};
+use common::{map::Map, FromServerMessage};
 use resources::CantGetResource;
 
-use crate::{
-    server::{ClientInfo, Logger, Server},
-    utils::spawn_player,
-};
+use crate::server::{Logger, Server};
+use crate::constructed_message::ConstructMessage;
+use crate::ecs::spawn::player::spawn_player;
 
 #[derive(Debug)]
 pub enum JoinError {
@@ -39,61 +39,49 @@ impl Display for JoinError {
 // Registers user
 pub fn execute(
     server: &mut Server,
-    requester_id: u64,
-    requester_info: ClientInfo,
+    endpoint: Endpoint,
 ) -> Result<(), JoinError> {
     let logger = server.ecs.resources.get::<Logger>().unwrap().clone();
 
-    if !server.is_registered(requester_id) {
-        FromServerMessage::OwnId(requester_id)
-            .construct()?
-            .send(&server.handler, requester_info.endpoint);
-
-        // Add player to the server clients
+    if server.is_registered(endpoint) {
         logger.log(format!(
-            "Added participant '{requester_id}' with ip {}",
-            requester_info.addr
+            "Participant with IP {} already exists",
+            endpoint.addr()
         ));
-
-        server.registered_clients.clients.insert(
-            requester_id,
-            ClientInfo::new(requester_info.addr, requester_info.endpoint),
-        );
-
-        // Sending initial map to player
-        // TODO: handle errors better
-        logger.log(format!("Sending map to '{requester_id}'"));
-
-        FromServerMessage::SendMap(server.ecs.resources.get::<Map>()?.clone())
-            .construct()?
-            .send(&server.handler, requester_info.endpoint);
-
-        // Sends ECS history to the newly joined user
-        FromServerMessage::EcsChanges(server.ecs.init_client())
-            .construct()?
-            .send(&server.handler, requester_info.endpoint);
-
-        // Spawns player
-        spawn_player(&mut server.ecs, requester_id);
-
-        // Sends new player info to all clients
-        FromServerMessage::EcsChanges(
-            server
-                .ecs
-                .observer
-                .drain_reliable()
-                .collect::<Vec<EcsProtocol>>(),
-        )
-        .construct()?
-        .send_all(
-            &server.handler,
-            server.registered_clients.get_all_endpoints(),
-        );
-    } else {
-        logger.log(format!(
-            "Participant with name '{requester_id}' already exists"
-        ));
+        return Ok(());
     }
+
+    let (_, entity) = spawn_player(&mut server.ecs);
+
+    FromServerMessage::OwnId(entity.to_bits().into())
+        .construct()?
+        .send(&server.handler, endpoint);
+
+    // Add player to the server clients
+    logger.log(format!(
+        "Added participant with ip {}",
+        endpoint.addr()
+    ));
+
+    // Spawns player
+
+    server.registered_clients.insert(
+        endpoint,
+        entity,
+    );
+
+    // Sending initial map to player
+    // TODO: handle errors better
+    logger.log(format!("Sending map to IP {}", endpoint.addr()));
+
+    FromServerMessage::SendMap(server.ecs.resources.get::<Map>()?.clone())
+        .construct()?
+        .send(&server.handler, endpoint);
+
+    // Sends ECS history to the newly joined user
+    FromServerMessage::EcsChanges(server.ecs.init_client())
+        .construct()?
+        .send(&server.handler, endpoint);
 
     Ok(())
 }
