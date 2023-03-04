@@ -151,7 +151,7 @@ impl Server {
     }
 
     pub fn handle_ticks(&mut self) {
-        self.ecs.tick(0.0);
+        self.ecs.tick(1.0 / TICKS_PER_SECOND as f32);
 
         let protocols = self
             .ecs

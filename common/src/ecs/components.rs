@@ -25,7 +25,7 @@ register_shared_components! {
     Size,
     Health,
     Player,
-    Input,
+    InputState,
 }
 
 // This macro simply adds derives for all these structs.
@@ -37,7 +37,6 @@ bulk_attribute! {
     pub struct LookDirection (pub Vec2);
     pub struct Size (pub Vec2);
     pub struct Health (pub i32);
-    pub struct Input(pub InputState);
     
     pub struct Player {
         pub id: u64,
@@ -51,8 +50,7 @@ pub struct InputState {
     pub left: bool,
     pub right: bool,
 
-    pub look_left: bool,
-    pub look_right: bool,
+    pub look_angle: f32,
     
     pub shoot: bool,
 } 
@@ -63,9 +61,8 @@ impl Default for InputState {
             forward: true, 
             backward: false, 
             left: false, 
-            right: false, 
-            look_left: true, 
-            look_right: false, 
+            right: false,
+            look_angle: 0.0,
             shoot: false 
         }
 

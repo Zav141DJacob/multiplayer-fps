@@ -1,29 +1,22 @@
-use std::collections::HashMap;
-
 use crate::ecs::ServerEcs;
-use crate::{ecs::systems::ServerSystems, events};
-use common::ecs::components::{Input, InputState, Player};
-use common::Direction;
+use crate::{ecs::systems::ServerSystems};
+use common::ecs::components::{Position, Velocity};
 
 impl ServerSystems {
     /// Move all entities with a position and velocity
-    pub fn apply_velocity(ecs: &mut ServerEcs, dir: Direction, requester_id: u64) {
-        events::r#move::execute(ecs, dir, requester_id);
-    }
-
-    pub fn apply_turning(ecs: &mut ServerEcs, dir: Direction, requester_id: u64) {
-        events::r#turn::execute(ecs, dir, requester_id);
-    }
-
-    pub fn apply_shoot(ecs: &mut ServerEcs, requester_id: u64) {
-        // events::r#move::execute(ecs, dir, requester_id);
-    }
-
-    pub fn get_input_states(ecs: &ServerEcs) -> HashMap<u64, InputState> {
-        ecs.world
-            .query::<(&Player, &Input)>()
+    pub fn move_system(ecs: &mut ServerEcs, dt: f32) {
+        ecs.world.query_mut::<(&Velocity, &mut Position)>()
             .into_iter()
-            .map(|(_, (player, input_state))| (player.id, input_state.0))
-            .collect()
+            .for_each(|(entity, (vel, pos))| {
+                // Observe the components we mutate
+                let mut pos = ecs.observer.observe_component(entity, pos);
+
+                // Unwrap component inner types
+                let pos = &mut pos.0;
+                let vel = vel.0;
+
+                // Apply velocity scaled with delta time
+                *pos += vel * dt
+            })
     }
 }
