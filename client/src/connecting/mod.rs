@@ -130,7 +130,7 @@ impl ProgramState for Connecting {
 
     fn change_state(
         &mut self,
-        _app: &mut App,
+        app: &mut App,
         _assets: &mut Assets,
         gfx: &mut Graphics,
         _plugins: &mut Plugins,
@@ -159,7 +159,7 @@ impl ProgramState for Connecting {
 
         let ecs = self.ecs.take()?;
         let connection = self.connection.take()?;
-        let game = Game::new(gfx, ecs, connection, my_player_entity);
+        let game = Game::new(app, gfx, ecs, connection, my_player_entity);
 
         Some(game.into())
     }

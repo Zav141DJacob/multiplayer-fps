@@ -49,7 +49,7 @@ bulk_attribute! {
     pub struct Bullet;
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct InputState {
     pub forward: bool,
     pub backward: bool,
@@ -60,17 +60,3 @@ pub struct InputState {
     
     pub shoot: bool,
 } 
-
-impl Default for InputState {
-    fn default() -> Self {
-        InputState { 
-            forward: true, 
-            backward: false, 
-            left: false, 
-            right: true,
-            look_angle: 0.0,
-            shoot: false 
-        }
-
-    }
-}

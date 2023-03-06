@@ -22,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
     let win = WindowConfig::new()
         .vsync(true)
         // .lazy_loop(true)
-        // .fullscreen(true)
+        .fullscreen(true)
         .high_dpi(false)
         .resizable(false)
         .size(1280, 720);
