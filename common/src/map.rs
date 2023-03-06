@@ -89,7 +89,7 @@ impl Map {
                 }
             }
         }
-        let rand_num: usize = rand::thread_rng().gen_range(0..=available_coords.len());
+        let rand_num: usize = rand::thread_rng().gen_range(0..available_coords.len());
 
         available_coords[rand_num]
     }
