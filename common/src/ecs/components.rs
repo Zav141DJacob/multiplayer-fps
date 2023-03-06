@@ -26,7 +26,6 @@ register_shared_components! {
     LookDirection,
     Size,
     Health,
-    ShootCooldown,
     HeldWeapon,
     Player,
     Bullet,
@@ -41,16 +40,13 @@ bulk_attribute! {
     pub struct LookDirection (pub Vec2);
     pub struct Size (pub Vec2);
     pub struct Health (pub i32);
-    pub struct ShootCooldown (pub SystemTime);
     pub struct HeldWeapon (pub Gun);
     
     pub struct Player {
         pub id: UserID,
     }
 
-    pub struct Bullet {
-        pub despawn_time: SystemTime
-    }
+    pub struct Bullet;
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
