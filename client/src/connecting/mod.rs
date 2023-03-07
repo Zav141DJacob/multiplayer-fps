@@ -25,8 +25,6 @@ pub struct Connecting {
     my_id: Option<u64>,
 
     exit: bool,
-
-    server_ui: Option<Program>,
 }
 
 impl Display for Connecting {
@@ -38,7 +36,12 @@ impl Display for Connecting {
 impl Connecting {
     pub fn new(address: IpAddr, port: u16, server_ui: Option<Program>) -> anyhow::Result<Self> {
         let connection = Connection::new(address, port)?;
-        let ecs = ClientEcs::default();
+        let mut ecs = ClientEcs::default();
+
+        if let Some(su) = server_ui {
+            ecs.resources.insert(su);
+        }
+
         Ok(Self {
             start_time: Instant::now(),
             connection: Some(connection),
@@ -46,8 +49,6 @@ impl Connecting {
             my_id: None,
 
             exit: false,
-
-            server_ui,
         })
     }
 }
@@ -85,7 +86,6 @@ impl ProgramState for Connecting {
                     self.ecs.as_mut().unwrap().handle_protocol(change)?;
                 }
             }
-            _ => {}
         }
 
         Ok(())
@@ -169,7 +169,6 @@ impl ProgramState for Connecting {
             ecs,
             connection,
             my_player_entity,
-            self.server_ui.clone(),
         );
 
         Some(game.into())

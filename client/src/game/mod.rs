@@ -52,8 +52,6 @@ pub struct Game {
 
     ui: GameUI,
     profiler: bool,
-
-    server_ui: Option<Program>,
 }
 
 impl Game {
@@ -62,7 +60,6 @@ impl Game {
         ecs: ClientEcs,
         connection: Connection,
         my_entity: Entity,
-        server_ui: Option<Program>,
     ) -> Self {
         let (width, height) = gfx.size();
         let (width, height) = (width as usize, height as usize);
@@ -98,8 +95,6 @@ impl Game {
             fps,
             ui,
             profiler: false,
-
-            server_ui,
         }
     }
 }
@@ -221,7 +216,7 @@ impl ProgramState for Game {
             puffin::profile_scope!("render egui");
 
             let out = plugins.egui(|ctx| {
-                if let Some(server_ui) = self.server_ui.as_mut() {
+                if let Ok(mut server_ui) = self.ecs.resources.get_mut::<Program>() {
                     Window::new("Server")
                         .collapsible(true)
                         .resizable(true)
