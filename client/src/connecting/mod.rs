@@ -1,3 +1,4 @@
+use admin_client::program::Program;
 use anyhow::bail;
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
@@ -24,6 +25,8 @@ pub struct Connecting {
     my_id: Option<u64>,
 
     exit: bool,
+
+    server_ui: Option<Program>,
 }
 
 impl Display for Connecting {
@@ -33,7 +36,7 @@ impl Display for Connecting {
 }
 
 impl Connecting {
-    pub fn new(address: IpAddr, port: u16) -> anyhow::Result<Self> {
+    pub fn new(address: IpAddr, port: u16, server_ui: Option<Program>) -> anyhow::Result<Self> {
         let connection = Connection::new(address, port)?;
         let ecs = ClientEcs::default();
         Ok(Self {
@@ -43,6 +46,8 @@ impl Connecting {
             my_id: None,
 
             exit: false,
+
+            server_ui,
         })
     }
 }
@@ -50,9 +55,9 @@ impl Connecting {
 impl ProgramState for Connecting {
     fn update(
         &mut self,
-        app: &mut App,
-        assets: &mut Assets,
-        plugins: &mut Plugins,
+        _app: &mut App,
+        _assets: &mut Assets,
+        _plugins: &mut Plugins,
     ) -> anyhow::Result<()> {
         let message = match self.connection.as_mut().unwrap().receive() {
             Ok(Some(message)) => message,
@@ -88,8 +93,8 @@ impl ProgramState for Connecting {
 
     fn draw(
         &mut self,
-        app: &mut App,
-        assets: &mut Assets,
+        _app: &mut App,
+        _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
     ) -> anyhow::Result<()> {
@@ -159,7 +164,13 @@ impl ProgramState for Connecting {
 
         let ecs = self.ecs.take()?;
         let connection = self.connection.take()?;
-        let game = Game::new(gfx, ecs, connection, my_player_entity);
+        let game = Game::new(
+            gfx,
+            ecs,
+            connection,
+            my_player_entity,
+            self.server_ui.clone(),
+        );
 
         Some(game.into())
     }

@@ -129,7 +129,7 @@ impl ProgramState for Menu {
     ) -> Option<Box<dyn ProgramState>> {
         match self.next_state.take()? {
             NextState::Game => {
-                let state = Connecting::new(IP, PORT)
+                let state = Connecting::new(IP, PORT, None)
                     .map(|v| v.into())
                     .unwrap_or_else(|err| ErrorState::from(&*err).into());
                 Some(state)

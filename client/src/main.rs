@@ -21,6 +21,7 @@ async fn main() -> anyhow::Result<()> {
     // Start up the windowing and game loop
     let win = WindowConfig::new()
         .vsync(true)
+        .title("Multiplayer FPS")
         // .lazy_loop(true)
         // .fullscreen(true)
         .high_dpi(false)
