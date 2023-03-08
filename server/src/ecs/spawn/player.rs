@@ -1,4 +1,5 @@
-use common::{ecs::components::{Position, Player, LookDirection}, map::Map};
+use common::{ecs::components::{Position, Player, LookDirection, HeldWeapon}, map::Map};
+use common::gun::Gun;
 use glam::Vec2;
 use hecs::Entity;
 use common::ecs::components::{InputState, Velocity};
@@ -17,7 +18,8 @@ pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs) -> Entity {
         },
         Position(pos.0),
         Velocity(Vec2::ZERO),
-        LookDirection(Vec2::from_angle(0.0))
+        LookDirection(Vec2::from_angle(0.0)),
+        HeldWeapon(Gun::Pistol),
     )).unwrap();
 
     // Insert server-side components

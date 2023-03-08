@@ -13,6 +13,9 @@ impl ServerSystems {
         ServerSystems::input_system(ecs, dt);
         ServerSystems::move_system(ecs, dt);
         // ServerSystems::shoot_system(ecs, dt);
+        ServerSystems::shoot_system(ecs, dt);
+        ServerSystems::shoot_cooldown_system(ecs, dt);
+        ServerSystems::bullet_despawn_system(ecs, dt);
         ServerSystems::collision_system(ecs, dt);
     }
 }

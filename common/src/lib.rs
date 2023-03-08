@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub mod defaults;
 pub mod ecs;
 pub mod map;
+pub mod gun;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum FromClientMessage {

@@ -30,7 +30,7 @@ impl ServerSystems {
             let pos = &mut pos.0;
             dbg!(&pos);
 
-            let mut to_pos = Vec2::default();
+            let mut to_pos = pos.clone();
 
             let x_floored_int = pos.x.floor() as i32;
             let y_floored_int = pos.y.floor() as i32;

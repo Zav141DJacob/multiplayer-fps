@@ -4,6 +4,8 @@ use std::num::NonZeroU64;
 
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
+use std::time::{SystemTime};
+use crate::gun::Gun;
 
 use crate::{register_shared_components, bulk_attribute, UserID};
 
@@ -24,7 +26,9 @@ register_shared_components! {
     LookDirection,
     Size,
     Health,
+    HeldWeapon,
     Player,
+    Bullet,
 }
 
 // This macro simply adds derives for all these structs.
@@ -36,10 +40,13 @@ bulk_attribute! {
     pub struct LookDirection (pub Vec2);
     pub struct Size (pub Vec2);
     pub struct Health (pub i32);
+    pub struct HeldWeapon (pub Gun);
     
     pub struct Player {
         pub id: UserID,
     }
+
+    pub struct Bullet;
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
