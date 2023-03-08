@@ -1,36 +1,36 @@
-pub(crate) mod ecs;
 mod controls;
+pub(crate) mod ecs;
+mod gameui;
 mod minimap;
 pub(crate) mod net;
 mod raycast;
 mod texture;
-mod gameui;
 
 use crate::game::minimap::Minimap;
 use crate::game::raycast::*;
 use crate::program::state::ProgramState;
+use admin_client::program::Program;
 use notan::app::{App, Color, Graphics, Plugins};
 
+use anyhow::Context;
 use notan::draw::CreateDraw;
 use notan::prelude::*;
 use std::fmt::{Display, Formatter};
-use anyhow::Context;
-
 
 use notan::egui::{EguiPluginSugar, Grid, Ui, Window};
 
+use crate::game::ecs::ClientEcs;
+use crate::game::net::Connection;
+use crate::game::raycast::sprites::Sprite;
+use crate::game::texture::pixels::Pixels;
+use crate::game::texture::ATLAS_MONSTER;
+use common::ecs::components::{LookDirection, Player, Position};
+use common::map::Map;
+use common::FromServerMessage;
 use fps_counter::FPSCounter;
 use glam::Vec2;
 use hecs::Entity;
 use itertools::Itertools;
-use common::ecs::components::{LookDirection, Player, Position};
-use common::{FromServerMessage};
-use common::map::Map;
-use crate::game::ecs::ClientEcs;
-use crate::game::net::Connection;
-use crate::game::raycast::sprites::Sprite;
-use crate::game::texture::ATLAS_MONSTER;
-use crate::game::texture::pixels::Pixels;
 
 use self::gameui::{GameUI, GameUiState};
 
@@ -55,7 +55,12 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(gfx: &mut Graphics, ecs: ClientEcs, connection: Connection, my_entity: Entity) -> Self {
+    pub fn new(
+        gfx: &mut Graphics,
+        ecs: ClientEcs,
+        connection: Connection,
+        my_entity: Entity,
+    ) -> Self {
         let (width, height) = gfx.size();
         let (width, height) = (width as usize, height as usize);
 
@@ -67,7 +72,7 @@ impl Game {
         let fps = FPSCounter::new();
 
         let ray_caster = RayCaster::new(width, height, FOV);
-        
+
         let ui_game_state = GameUiState {
             player_hp_max: 100,
             player_hp: 100,
@@ -77,7 +82,6 @@ impl Game {
         };
 
         let ui = GameUI::new(ui_game_state, gfx);
-
 
         Game {
             ecs,
@@ -102,7 +106,12 @@ impl Display for Game {
 }
 
 impl ProgramState for Game {
-    fn update(&mut self, _app: &mut App, _assets: &mut Assets, _plugins: &mut Plugins) -> anyhow::Result<()> {
+    fn update(
+        &mut self,
+        _app: &mut App,
+        _assets: &mut Assets,
+        _plugins: &mut Plugins,
+    ) -> anyhow::Result<()> {
         let message = self.connection.receive()?;
 
         if let Some(FromServerMessage::EcsChanges(changes)) = message {
@@ -116,7 +125,7 @@ impl ProgramState for Game {
 
     fn draw(
         &mut self,
-        _app: &mut App,
+        app: &mut App,
         _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
@@ -135,10 +144,12 @@ impl ProgramState for Game {
         // Draw canvas background
         let (width, height) = self.pixels.dimensions();
 
-        let (my_pos, my_dir) = self.ecs.world.query_one_mut::<(&Position, &LookDirection)>(self.my_entity)
+        let (my_pos, my_dir) = self
+            .ecs
+            .world
+            .query_one_mut::<(&Position, &LookDirection)>(self.my_entity)
             .context("Couldn't query for own player entity")?;
         let (my_pos, my_dir) = (my_pos.0, my_dir.0);
-
 
         self.ray_caster.draw_walls(
             &mut self.pixels,
@@ -148,21 +159,19 @@ impl ProgramState for Game {
             &*self.ecs.resources.get::<Map>()?,
         );
 
-
-        let mut sprites = self.ecs.world.query_mut::<&Position>().with::<&Player>()
+        let mut sprites = self
+            .ecs
+            .world
+            .query_mut::<&Position>()
+            .with::<&Player>()
             .into_iter()
             .filter(|(entity, _)| self.my_entity == *entity)
             .map(|(_, pos)| pos.0)
             .map(|pos| Sprite::new(&ATLAS_MONSTER[0], pos, Vec2::ONE, 0.0))
             .collect_vec();
 
-        self.ray_caster.draw_sprites(
-            &mut self.pixels,
-            my_pos,
-            my_dir,
-            perspective,
-            &mut sprites,
-        );
+        self.ray_caster
+            .draw_sprites(&mut self.pixels, my_pos, my_dir, perspective, &mut sprites);
 
         let mut draw = gfx.create_draw();
 
@@ -202,13 +211,19 @@ impl ProgramState for Game {
 
         gfx.render(&draw);
 
-
         // Render egui
         {
             puffin::profile_scope!("render egui");
 
             let out = plugins.egui(|ctx| {
-                Window::new("Debug")
+                if let Ok(mut server_ui) = self.ecs.resources.get_mut::<Program>() {
+                    Window::new("Server")
+                        .collapsible(true)
+                        .resizable(true)
+                        .show(ctx, |ui| server_ui.draw(ui, app));
+                }
+
+                Window::new("Client debug")
                     .collapsible(true)
                     .resizable(false)
                     .show(ctx, |ui| self.debug_ui(ui));
@@ -237,8 +252,6 @@ impl Game {
             puffin::set_scopes_on(self.profiler);
         };
 
-        Grid::new("debug_grid_1").show(ui, |_ui| {
-
-        });
+        Grid::new("debug_grid_1").show(ui, |_ui| {});
     }
 }

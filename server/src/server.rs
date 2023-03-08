@@ -1,22 +1,23 @@
+use chrono::Utc;
 use common::defaults::{MAP_HEIGHT, MAP_WIDTH, TICKS_PER_SECOND};
 use common::ecs::components::EcsProtocol;
 use common::map::Map;
 use message_io::node::NodeEvent;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
-use std::fmt::Display;
-use std::time::Duration;
+use hecs::Entity;
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::io;
 use std::net::SocketAddr;
-use hecs::Entity;
+use std::time::Duration;
 
+use crate::constructed_message::ConstructMessage;
 use common::{FromClientMessage, FromServerMessage, Signal};
 use message_io::{
     network::{Endpoint, NetEvent, Transport},
     node::{self, NodeHandler, NodeListener},
 };
-use crate::constructed_message::ConstructMessage;
 
 use crate::ecs::ServerEcs;
 use crate::events;
@@ -52,7 +53,8 @@ impl Logger {
     }
 
     pub fn log<T: Display>(&self, message: T) {
-        let msg = format!("Server: {message}");
+        let datetime = Utc::now().format("%Y-%m-%d %H:%M:%S");
+        let msg = format!("[{datetime}]: {message}");
 
         if self.enable_channels && self.sender.send(msg.clone()).is_err() {
             println!("Warning: failed to send message to channel");
