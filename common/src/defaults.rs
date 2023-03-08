@@ -7,5 +7,6 @@ pub const MAP_WIDTH: usize = 10;
 pub const MAP_HEIGHT: usize = 10;
 
 pub const PLAYER_SPEED: f32 = 0.1;
+pub const PLAYER_SIZE: f32 = 0.25;
 
 pub const TICKS_PER_SECOND: u64 = 20;

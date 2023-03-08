@@ -57,10 +57,10 @@ pub struct InputState {
 impl Default for InputState {
     fn default() -> Self {
         InputState { 
-            forward: true, 
+            forward: false, 
             backward: false, 
             left: false, 
-            right: true,
+            right: false,
             look_angle: 0.0,
             shoot: false 
         }

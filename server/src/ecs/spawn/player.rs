@@ -10,7 +10,6 @@ const DEFAULT_SPEED: f32 = 1.0;
 
 pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs) -> Entity {
     let entity = ecs.world.reserve_entity();
-
     // Insert observed components
     ecs.observed_world().insert(entity, (
         Player {
