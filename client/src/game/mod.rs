@@ -1,36 +1,38 @@
-pub(crate) mod ecs;
 mod controls;
+pub(crate) mod ecs;
+mod gameui;
 mod minimap;
 pub(crate) mod net;
 mod raycast;
 mod texture;
-mod gameui;
+mod input;
 
 use crate::game::minimap::Minimap;
 use crate::game::raycast::*;
 use crate::program::state::ProgramState;
+use admin_client::program::Program;
 use notan::app::{App, Color, Graphics, Plugins};
 
+use anyhow::Context;
 use notan::draw::CreateDraw;
 use notan::prelude::*;
 use std::fmt::{Display, Formatter};
-use anyhow::Context;
-
 
 use notan::egui::{EguiPluginSugar, Grid, Ui, Window};
 
+use crate::game::ecs::ClientEcs;
+use crate::game::input::InputHandler;
+use crate::game::net::Connection;
+use crate::game::raycast::sprites::Sprite;
+use crate::game::texture::pixels::Pixels;
+use crate::game::texture::ATLAS_MONSTER;
+use common::ecs::components::{Player, Position};
+use common::map::Map;
+use common::{FromClientMessage, FromServerMessage};
 use fps_counter::FPSCounter;
 use glam::Vec2;
 use hecs::Entity;
 use itertools::Itertools;
-use common::ecs::components::{LookDirection, Player, Position};
-use common::{FromServerMessage};
-use common::map::Map;
-use crate::game::ecs::ClientEcs;
-use crate::game::net::Connection;
-use crate::game::raycast::sprites::Sprite;
-use crate::game::texture::ATLAS_MONSTER;
-use crate::game::texture::pixels::Pixels;
 
 use self::gameui::{GameUI, GameUiState};
 
@@ -43,6 +45,7 @@ pub struct Game {
     ecs: ClientEcs,
     connection: Connection,
     my_entity: Entity,
+    input: InputHandler,
 
     pixels: Pixels,
     minimap: Minimap,
@@ -55,7 +58,9 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(gfx: &mut Graphics, ecs: ClientEcs, connection: Connection, my_entity: Entity) -> Self {
+    pub fn new(
+        app: &mut App, gfx: &mut Graphics, ecs: ClientEcs, connection: Connection, my_entity: Entity,
+    ) -> Self {
         let (width, height) = gfx.size();
         let (width, height) = (width as usize, height as usize);
 
@@ -67,7 +72,7 @@ impl Game {
         let fps = FPSCounter::new();
 
         let ray_caster = RayCaster::new(width, height, FOV);
-        
+
         let ui_game_state = GameUiState {
             player_hp_max: 100,
             player_hp: 100,
@@ -78,11 +83,13 @@ impl Game {
 
         let ui = GameUI::new(ui_game_state, gfx);
 
+        let input = InputHandler::new(app);
 
         Game {
             ecs,
             connection,
             my_entity,
+            input,
 
             pixels,
             minimap,
@@ -102,27 +109,42 @@ impl Display for Game {
 }
 
 impl ProgramState for Game {
-    fn update(&mut self, _app: &mut App, _assets: &mut Assets, _plugins: &mut Plugins) -> anyhow::Result<()> {
-        let message = self.connection.receive()?;
+    fn update(
+        &mut self,
+        app: &mut App,
+        _assets: &mut Assets,
+        _plugins: &mut Plugins,
+    ) -> anyhow::Result<()> {
+        self.accept_messages()?;
 
-        if let Some(FromServerMessage::EcsChanges(changes)) = message {
-            for change in changes {
-                self.ecs.handle_protocol(change)?;
-            }
+        self.input.tick(app);
+        if let Some(state) = self.input.take_state() {
+            self.connection.send(FromClientMessage::UpdateInputs(state))?;
         }
+
+        self.ecs.tick(app.system_timer.delta_f32());
 
         Ok(())
     }
 
     fn draw(
         &mut self,
-        _app: &mut App,
+        app: &mut App,
         _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
     ) -> anyhow::Result<()> {
-        let perspective = self.ray_caster.perspective(0.0, 0.6, 0.0);
+        if self.input.mouse_locked() {
+            app.window().set_cursor(CursorIcon::None);
+        }
+
+        let perspective = self.ray_caster.perspective(self.input.up_down_angle(), 0.6, 0.0);
         let horizon = (0.5 * self.pixels.height() as f32 + perspective.y_offset) as usize;
+
+        let my_pos = self.ecs.world.query_one_mut::<&Position>(self.my_entity)
+            .context("Couldn't query for own player entity")?;
+        let my_pos = my_pos.0;
+        let my_dir = Vec2::from_angle(self.input.peek_state().look_angle);
 
         self.pixels.clear_with_column(|y| {
             if y <= horizon {
@@ -135,11 +157,6 @@ impl ProgramState for Game {
         // Draw canvas background
         let (width, height) = self.pixels.dimensions();
 
-        let (my_pos, my_dir) = self.ecs.world.query_one_mut::<(&Position, &LookDirection)>(self.my_entity)
-            .context("Couldn't query for own player entity")?;
-        let (my_pos, my_dir) = (my_pos.0, my_dir.0);
-
-
         self.ray_caster.draw_walls(
             &mut self.pixels,
             my_pos,
@@ -148,21 +165,19 @@ impl ProgramState for Game {
             &*self.ecs.resources.get::<Map>()?,
         );
 
-
-        let mut sprites = self.ecs.world.query_mut::<&Position>().with::<&Player>()
+        let mut sprites = self
+            .ecs
+            .world
+            .query_mut::<&Position>()
+            .with::<&Player>()
             .into_iter()
-            .filter(|(entity, _)| self.my_entity == *entity)
+            .filter(|(entity, _)| self.my_entity != *entity)
             .map(|(_, pos)| pos.0)
             .map(|pos| Sprite::new(&ATLAS_MONSTER[0], pos, Vec2::ONE, 0.0))
             .collect_vec();
 
-        self.ray_caster.draw_sprites(
-            &mut self.pixels,
-            my_pos,
-            my_dir,
-            perspective,
-            &mut sprites,
-        );
+        self.ray_caster
+            .draw_sprites(&mut self.pixels, my_pos, my_dir, perspective, &mut sprites);
 
         let mut draw = gfx.create_draw();
 
@@ -202,13 +217,19 @@ impl ProgramState for Game {
 
         gfx.render(&draw);
 
-
         // Render egui
         {
             puffin::profile_scope!("render egui");
 
             let out = plugins.egui(|ctx| {
-                Window::new("Debug")
+                if let Ok(mut server_ui) = self.ecs.resources.get_mut::<Program>() {
+                    Window::new("Server")
+                        .collapsible(true)
+                        .resizable(true)
+                        .show(ctx, |ui| server_ui.draw(ui, app));
+                }
+
+                Window::new("Client debug")
                     .collapsible(true)
                     .resizable(false)
                     .show(ctx, |ui| self.debug_ui(ui));
@@ -229,16 +250,31 @@ impl ProgramState for Game {
 
         Ok(())
     }
+
+    fn event(&mut self, _app: &mut App, _assets: &mut Assets, _plugins: &mut Plugins, event: Event) -> anyhow::Result<()> {
+        self.input.handle_event(event);
+        Ok(())
+    }
 }
 
 impl Game {
+    fn accept_messages(&mut self) -> anyhow::Result<()> {
+        while let Some(message) = self.connection.receive()? {
+            if let FromServerMessage::EcsChanges(changes) = message {
+                for change in changes {
+                    self.ecs.handle_protocol(change)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     fn debug_ui(&mut self, ui: &mut Ui) {
         if ui.checkbox(&mut self.profiler, "Profiler").changed() {
             puffin::set_scopes_on(self.profiler);
         };
 
-        Grid::new("debug_grid_1").show(ui, |_ui| {
-
-        });
+        Grid::new("debug_grid_1").show(ui, |_ui| {});
     }
 }

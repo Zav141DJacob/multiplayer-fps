@@ -4,7 +4,6 @@ use std::num::NonZeroU64;
 
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime};
 use crate::gun::Gun;
 
 use crate::{register_shared_components, bulk_attribute, UserID};
@@ -49,7 +48,7 @@ bulk_attribute! {
     pub struct Bullet;
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct InputState {
     pub forward: bool,
     pub backward: bool,
@@ -60,17 +59,3 @@ pub struct InputState {
     
     pub shoot: bool,
 } 
-
-impl Default for InputState {
-    fn default() -> Self {
-        InputState { 
-            forward: false, 
-            backward: false, 
-            left: false, 
-            right: false,
-            look_angle: 0.0,
-            shoot: false 
-        }
-
-    }
-}

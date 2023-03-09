@@ -9,6 +9,7 @@ use crate::game::texture::sampler::TextureSampler;
 pub mod pixels;
 pub mod sampler;
 pub mod draw_column;
+pub mod animated_texture;
 
 pub fn get_wall_texture(tex: Textured) -> &'static TextureSampler {
     // return &TEX_TEST2;
@@ -36,4 +37,8 @@ pub static TEX_TEST1: Lazy<TextureSampler> = Lazy::new(|| {
 
 pub static TEX_TEST2: Lazy<TextureSampler> = Lazy::new(|| {
     TextureSampler::try_from(include_bytes!("../../../assets/test2.png").as_slice()).unwrap()
+});
+
+pub static ATLAS_PLAYER: Lazy<Vec<TextureSampler>> = Lazy::new(|| {
+    TextureSampler::from_tiles(8, 7, 1, include_bytes!("../../../assets/player.png")).unwrap()
 });

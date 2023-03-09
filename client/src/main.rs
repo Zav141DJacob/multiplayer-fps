@@ -19,13 +19,17 @@ async fn main() -> anyhow::Result<()> {
     tracing::subscriber::set_global_default(subscriber)?;
 
     // Start up the windowing and game loop
-    let win = WindowConfig::new()
+    #[allow(unused_mut)]
+    let mut win = WindowConfig::new()
         .vsync(true)
+        .title("Multiplayer FPS")
         // .lazy_loop(true)
-        // .fullscreen(true)
         .high_dpi(false)
         .resizable(false)
         .size(1280, 720);
+
+    #[cfg(feature = "mouse-look")]
+    { win.fullscreen = true; }
 
     notan::init_with(Program::notan_setup)
         .add_config(win)

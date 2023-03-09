@@ -1,3 +1,4 @@
+use admin_client::program::Program;
 use anyhow::bail;
 use std::fmt::{Display, Formatter};
 use std::net::IpAddr;
@@ -33,9 +34,14 @@ impl Display for Connecting {
 }
 
 impl Connecting {
-    pub fn new(address: IpAddr, port: u16) -> anyhow::Result<Self> {
+    pub fn new(address: IpAddr, port: u16, server_ui: Option<Program>) -> anyhow::Result<Self> {
         let connection = Connection::new(address, port)?;
-        let ecs = ClientEcs::default();
+        let mut ecs = ClientEcs::default();
+
+        if let Some(su) = server_ui {
+            ecs.resources.insert(su);
+        }
+
         Ok(Self {
             start_time: Instant::now(),
             connection: Some(connection),
@@ -50,9 +56,9 @@ impl Connecting {
 impl ProgramState for Connecting {
     fn update(
         &mut self,
-        app: &mut App,
-        assets: &mut Assets,
-        plugins: &mut Plugins,
+        _app: &mut App,
+        _assets: &mut Assets,
+        _plugins: &mut Plugins,
     ) -> anyhow::Result<()> {
         let message = match self.connection.as_mut().unwrap().receive() {
             Ok(Some(message)) => message,
@@ -80,7 +86,6 @@ impl ProgramState for Connecting {
                     self.ecs.as_mut().unwrap().handle_protocol(change)?;
                 }
             }
-            _ => {}
         }
 
         Ok(())
@@ -88,8 +93,8 @@ impl ProgramState for Connecting {
 
     fn draw(
         &mut self,
-        app: &mut App,
-        assets: &mut Assets,
+        _app: &mut App,
+        _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
     ) -> anyhow::Result<()> {
@@ -130,7 +135,7 @@ impl ProgramState for Connecting {
 
     fn change_state(
         &mut self,
-        _app: &mut App,
+        app: &mut App,
         _assets: &mut Assets,
         gfx: &mut Graphics,
         _plugins: &mut Plugins,
@@ -159,7 +164,9 @@ impl ProgramState for Connecting {
 
         let ecs = self.ecs.take()?;
         let connection = self.connection.take()?;
-        let game = Game::new(gfx, ecs, connection, my_player_entity);
+        let game = Game::new(
+            app, gfx, ecs, connection, my_player_entity,
+        );
 
         Some(game.into())
     }

@@ -7,19 +7,13 @@ use std::{
 use admin_client::program::Program;
 use common::defaults::PORT;
 use notan::{
-    egui::{self, EguiPluginSugar, Id, Ui},
+    egui::{self, EguiPluginSugar, Id},
     prelude::{App, Assets, Color, Graphics, Plugins},
 };
 
 use crate::{connecting::Connecting, error::ErrorState, program::state::ProgramState};
 
 use super::Menu;
-
-// TODO: finish integrating server host UI
-pub fn host_server(app: &mut App, ui: &mut Ui, port: u16) {
-    let mut p = Program::new("127.0.0.1".parse().unwrap(), port, false);
-    // p.draw(ui, app);
-}
 
 enum NextState {
     Menu,
@@ -49,6 +43,8 @@ pub struct HostingMenu {
     port: String,
 
     processed_port: Option<u16>,
+
+    server: Option<Program>,
 }
 
 impl Display for HostingMenu {
@@ -64,6 +60,8 @@ impl HostingMenu {
             next_state: None,
             port: PORT.to_string(),
             processed_port: None,
+
+            server: None,
         }
     }
 
@@ -88,7 +86,7 @@ impl HostingMenu {
 impl ProgramState for HostingMenu {
     fn draw(
         &mut self,
-        app: &mut App,
+        _app: &mut App,
         _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
@@ -125,7 +123,13 @@ impl ProgramState for HostingMenu {
                             return;
                         }
 
-                        host_server(app, ui, self.processed_port.unwrap());
+                        let mut p = Program::new(
+                            "127.0.0.1".parse().unwrap(),
+                            self.processed_port.unwrap(),
+                            false,
+                        );
+                        p.run();
+                        self.server = Some(p);
 
                         self.next_state = Some(NextState::Game);
                     }
@@ -139,7 +143,14 @@ impl ProgramState for HostingMenu {
                                     return;
                                 }
 
-                                host_server(app, ui, self.processed_port.unwrap());
+                                let mut p = Program::new(
+                                    "127.0.0.1".parse().unwrap(),
+                                    self.processed_port.unwrap(),
+                                    false,
+                                );
+                                p.run();
+                                self.server = Some(p);
+
                                 self.next_state = Some(NextState::Game);
                             }
                             if ui.button("Back").clicked() {
@@ -172,6 +183,7 @@ impl ProgramState for HostingMenu {
                 let state = Connecting::new(
                     IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
                     self.processed_port.unwrap(),
+                    self.server.clone(),
                 )
                 .map(|v| v.into())
                 .unwrap_or_else(|err| ErrorState::from(&*err).into());
