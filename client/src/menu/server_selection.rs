@@ -184,10 +184,13 @@ impl ProgramState for ServerSelectionMenu {
     ) -> Option<Box<dyn ProgramState>> {
         match self.next_state.take()? {
             NextState::Game => {
-                let state =
-                    Connecting::new(self.processed_ip.unwrap(), self.processed_port.unwrap())
-                        .map(|v| v.into())
-                        .unwrap_or_else(|err| ErrorState::from(&*err).into());
+                let state = Connecting::new(
+                    self.processed_ip.unwrap(),
+                    self.processed_port.unwrap(),
+                    None,
+                )
+                .map(|v| v.into())
+                .unwrap_or_else(|err| ErrorState::from(&*err).into());
                 Some(state)
             }
             NextState::Menu => Some(Menu::new().into()),
