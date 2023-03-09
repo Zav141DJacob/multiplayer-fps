@@ -68,15 +68,15 @@ impl ServerSystems {
                                         to_pos.x = pos.x;
                                     },
                                     Direction::Right => {
-                                        to_pos.x = x_floored_f + (1.0 - PLAYER_SIZE / 2.0);
+                                        to_pos.x = x_floored_f + (PLAYER_SIZE / 2.0);
                                         to_pos.y = pos.y;
                                     },
                                     Direction::Down => {
-                                        to_pos.y = y_floored_f + PLAYER_SIZE / 2.0;
+                                        to_pos.y = y_floored_f + (PLAYER_SIZE / 2.0);
                                         to_pos.x = pos.x;
                                     },
                                     Direction::Left => {
-                                        to_pos.x = x_floored_f + PLAYER_SIZE / 2.0; 
+                                        to_pos.x = x_floored_f + (1.0 - PLAYER_SIZE / 2.0); 
                                         to_pos.y = pos.y;
                                     }
                                 }
@@ -114,12 +114,12 @@ impl ServerSystems {
                 Vec2::new(position.x + 1.0, position.y - 1.0)
             ]),
             Direction::Down => Some([
-                Vec2::new(position.x, position.y - 1.0),
-                Vec2::new(position.x, position.y - 1.0)
+                Vec2::new(position.x, position.y + 1.0),
+                Vec2::new(position.x + 1.0, position.y + 1.0)
             ]),
             Direction::Left => Some([
                 Vec2::new(position.x, position.y),
-                Vec2::new(position.x, position.y)
+                Vec2::new(position.x, position.y - 1.0)
             ]),
             _ => None
         }
@@ -130,10 +130,10 @@ impl ServerSystems {
         // 5 - up
         // 7 - right
         match i {
-            1 => Some(Direction::Down),
-            3 => Some(Direction::Left),
-            5 => Some(Direction::Up),
-            7 => Some(Direction::Right),
+            0 => Some(Direction::Up),
+            2 => Some(Direction::Left),
+            4 => Some(Direction::Down),
+            6 => Some(Direction::Right),
             _ => None
         }
     }
