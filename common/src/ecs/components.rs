@@ -4,7 +4,6 @@ use std::num::NonZeroU64;
 
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime};
 use crate::gun::Gun;
 
 use crate::{register_shared_components, bulk_attribute, UserID};

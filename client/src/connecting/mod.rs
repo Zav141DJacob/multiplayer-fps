@@ -50,9 +50,9 @@ impl Connecting {
 impl ProgramState for Connecting {
     fn update(
         &mut self,
-        app: &mut App,
-        assets: &mut Assets,
-        plugins: &mut Plugins,
+        _app: &mut App,
+        _assets: &mut Assets,
+        _plugins: &mut Plugins,
     ) -> anyhow::Result<()> {
         let message = match self.connection.as_mut().unwrap().receive() {
             Ok(Some(message)) => message,
@@ -88,8 +88,8 @@ impl ProgramState for Connecting {
 
     fn draw(
         &mut self,
-        app: &mut App,
-        assets: &mut Assets,
+        _app: &mut App,
+        _assets: &mut Assets,
         gfx: &mut Graphics,
         plugins: &mut Plugins,
     ) -> anyhow::Result<()> {
