@@ -23,7 +23,7 @@ async fn main() -> anyhow::Result<()> {
         .vsync(true)
         .title("Multiplayer FPS")
         // .lazy_loop(true)
-        .fullscreen(true)
+        // .fullscreen(true)
         .high_dpi(false)
         .resizable(false)
         .size(1280, 720);
