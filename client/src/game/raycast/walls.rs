@@ -120,7 +120,7 @@ fn ray_algorithm(
         (1.0 + (ray_dir.x / ray_dir.y) * (ray_dir.x / ray_dir.y)).sqrt(),
     );
 
-    let mut map_check = IVec2::new(ray_start.x as i32, ray_start.y as i32);
+    let mut map_check = IVec2::new(ray_start.x.floor() as i32, ray_start.y.floor() as i32);
     let mut ray_length_1d = Vec2::default();
 
     let mut map_step = IVec2::new(0, 0);
