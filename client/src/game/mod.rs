@@ -171,7 +171,7 @@ impl ProgramState for Game {
             .query_mut::<&Position>()
             .with::<&Player>()
             .into_iter()
-            .filter(|(entity, _)| self.my_entity == *entity)
+            .filter(|(entity, _)| self.my_entity != *entity)
             .map(|(_, pos)| pos.0)
             .map(|pos| Sprite::new(&ATLAS_MONSTER[0], pos, Vec2::ONE, 0.0))
             .collect_vec();
