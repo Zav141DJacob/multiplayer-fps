@@ -28,6 +28,7 @@ register_shared_components! {
     HeldWeapon,
     Player,
     Bullet,
+    WeaponCrate,
 }
 
 // This macro simply adds derives for all these structs.
@@ -46,6 +47,7 @@ bulk_attribute! {
     }
 
     pub struct Bullet;
+    pub struct WeaponCrate (pub Gun);
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
