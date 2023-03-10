@@ -83,8 +83,8 @@ impl Map {
             for y in 0..self.height {
                 if self.cell(x, y) == MapCell::Empty {
                     available_coords.push(Position(Vec2 {
-                        x: x as f32,
-                        y: y as f32,
+                        x: x as f32 + 0.5,
+                        y: y as f32 + 0.5,
                     }));
                 }
             }

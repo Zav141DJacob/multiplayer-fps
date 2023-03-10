@@ -16,3 +16,9 @@ pub fn spawn_weapon_crate(ecs: &mut ServerEcs) -> Entity {
 
     entity
 }
+
+pub fn spawn_weapon_crates_init(ecs: &mut ServerEcs) {
+    for _ in 0..4 {
+        spawn_weapon_crate(ecs);
+    }
+}
