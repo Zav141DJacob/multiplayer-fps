@@ -21,7 +21,7 @@ use std::fmt::{Display, Formatter};
 
 use notan::egui::{EguiPluginSugar, Grid, Ui, Window};
 
-use crate::game::ecs::ClientEcs;
+use crate::game::ecs::{ClientEcs, MyEntity};
 use crate::game::input::InputHandler;
 use crate::game::net::Connection;
 use crate::game::raycast::sprites::Sprite;
@@ -34,6 +34,8 @@ use fps_counter::FPSCounter;
 use glam::Vec2;
 use hecs::Entity;
 use itertools::Itertools;
+use crate::game::ecs::component::RenderSprite;
+use crate::game::ecs::systems::ClientSystems;
 
 use self::gameui::{GameUI, GameUiState};
 
@@ -60,10 +62,12 @@ pub struct Game {
 
 impl Game {
     pub fn new(
-        app: &mut App, gfx: &mut Graphics, ecs: ClientEcs, connection: Connection, my_entity: Entity,
+        app: &mut App, gfx: &mut Graphics, mut ecs: ClientEcs, connection: Connection, my_entity: Entity,
     ) -> Self {
         let (width, height) = gfx.size();
         let (width, height) = (width as usize, height as usize);
+
+        ecs.resources.insert(MyEntity(my_entity));
 
         let pixels = Pixels::new(width, height, gfx);
         let mut minimap = Minimap::new(ecs.resources.get::<Map>().unwrap().clone(), gfx);
@@ -127,7 +131,8 @@ impl ProgramState for Game {
             self.connection.send(FromClientMessage::UpdateInputs(state))?;
         }
 
-        self.ecs.tick(app.system_timer.delta_f32());
+        let dt = app.system_timer.delta_f32();
+        self.ecs.tick(dt);
 
         Ok(())
     }
@@ -170,15 +175,11 @@ impl ProgramState for Game {
             &*self.ecs.resources.get::<Map>()?,
         );
 
-        let mut sprites = self
-            .ecs
-            .world
-            .query_mut::<&Position>()
-            .with::<&Player>()
+        let mut sprites = self.ecs.world.query_mut::<(&Position, &RenderSprite)>()
             .into_iter()
             .filter(|(entity, _)| self.my_entity != *entity)
-            .map(|(_, pos)| pos.0)
-            .map(|pos| Sprite::new(&ATLAS_MONSTER[0], pos, Vec2::ONE, 0.0))
+            .map(|(_, (pos, sprite))| (pos.0, sprite.tex))
+            .map(|(pos, tex)| Sprite::new(tex, pos, Vec2::ONE, 0.0))
             .collect_vec();
 
         self.ray_caster

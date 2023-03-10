@@ -2,6 +2,7 @@
 use once_cell::sync::Lazy;
 
 use common::map::Textured;
+use crate::game::texture::animated_texture::AnimatedTexture;
 
 
 use crate::game::texture::sampler::TextureSampler;
@@ -41,4 +42,22 @@ pub static TEX_TEST2: Lazy<TextureSampler> = Lazy::new(|| {
 
 pub static ATLAS_PLAYER: Lazy<Vec<TextureSampler>> = Lazy::new(|| {
     TextureSampler::from_tiles(8, 7, 1, include_bytes!("../../../assets/player.png")).unwrap()
+});
+
+pub static ANIMATED_PLAYER: Lazy<AnimatedTexture> = Lazy::new(|| {
+    AnimatedTexture::new(&ATLAS_PLAYER)
+        .register_state("standing", 0.5, vec![
+        vec![0, 1, 2, 3, 4, 5, 6, 7],
+    ])
+        .register_state("running", 0.15, vec![
+            vec![8, 9, 10, 11, 12, 13, 14, 15],
+            vec![16, 17, 18, 19, 20, 21, 22, 23],
+            vec![24, 25, 26, 27, 28, 29, 30, 31],
+            vec![32, 33, 34, 35, 36, 37, 38, 39],
+        ])
+        .register_state("shooting", 0.1, vec![
+            vec![48],
+            vec![49],
+            vec![50],
+        ])
 });
