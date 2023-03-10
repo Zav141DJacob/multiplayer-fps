@@ -3,6 +3,7 @@ use crate::ecs::ServerEcs;
 mod physics;
 mod input;
 mod shoot;
+mod pick_up;
 
 /// Server-side systems are implemented onto this
 pub struct ServerSystems;
@@ -14,5 +15,6 @@ impl ServerSystems {
         ServerSystems::shoot_system(ecs, dt);
         ServerSystems::shoot_cooldown_system(ecs, dt);
         ServerSystems::bullet_despawn_system(ecs, dt);
+        ServerSystems::pick_up_system(ecs, dt);
     }
 }
