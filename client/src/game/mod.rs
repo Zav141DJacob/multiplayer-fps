@@ -11,6 +11,7 @@ use crate::game::minimap::Minimap;
 use crate::game::raycast::*;
 use crate::program::state::ProgramState;
 use admin_client::program::Program;
+use common::defaults::{PLAYER_MAX_HP};
 use notan::app::{App, Color, Graphics, Plugins};
 
 use anyhow::Context;
@@ -26,7 +27,7 @@ use crate::game::net::Connection;
 use crate::game::raycast::sprites::Sprite;
 use crate::game::texture::pixels::Pixels;
 use crate::game::texture::ATLAS_MONSTER;
-use common::ecs::components::{Player, Position};
+use common::ecs::components::{Player, Position, Health};
 use common::map::Map;
 use common::{FromClientMessage, FromServerMessage};
 use fps_counter::FPSCounter;
@@ -73,14 +74,18 @@ impl Game {
 
         let ray_caster = RayCaster::new(width, height, FOV);
 
+        let player_hp = *ecs.world.get::<&Health>(my_entity).unwrap();
+
+        // TODO: link rest of the info to ecs
         let ui_game_state = GameUiState {
-            player_hp_max: 100,
-            player_hp: 100,
+            player_hp_max: PLAYER_MAX_HP,
+            player_hp: player_hp.0,
             weapon_name: "SCAR".to_string(),
             max_ammo: 25,
             ammo: 15,
         };
 
+        // TODO: make GameUi actually use ecs
         let ui = GameUI::new(ui_game_state, gfx);
 
         let input = InputHandler::new(app);

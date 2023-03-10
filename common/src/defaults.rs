@@ -6,6 +6,8 @@ pub const PORT: u16 = 1337;
 pub const MAP_WIDTH: usize = 10;
 pub const MAP_HEIGHT: usize = 10;
 
+pub const PLAYER_MAX_HP: u32 = 100;
+pub const DEFAULT_PLAYER_HP: u32 = PLAYER_MAX_HP;
 pub const PLAYER_SPEED: f32 = 0.1;
 
 pub const TICKS_PER_SECOND: u64 = 20;
