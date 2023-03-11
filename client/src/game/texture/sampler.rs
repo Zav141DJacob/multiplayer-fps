@@ -139,7 +139,7 @@ impl TextureSampler {
     /// Samples a given number of colors in column `u` according to a range of `v`.
     ///
     /// Here are some pseudocode examples:
-    /// ```rust,no-run
+    /// ```rust,no_run
     /// let tex = GameTexture::from(img); // Single-column texture with colors ABCD
     /// tex.sample_column(0, 0.0..1.0, 4) == ABCD;
     /// tex.sample_column(0, 0.0..0.5, 4) == AABB;
