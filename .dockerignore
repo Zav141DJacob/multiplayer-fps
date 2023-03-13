@@ -1,0 +1,6 @@
+/target
+/.idea
+/.trunk
+docker-compose.yml
+Dockerfile
+README.md
