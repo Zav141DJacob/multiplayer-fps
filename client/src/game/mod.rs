@@ -26,7 +26,6 @@ use crate::game::input::InputHandler;
 use crate::game::net::Connection;
 use crate::game::raycast::sprites::Sprite;
 use crate::game::texture::pixels::Pixels;
-use crate::game::texture::ATLAS_MONSTER;
 use common::ecs::components::{Player, Position, Health};
 use common::map::Map;
 use common::{FromClientMessage, FromServerMessage};
@@ -34,8 +33,7 @@ use fps_counter::FPSCounter;
 use glam::Vec2;
 use hecs::Entity;
 use itertools::Itertools;
-use crate::game::ecs::component::RenderSprite;
-use crate::game::ecs::systems::ClientSystems;
+use crate::game::ecs::component::{Height, RenderSprite, Scale};
 
 use self::gameui::{GameUI, GameUiState};
 
