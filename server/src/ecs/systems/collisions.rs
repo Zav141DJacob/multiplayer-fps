@@ -4,11 +4,11 @@ use std::collections::HashMap;
 use crate::ecs::ServerEcs;
 use crate::{ecs::systems::ServerSystems};
 use common::defaults::PLAYER_SIZE;
-use common::ecs::components::{Position, Player};
+use common::ecs::components::{Position, Player, Bullet};
 use common::map::{Map, MapCell};
 use glam::Vec2;
-use hecs::QueryMut;
-
+use hecs::{QueryMut, Entity};
+use std::any::type_name;
 pub enum Direction {
     Up,
     Right,
@@ -18,17 +18,67 @@ pub enum Direction {
 
 impl ServerSystems {
     pub fn collision_system(ecs: &mut ServerEcs, _dt: f32) {
-        Self::wall_collisions(ecs);
+
+        // let bullet_query = ecs.world.query::<(&Bullet, &mut Position)>();
+
+        Self::prepare_wall_collisions::<&Player>(ecs);
+        Self::prepare_wall_collisions::<&Bullet>(ecs);
+        // Self::bullet_player_collisions(ecs);
     }
 
-    fn wall_collisions(ecs: &mut ServerEcs) {
-        let player_query = ecs.world.query_mut::<(&Player, &mut Position)>();
-        let map = (ecs.resources.get::<Map>().unwrap()).clone();
-        for (entity, (player, pos)) in player_query {
+    // fn bullet_player_collisions(ecs: &mut ServerEcs) {
+    //     let query = ecs.world.query_mut::<(&, &mut Position)>();
+
+    // }
+
+    fn prepare_wall_collisions<T: hecs::Query + hecs::Component>(ecs: &mut ServerEcs) {
+        let generic_type = type_name::<T>().split("::").last().unwrap();
+        let query = ecs.world.query_mut::<(T, &mut Position)>();
+        let map = ecs.resources.get::<Map>().unwrap().clone();
+        let mut player_positions: Vec<Vec2> = Vec::new();
+        let mut to_remove: Vec<Entity> = Vec::new();
+        for (entity, (_, pos)) in query {
             let mut pos = ecs.observer.observe_component(entity, pos);
-            dbg!(pos.0);
             let pos = &mut pos.0;
-            dbg!(&pos);
+            let to_pos = Self::wall_collision(map.clone(), pos);
+            match generic_type {
+                "Player" => {
+                    player_positions.push(to_pos);
+                    *pos = to_pos;
+                },
+                "Bullet" => {
+                    if *pos != to_pos {
+                        to_remove.push(entity);
+
+                    }
+                },
+                _ => panic!()
+            }
+        }
+        for e in to_remove {
+            ecs.observed_world().despawn(e).unwrap();
+        }
+        to_remove = Vec::new();
+        if generic_type == "Player" {
+            let bullet_query = ecs.world.query_mut::<(&Bullet, &Position)>();
+
+            for (entity, (_, bullet_pos)) in bullet_query {
+                for player_pos in &player_positions {
+                    if player_pos.distance(bullet_pos.0) > 0.2 {
+                        // todo
+                        //  add take damage function here
+                        to_remove.push(entity);
+                    }
+                }
+            }
+        }
+        for e in to_remove {
+            ecs.observed_world().despawn(e).unwrap();
+        }
+
+    }
+
+    fn wall_collision(map: Map, pos: &mut Vec2) -> Vec2{
 
             let mut to_pos = pos.clone();
 
@@ -40,7 +90,7 @@ impl ServerSystems {
 
             // let cell_position = Vec2::new(x_floored, y_floored);
 
-            dbg!(y_floored_int);
+            // dbg!(y_floored_int);
             let cells: Vec<(Vec2, MapCell)> = vec![
                 (Vec2::new(x_floored_f, y_floored_f + 1.0), map.cell(x_floored_int as usize, (y_floored_int + 1) as usize)),
                 (Vec2::new(x_floored_f + 1.0, y_floored_f + 1.0), map.cell((x_floored_int + 1) as usize, (y_floored_int + 1) as usize)),
@@ -86,8 +136,8 @@ impl ServerSystems {
                     
                 }
             }
-            *pos = to_pos;
-        }
+            to_pos
+        // }
     }
 
     //  Checks if a line is inside a circle
