@@ -1,4 +1,4 @@
-use std::{string, f32::consts::PI};
+use std::f32::consts::PI;
 
 use notan::egui::epaint::ahash::{HashMap, HashMapExt};
 
@@ -25,45 +25,46 @@ pub struct AnimatedTextureState {
 }
 
 impl AnimatedTexture {
-    pub fn new(sprite_sheet: &'static [TextureSampler]) -> Self{
-        Self { 
+    pub fn new(sprite_sheet: &'static [TextureSampler]) -> Self {
+        Self {
             sprite_sheet,
             states: HashMap::new(),
         }
     }
 
     pub fn register_state(mut self, name: &str, frame_time: f32, states: Vec<Vec<usize>>) -> Self {
-        self.states.insert(
-            name.to_string(),
-            AnimationMap { 
-                states,
-                frame_time,
-            }
-        );
+        self.states
+            .insert(name.to_string(), AnimationMap { states, frame_time });
         self
     }
 
     pub fn get_state(&'static self, initial_state: &str) -> AnimatedTextureState {
-        AnimatedTextureState { 
-            tex: self, 
-            cur_state: self.states.get(initial_state).expect("No animation states exist, with that name, or empty"),
+        AnimatedTextureState {
+            tex: self,
+            cur_state: self
+                .states
+                .get(initial_state)
+                .expect("No animation states exist, with that name, or empty"),
             cur_state_str: initial_state.to_string(),
             cur_frame: 0,
-            frame_time_mult: 1.0, 
-            current_frame_accumulator: 0.0
+            frame_time_mult: 1.0,
+            current_frame_accumulator: 0.0,
         }
     }
 }
 
 impl AnimatedTextureState {
-    
     pub fn set_state(&mut self, name: &str, speed_mult: f32) {
         if self.cur_state_str == name {
-            return
+            return;
         }
 
         self.cur_state_str = name.to_string();
-        self.cur_state = self.tex.states.get(name).expect("No animation states exist, with that name, or empty");
+        self.cur_state = self
+            .tex
+            .states
+            .get(name)
+            .expect("No animation states exist, with that name, or empty");
         self.cur_frame = 0;
         self.current_frame_accumulator = 0.0;
         self.frame_time_mult = 1.0 / speed_mult;
@@ -84,7 +85,6 @@ impl AnimatedTextureState {
             self.cur_frame += 1;
             self.cur_frame %= self.cur_state.states.len();
         }
-
     }
 
     fn get_angled_frame(&mut self, look_angle: f32) -> usize {

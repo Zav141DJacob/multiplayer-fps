@@ -54,7 +54,7 @@ impl ServerSelectionMenu {
     pub fn new() -> ServerSelectionMenu {
         ServerSelectionMenu {
             next_state: None,
-            ip: format!("{}:{}", IP.to_string(), PORT.to_string()),
+            ip: format!("{IP}:{PORT}"),
 
             processed_ip: None,
             errors: Vec::new(),

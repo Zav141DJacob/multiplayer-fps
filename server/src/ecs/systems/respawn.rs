@@ -10,7 +10,7 @@ impl ServerSystems {
             .query_mut::<(&mut Position, &Health)>();
 
         for (e, (p, h)) in player_query {
-            if h.0 <= 0 {
+            if h.0 == 0 {
                 let mut p = ecs.observer.observe_component(e, p);
                 *p = ecs.resources.get::<Map>().unwrap().random_empty_spot();
             }

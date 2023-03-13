@@ -118,34 +118,28 @@ impl Server {
         let logger = self.ecs.resources.get::<Logger>().unwrap().clone();
         let listener = self.listener.take().unwrap();
 
-        listener.for_each(move |event| {
-            match event {
-                NodeEvent::Signal(signal) => match signal {
-                    Signal::Tick => {
-                        self.handle_ticks();
-                    }
-                    _ => (), // I put the Signal enum inside common, so I would like some input on
-                             // if we should merge Signals from client as well
-                },
-                NodeEvent::Network(net_event) => {
-                    if let NetEvent::Message(endpoint, input_data) = net_event {
-                        let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
+        listener.for_each(move |event| match event {
+            NodeEvent::Signal(signal) => match signal {
+                Signal::Tick => {
+                    self.handle_ticks();
+                }
+            },
+            NodeEvent::Network(net_event) => {
+                if let NetEvent::Message(endpoint, input_data) = net_event {
+                    let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
 
-                        logger.log(format!("Event {message:?}"));
+                    logger.log(format!("Event {message:?}"));
 
-                        match message {
-                            FromClientMessage::Ping => {
-                                events::ping::execute(&logger, &self.handler, endpoint).unwrap()
-                            }
-                            FromClientMessage::Leave => {
-                                events::leave::execute(self, endpoint).unwrap()
-                            }
-                            FromClientMessage::Join => {
-                                events::join::execute(self, endpoint).unwrap();
-                            }
-                            FromClientMessage::UpdateInputs(updated_input_state) => {
-                                events::update_inputs::execute(self, updated_input_state, endpoint);
-                            }
+                    match message {
+                        FromClientMessage::Ping => {
+                            events::ping::execute(&logger, &self.handler, endpoint).unwrap()
+                        }
+                        FromClientMessage::Leave => events::leave::execute(self, endpoint).unwrap(),
+                        FromClientMessage::Join => {
+                            events::join::execute(self, endpoint).unwrap();
+                        }
+                        FromClientMessage::UpdateInputs(updated_input_state) => {
+                            events::update_inputs::execute(self, updated_input_state, endpoint);
                         }
                     }
                 }
