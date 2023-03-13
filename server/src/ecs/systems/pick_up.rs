@@ -18,12 +18,14 @@ impl ServerSystems {
             .map(|(e, (&p, &c))| (e, p, c))
             .collect::<Vec<_>>();
 
-        for p in player_query {
+        for mut p in player_query {
             for c in &crate_query {
                 if (p.1.0.x - c.1.0.x).abs() < 0.3 && (p.1.0.y - c.1.0.y).abs() < 0.3 {
-                    let e = ecs.world.entity(p.0).unwrap();
-                    e.get::<&mut HeldWeapon>().unwrap().0 = c.2.0;
-                    e.get::<&mut HeldWeapon>().unwrap().0.recharge();
+                    {
+                        let mut w = ecs.observer.observe_component(p.0, &mut p.2);
+                        w.0 = c.2.0;
+                        w.0.recharge(); // to be replaced with reload
+                    }
                     ecs.observed_world().despawn(c.0).unwrap();
                     println!("a weapon was picked up");
                 }
