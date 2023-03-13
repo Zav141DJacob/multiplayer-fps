@@ -1,7 +1,6 @@
 use std::{
     fmt::{Display, Formatter},
-    net::{AddrParseError, IpAddr},
-    num::ParseIntError,
+    net::{SocketAddr, ToSocketAddrs},
 };
 
 use common::defaults::{IP, PORT};
@@ -20,29 +19,14 @@ enum NextState {
 }
 
 #[derive(Clone)]
-enum InputErrors {
-    Port(ParseIntError),
-    Ip(AddrParseError),
-}
-
-impl ToString for InputErrors {
-    fn to_string(&self) -> String {
-        match self {
-            InputErrors::Port(e) => e.to_string(),
-            InputErrors::Ip(e) => e.to_string(),
-        }
-    }
-}
-
-#[derive(Clone)]
 struct ErrorWindow {
-    error: InputErrors,
+    error: String,
     id: u16,
     is_open: bool,
 }
 
 impl ErrorWindow {
-    pub fn new(error: InputErrors, id: u16) -> ErrorWindow {
+    pub fn new(error: String, id: u16) -> ErrorWindow {
         ErrorWindow {
             error,
             id,
@@ -56,10 +40,8 @@ pub struct ServerSelectionMenu {
     errors: Vec<ErrorWindow>,
     next_state: Option<NextState>,
     ip: String,
-    port: String,
 
-    processed_ip: Option<IpAddr>,
-    processed_port: Option<u16>,
+    processed_ip: Option<SocketAddr>,
 }
 
 impl Display for ServerSelectionMenu {
@@ -72,11 +54,9 @@ impl ServerSelectionMenu {
     pub fn new() -> ServerSelectionMenu {
         ServerSelectionMenu {
             next_state: None,
-            ip: IP.to_string(),
-            port: PORT.to_string(),
+            ip: format!("{}:{}", IP.to_string(), PORT.to_string()),
 
             processed_ip: None,
-            processed_port: None,
             errors: Vec::new(),
         }
     }
@@ -87,20 +67,11 @@ impl ServerSelectionMenu {
             None => 0,
         };
 
-        self.processed_port = match self.port.parse() {
-            Ok(p) => Some(p),
+        self.processed_ip = match self.ip.to_socket_addrs() {
+            Ok(mut ip) => Some(ip.next().unwrap()),
             Err(error) => {
                 self.errors
-                    .push(ErrorWindow::new(InputErrors::Port(error), new_id()));
-                return false;
-            }
-        };
-
-        self.processed_ip = match self.ip.parse() {
-            Ok(ip) => Some(ip),
-            Err(error) => {
-                self.errors
-                    .push(ErrorWindow::new(InputErrors::Ip(error), new_id()));
+                    .push(ErrorWindow::new(error.to_string(), new_id()));
                 return false;
             }
         };
@@ -120,12 +91,7 @@ impl ProgramState for ServerSelectionMenu {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 for error in self.errors.iter_mut() {
-                    let title = match error.error {
-                        InputErrors::Port(_) => "Error: Invalid port",
-                        InputErrors::Ip(_) => "Error: Invalid IP",
-                    };
-
-                    egui::Window::new(title)
+                    egui::Window::new("Error")
                         .id(Id::new(error.id))
                         .open(&mut error.is_open)
                         .show(ctx, |ui| ui.label(error.error.to_string()));
@@ -144,7 +110,6 @@ impl ProgramState for ServerSelectionMenu {
 
                     ui.label("IP & Port:");
                     ui.text_edit_singleline(&mut self.ip);
-                    ui.text_edit_singleline(&mut self.port);
 
                     ui.add_space(10.0);
                     ui.vertical_centered(|ui| {
@@ -184,13 +149,10 @@ impl ProgramState for ServerSelectionMenu {
     ) -> Option<Box<dyn ProgramState>> {
         match self.next_state.take()? {
             NextState::Game => {
-                let state = Connecting::new(
-                    self.processed_ip.unwrap(),
-                    self.processed_port.unwrap(),
-                    None,
-                )
-                .map(|v| v.into())
-                .unwrap_or_else(|err| ErrorState::from(&*err).into());
+                let processed = self.processed_ip.unwrap();
+                let state = Connecting::new(processed.ip(), processed.port(), None)
+                    .map(|v| v.into())
+                    .unwrap_or_else(|err| ErrorState::from(&*err).into());
                 Some(state)
             }
             NextState::Menu => Some(Menu::new().into()),
