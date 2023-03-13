@@ -40,16 +40,18 @@ impl ServerSystems {
         for (entity, (_, pos)) in query {
             let mut pos = ecs.observer.observe_component(entity, pos);
             let pos = &mut pos.0;
-            let to_pos = Self::wall_collision(map.clone(), pos);
             match generic_type {
                 "Player" => {
+                    let to_pos = Self::wall_collision(map.clone(), pos, PLAYER_SIZE);
+
                     player_positions.push(to_pos);
                     *pos = to_pos;
                 },
                 "Bullet" => {
+                    let to_pos = Self::wall_collision(map.clone(), pos, 0.0);
+
                     if *pos != to_pos {
                         to_remove.push(entity);
-
                     }
                 },
                 _ => panic!()
@@ -64,11 +66,11 @@ impl ServerSystems {
 
             for (entity, (_, bullet_pos)) in bullet_query {
                 for player_pos in &player_positions {
-                    if player_pos.distance(bullet_pos.0) > 0.125 {
-                        // todo
-                        //  add take damage function here
-                        to_remove.push(entity);
-                    }
+                    // if player_pos.distance(bullet_pos.0) > 0.0 {
+                    //     // todo
+                    //     //  add take damage function here
+                    //     to_remove.push(entity);
+                    // }
                 }
             }
         }
@@ -78,7 +80,7 @@ impl ServerSystems {
 
     }
 
-    fn wall_collision(map: Map, pos: &mut Vec2) -> Vec2{
+    fn wall_collision(map: Map, pos: &mut Vec2, size: f32) -> Vec2{
 
             let mut to_pos = pos.clone();
 
@@ -114,19 +116,19 @@ impl ServerSystems {
                             if Self::in_circle(&side_vec, &pos) {
                                 match side {
                                     Direction::Up => {
-                                        to_pos.y = y_floored_f + (1.0 - PLAYER_SIZE / 2.0);
+                                        to_pos.y = y_floored_f + (1.0 - size / 2.0);
                                         to_pos.x = pos.x;
                                     },
                                     Direction::Right => {
-                                        to_pos.x = x_floored_f + (PLAYER_SIZE / 2.0);
+                                        to_pos.x = x_floored_f + (size / 2.0);
                                         to_pos.y = pos.y;
                                     },
                                     Direction::Down => {
-                                        to_pos.y = y_floored_f + (PLAYER_SIZE / 2.0);
+                                        to_pos.y = y_floored_f + (size / 2.0);
                                         to_pos.x = pos.x;
                                     },
                                     Direction::Left => {
-                                        to_pos.x = x_floored_f + (1.0 - PLAYER_SIZE / 2.0); 
+                                        to_pos.x = x_floored_f + (1.0 - size / 2.0); 
                                         to_pos.y = pos.y;
                                     }
                                 }
