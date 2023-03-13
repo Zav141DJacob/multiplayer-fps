@@ -1,7 +1,7 @@
 use glam::Vec2;
-use rand::Rng;
+use rand::{Rng, thread_rng};
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+use std::{str::FromStr};
 
 use crate::ecs::components::Position;
 
@@ -10,6 +10,12 @@ pub struct Map {
     pub width: usize,
     pub height: usize,
     pub data: Vec<MapCell>,
+}
+
+#[derive(Debug, Clone, PartialEq )]
+struct Skip {
+    pub x: usize,
+    pub y: usize
 }
 
 #[rustfmt::skip::macros(vec)]
@@ -54,27 +60,107 @@ impl Map {
         }
     }
 
-    pub fn gen(width: usize, height: usize) -> Self {
-        let mut map = Map::new(width, height);
-        map.data = vec![MapCell::Wall(Wall::SolidColor([1.0, 1.0, 1.0])); width * height];
+    fn set(&mut self, x: usize, y: usize, value: MapCell) {
+        assert!(x < self.width);
+        assert!(y < self.height);
+        self.data[y * self.width + x] = value;
+    }
 
-        for r in 1..map.height {
-            for c in 1..map.width {
-                if rand::random() {
-                    map.data[r * map.width + c - 1] = MapCell::Empty
-                } else {
-                    map.data[(r - 1) * map.width + c] = MapCell::Empty
+    fn divide(&mut self, x1: usize, x2: usize, y1: usize, y2: usize, mut skiplist: Vec<Skip>, horiz: bool) {
+        if x2 <= x1 || y2 <= y1 {
+            return;
+        }
+
+        let width = x2 - x1;
+        let height = y2 - y1;
+
+        if horiz && width < 2 || !horiz && height < 2 {
+            return;
+        }
+
+        let mut rng = thread_rng();
+    
+        if horiz {
+            let wall_y = y1 + (height / 2);
+            let door_x1 = x1 + rng.gen_range(0..width);
+            let door_x2 = x1 + rng.gen_range(0..width);
+            skiplist.push(Skip { x: door_x1, y: wall_y });
+            skiplist.push(Skip { x: door_x2, y: wall_y });
+            if wall_y > 0 {
+                skiplist.push(Skip { x: door_x1, y: wall_y - 1 });
+                skiplist.push(Skip { x: door_x2, y: wall_y - 1 });
+            }
+            if wall_y < height - 1 {
+                skiplist.push(Skip { x: door_x1, y: wall_y + 1 });
+                skiplist.push(Skip { x: door_x2, y: wall_y + 1 });
+            }
+            for x in x1..x2 {
+                if !skiplist.contains(&Skip { x: x, y: wall_y }) {
+                    self.set(x, wall_y, MapCell::Wall(Wall::Textured(Textured::GrayBrick)));
+                }
+            }
+            self.divide(x1, x2, y1, wall_y, skiplist.clone(), !horiz);
+            self.divide(x1, x2, wall_y + 1, y2, skiplist.clone(), !horiz);
+        } else {
+            let wall_x = x1 + (width / 2);
+            let door_y1 = y1 + rng.gen_range(0..height);
+            let door_y2 = y1 + rng.gen_range(0..height);
+            skiplist.push(Skip { x: wall_x, y: door_y1 });
+            skiplist.push(Skip { x: wall_x, y: door_y2 });
+            if wall_x > 0 {
+                skiplist.push(Skip { x: wall_x - 1, y: door_y1 });
+                skiplist.push(Skip { x: wall_x - 1, y: door_y2 });
+            }
+            if wall_x < width - 1 {
+                skiplist.push(Skip { x: wall_x + 1, y: door_y1 });
+                skiplist.push(Skip { x: wall_x + 1, y: door_y2 });
+            }
+            for y in y1..y2 {
+                if !skiplist.contains(&Skip { x: wall_x, y: y }) {
+                    self.set(wall_x, y, MapCell::Wall(Wall::Textured(Textured::GrayBrick)));
+                }
+            }
+            self.divide(x1, wall_x, y1, y2, skiplist.clone(), !horiz);
+            self.divide(wall_x + 1, x2, y1, y2, skiplist.clone(), !horiz);
+        }
+    }
+    
+    pub fn gen(width: usize, height: usize) -> Map {
+        let mut map = Map::new(width, height);
+        let skiplist: Vec<Skip> = Vec::new();
+        map.divide(0, width, 0, height, skiplist, true);
+        for r in 0..map.width {
+            for c in 0..map.height {
+                if r == 0 || c == 0 || r == map.height - 1 || c == map.width - 1 {
+                    map.set(r, c, MapCell::Wall(Wall::Textured(Textured::GrayBrick)))
                 }
             }
         }
-        //print!("{:?}", map);
+
+        //Self::console_log_map(&map);
         map
     }
+
     pub fn get_width(&self) -> usize {
         self.width
     }
     pub fn get_height(&self) -> usize {
         self.height
+    }
+
+    pub fn console_log_map(map: &Map) {
+        let mut i = 0;
+        for x in &map.data {
+            i += 1;
+            if x.ne(&MapCell::Empty) {
+                print!("X");
+            } else {
+                print!(" ");
+            }
+            if i % &map.width == 0 {
+                print!("\n");
+            }
+        }
     }
 
     pub fn random_empty_spot(&self) -> Position {

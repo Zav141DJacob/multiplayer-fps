@@ -11,6 +11,7 @@ use crate::game::minimap::Minimap;
 use crate::game::raycast::*;
 use crate::program::state::ProgramState;
 use admin_client::program::Program;
+use common::defaults::{PLAYER_MAX_HP};
 use notan::app::{App, Color, Graphics, Plugins};
 
 use anyhow::Context;
@@ -20,19 +21,20 @@ use std::fmt::{Display, Formatter};
 
 use notan::egui::{EguiPluginSugar, Grid, Ui, Window};
 
-use crate::game::ecs::ClientEcs;
+use crate::game::ecs::{ClientEcs, MyEntity};
 use crate::game::input::InputHandler;
 use crate::game::net::Connection;
 use crate::game::raycast::sprites::Sprite;
 use crate::game::texture::pixels::Pixels;
 use crate::game::texture::ATLAS_MONSTER;
-use common::ecs::components::{Player, Position, WeaponCrate};
+use common::ecs::components::{Player, Position, Health, WeaponCrate};
 use common::map::Map;
 use common::{FromClientMessage, FromServerMessage};
 use fps_counter::FPSCounter;
 use glam::Vec2;
 use hecs::Entity;
 use itertools::Itertools;
+use crate::game::ecs::component::{Height, RenderSprite, Scale};
 
 use self::gameui::{GameUI, GameUiState};
 use self::texture::WEAPON_CRATE;
@@ -60,10 +62,12 @@ pub struct Game {
 
 impl Game {
     pub fn new(
-        app: &mut App, gfx: &mut Graphics, ecs: ClientEcs, connection: Connection, my_entity: Entity,
+        app: &mut App, gfx: &mut Graphics, mut ecs: ClientEcs, connection: Connection, my_entity: Entity,
     ) -> Self {
         let (width, height) = gfx.size();
         let (width, height) = (width as usize, height as usize);
+
+        ecs.resources.insert(MyEntity(my_entity));
 
         let pixels = Pixels::new(width, height, gfx);
         let mut minimap = Minimap::new(ecs.resources.get::<Map>().unwrap().clone(), gfx);
@@ -74,14 +78,18 @@ impl Game {
 
         let ray_caster = RayCaster::new(width, height, FOV);
 
+        let player_hp = *ecs.world.get::<&Health>(my_entity).unwrap();
+
+        // TODO: link rest of the info to ecs
         let ui_game_state = GameUiState {
-            player_hp_max: 100,
-            player_hp: 100,
+            player_hp_max: PLAYER_MAX_HP,
+            player_hp: player_hp.0,
             weapon_name: "SCAR".to_string(),
             max_ammo: 25,
             ammo: 15,
         };
 
+        // TODO: make GameUi actually use ecs
         let ui = GameUI::new(ui_game_state, gfx);
 
         let input = InputHandler::new(app);
@@ -123,7 +131,8 @@ impl ProgramState for Game {
             self.connection.send(FromClientMessage::UpdateInputs(state))?;
         }
 
-        self.ecs.tick(app.system_timer.delta_f32());
+        let dt = app.system_timer.delta_f32();
+        self.ecs.tick(dt);
 
         Ok(())
     }
@@ -166,15 +175,20 @@ impl ProgramState for Game {
             &*self.ecs.resources.get::<Map>()?,
         );
 
-        let mut enemy_sprites = self
-            .ecs
-            .world
-            .query_mut::<&Position>()
-            .with::<&Player>()
+        let mut sprites = self.ecs.world.query_mut::<(&Position, &RenderSprite, Option<&Scale>, Option<&Height>)>()
             .into_iter()
             .filter(|(entity, _)| self.my_entity != *entity)
-            .map(|(_, pos)| pos.0)
-            .map(|pos| Sprite::new(&ATLAS_MONSTER[0], pos, Vec2::ONE, 0.0))
+            .map(|(_, (pos, sprite, scale, height))| {
+                (
+                    pos.0,
+                    sprite.tex,
+                    scale.map(|v| v.0).unwrap_or(Vec2::ONE),
+                    height.map(|v| v.0).unwrap_or(0.0)
+                )
+            })
+            .map(|(pos, tex, scale, height)| {
+                Sprite::new(tex, pos, scale, height)
+            })
             .collect_vec();
 
         let mut crate_sprites = self
@@ -191,7 +205,7 @@ impl ProgramState for Game {
             .draw_sprites(&mut self.pixels, my_pos, my_dir, perspective, &mut crate_sprites);
 
         self.ray_caster
-            .draw_sprites(&mut self.pixels, my_pos, my_dir, perspective, &mut enemy_sprites);
+            .draw_sprites(&mut self.pixels, my_pos, my_dir, perspective, &mut sprites);
 
         let mut draw = gfx.create_draw();
 
@@ -219,7 +233,7 @@ impl ProgramState for Game {
             .render_player_location(&mut draw, width, height, my_pos, Color::RED);
 
         // Draw enemies on map
-        for sprite in enemy_sprites.iter() {
+        for sprite in sprites.iter() {
             self.minimap.render_entity_location(
                 &mut draw,
                 width,

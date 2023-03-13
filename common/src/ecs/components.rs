@@ -2,11 +2,11 @@
 
 use std::num::NonZeroU64;
 
+use crate::gun::Gun;
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
-use crate::gun::Gun;
 
-use crate::{register_shared_components, bulk_attribute, UserID};
+use crate::{bulk_attribute, register_shared_components, UserID};
 
 /// Describes the instructions the server can give to the client ECS.
 /// The contained NonZeroU64 is the entity ID.
@@ -39,9 +39,9 @@ bulk_attribute! {
     pub struct Velocity (pub Vec2);
     pub struct LookDirection (pub Vec2);
     pub struct Size (pub Vec2);
-    pub struct Health (pub i32);
+    pub struct Health (pub u32);
     pub struct HeldWeapon (pub Gun);
-    
+
     pub struct Player {
         pub id: UserID,
     }
@@ -58,6 +58,6 @@ pub struct InputState {
     pub right: bool,
 
     pub look_angle: f32,
-    
+
     pub shoot: bool,
-} 
+}

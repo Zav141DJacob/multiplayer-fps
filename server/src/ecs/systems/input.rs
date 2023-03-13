@@ -41,6 +41,7 @@ impl ServerSystems {
                 move_dir -= right;
             }
 
+            // this makes backend and frontend crash, so I commented it out for now -Jacob
             move_dir = move_dir.normalize_or_zero();
 
             let mut vel = ecs.observer.observe_component(entity, vel);

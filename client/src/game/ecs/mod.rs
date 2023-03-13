@@ -23,3 +23,5 @@ impl ClientEcs {
         ClientSystems::run(self, dt);
     }
 }
+
+pub struct MyEntity(pub Entity);

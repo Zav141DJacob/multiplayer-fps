@@ -2,8 +2,6 @@ use std::cmp::Reverse;
 use glam::Vec2;
 use ordered_float::OrderedFloat;
 use crate::game::raycast::{Perspective, RayCaster};
-use crate::game::texture::ATLAS_MONSTER;
-use crate::game::texture::ATLAS_PLAYER;
 use crate::game::texture::draw_column::DrawColumn;
 use crate::game::texture::pixels::{blend_color_u8, Pixels};
 use crate::game::texture::sampler::TextureSampler;
@@ -15,11 +13,12 @@ pub struct Sprite {
     pub position: Vec2,
     pub scale: Vec2,
     pub height_offset: f32,
-    pub distance_2: f32,
+    distance_2: f32,
 }
 
 impl Sprite {
     pub fn new(texture: &'static TextureSampler, position: Vec2, scale: Vec2, height_offset: f32) -> Self {
+        let height_offset = height_offset * scale.y;
         Self {
             texture,
             position,
@@ -32,16 +31,6 @@ impl Sprite {
     pub fn new_simple(texture: &'static TextureSampler, position: Vec2) -> Self {
         Self::new(texture, position, Vec2::ONE, 0.0)
     }
-}
-
-pub fn default_sprites() -> Vec<Sprite> {
-    vec![
-        Sprite::new(&ATLAS_MONSTER[0], Vec2::new(3.8, 2.7), Vec2::new(0.5 ,0.5), 0.0),
-        Sprite::new_simple(&ATLAS_MONSTER[2], Vec2::new(5.3, 5.3)),
-        Sprite::new(&ATLAS_MONSTER[2], Vec2::new(5.3, 6.3), Vec2::new(0.5, 0.5), 0.0),
-        Sprite::new(&ATLAS_MONSTER[2], Vec2::new(5.3, 4.3), Vec2::new(1.5, 1.5), 0.0),
-        Sprite::new_simple(&ATLAS_MONSTER[3], Vec2::new(8.1, 8.2)),
-    ]
 }
 
 impl RayCaster {

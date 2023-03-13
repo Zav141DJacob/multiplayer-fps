@@ -61,12 +61,17 @@ impl TextureSampler {
     /// Turns a given image into a vector of GameTextures. Takes in the width and height of a single tile in the image.
     /// Might be useful for animations and texture atlases.
     pub fn from_tiles(tiles_x: u32, tiles_y: u32, gap: u32, bytes: &[u8]) -> anyhow::Result<Vec<Self>> {
+        assert!(tiles_x > 0 && tiles_y > 0, "tiles_x or tiles_y can't be 0");
+
         let big_image = image::load_from_memory(bytes)?.into_rgba8();
 
-        if big_image.width() % tiles_x != 0 {
+        let gap_x = (tiles_x - 1) * gap;
+        let gap_y = (tiles_y - 1) * gap;
+
+        if (big_image.width() - gap_x) % tiles_x != 0 {
             bail!("image width {} is not an exact multiple of tiles_x {}", big_image.width(), tiles_x);
         }
-        if big_image.height() % tiles_y != 0 {
+        if (big_image.height() - gap_y) % tiles_y != 0 {
             bail!("image height {} is not an exact multiple of tiles_y {}", big_image.height(), tiles_y);
         }
 
@@ -134,7 +139,7 @@ impl TextureSampler {
     /// Samples a given number of colors in column `u` according to a range of `v`.
     ///
     /// Here are some pseudocode examples:
-    /// ```rust,no-run
+    /// ```rust,no_run
     /// let tex = GameTexture::from(img); // Single-column texture with colors ABCD
     /// tex.sample_column(0, 0.0..1.0, 4) == ABCD;
     /// tex.sample_column(0, 0.0..0.5, 4) == AABB;

@@ -1,4 +1,4 @@
-use common::{ecs::components::{Position, Player, LookDirection, HeldWeapon}, map::Map};
+use common::{ecs::components::{Position, Player, LookDirection, HeldWeapon, Health}, map::Map, defaults::DEFAULT_PLAYER_HP};
 use common::gun::Gun;
 use glam::Vec2;
 use hecs::Entity;
@@ -11,13 +11,13 @@ const DEFAULT_SPEED: f32 = 2.5;
 
 pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs) -> Entity {
     let entity = ecs.world.reserve_entity();
-
     // Insert observed components
     ecs.observed_world().insert(entity, (
         Player {
             id: entity.to_bits().into()
         },
         Position(pos.0),
+        Health(DEFAULT_PLAYER_HP),
         Velocity(Vec2::ZERO),
         LookDirection(Vec2::from_angle(0.0)),
         HeldWeapon(Gun::Pistol),
