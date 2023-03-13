@@ -1,5 +1,8 @@
 use std::time::Duration;
 use serde::{Serialize, Deserialize};
+
+use rand::Rng;
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Gun {
     Pistol,
@@ -16,6 +19,13 @@ impl Gun {
         match self {
             Gun::Pistol => Duration::new(1,0),
             Gun::MachineGun => Duration::new(0,100_000_000),
+        }
+    }
+    pub fn get_random_gun() -> Gun {
+        let index = rand::thread_rng().gen_range(0..=1);
+        match index {
+            0 => Gun::Pistol,
+            _ => Gun::MachineGun,
         }
     }
 }

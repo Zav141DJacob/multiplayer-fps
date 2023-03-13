@@ -32,6 +32,10 @@ pub static ATLAS_MONSTER: Lazy<Vec<TextureSampler>> = Lazy::new(|| {
     TextureSampler::from_tiles(4, 1, 0, include_bytes!("../../../assets/monsters.png")).unwrap()
 });
 
+pub static WEAPON_CRATE: Lazy<TextureSampler> = Lazy::new(|| {
+    TextureSampler::try_from(include_bytes!("../../../assets/weapon_crate.png").as_slice()).unwrap()
+});
+
 pub static TEX_TEST1: Lazy<TextureSampler> = Lazy::new(|| {
     TextureSampler::try_from(include_bytes!("../../../assets/test1.png").as_slice()).unwrap()
 });

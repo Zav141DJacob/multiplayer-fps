@@ -26,7 +26,8 @@ use crate::game::input::InputHandler;
 use crate::game::net::Connection;
 use crate::game::raycast::sprites::Sprite;
 use crate::game::texture::pixels::Pixels;
-use common::ecs::components::{Player, Position, Health};
+use crate::game::texture::ATLAS_MONSTER;
+use common::ecs::components::{Player, Position, Health, WeaponCrate};
 use common::map::Map;
 use common::{FromClientMessage, FromServerMessage};
 use fps_counter::FPSCounter;
@@ -36,6 +37,7 @@ use itertools::Itertools;
 use crate::game::ecs::component::{Height, RenderSprite, Scale};
 
 use self::gameui::{GameUI, GameUiState};
+use self::texture::WEAPON_CRATE;
 
 const CAMERA_SENSITIVITY: f32 = 0.08; // rad
 const FOV: f32 = 70.0;
@@ -189,6 +191,19 @@ impl ProgramState for Game {
             })
             .collect_vec();
 
+        let mut crate_sprites = self
+            .ecs
+            .world
+            .query_mut::<&Position>()
+            .with::<&WeaponCrate>()
+            .into_iter()
+            .map(|(_, pos)| pos.0)
+            .map(|pos| Sprite::new(&WEAPON_CRATE, pos, Vec2::new(0.5, 0.5), 0.0))
+            .collect_vec();
+
+        self.ray_caster
+            .draw_sprites(&mut self.pixels, my_pos, my_dir, perspective, &mut crate_sprites);
+
         self.ray_caster
             .draw_sprites(&mut self.pixels, my_pos, my_dir, perspective, &mut sprites);
 
@@ -219,6 +234,17 @@ impl ProgramState for Game {
 
         // Draw enemies on map
         for sprite in sprites.iter() {
+            self.minimap.render_entity_location(
+                &mut draw,
+                width,
+                height,
+                sprite.position,
+                sprite.texture.dominant().into(),
+            );
+        }
+
+        // Draw weapon crates on map
+        for sprite in crate_sprites.iter() {
             self.minimap.render_entity_location(
                 &mut draw,
                 width,

@@ -13,6 +13,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use crate::constructed_message::ConstructMessage;
+use crate::ecs::spawn::weapon_crate::spawn_weapon_crates_init;
 use common::{FromClientMessage, FromServerMessage, Signal};
 use message_io::{
     network::{Endpoint, NetEvent, Transport},
@@ -77,6 +78,7 @@ impl Server {
 
         let mut ecs = ServerEcs::default();
         ecs.resources.insert(Map::gen(MAP_WIDTH, MAP_HEIGHT));
+        spawn_weapon_crates_init(&mut ecs);
         let (logger, logger_receiver) = Logger::new(enable_logging_channels);
         ecs.resources.insert(logger);
 
