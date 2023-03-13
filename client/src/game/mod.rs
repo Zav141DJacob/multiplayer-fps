@@ -191,6 +191,15 @@ impl ProgramState for Game {
         self.pixels.flush(gfx);
         self.pixels.draw(&mut draw);
 
+
+        // set UI game state
+        self.ui.set_game_state(GameUiState { 
+            player_hp_max: PLAYER_MAX_HP, 
+            player_hp: self.ecs.world.get::<&Health>(self.my_entity).unwrap().0, 
+            weapon_name: "Scar".to_string(), 
+            max_ammo: 25, 
+            ammo: 15 
+        });
         // Draw UI
         self.ui.draw_health(&mut draw, width, height);
         self.ui.draw_weapon_stats(&mut draw, width, height);
