@@ -1,11 +1,6 @@
 use glam::{Vec2, Vec3};
-use notan::draw::{DrawTextSection, Font, CreateFont, DrawShapes};
-use notan::{
-    prelude::{Color, Graphics},
-};
-
-
-
+use notan::draw::{CreateFont, DrawShapes, DrawTextSection, Font};
+use notan::prelude::{Color, Graphics};
 
 pub struct GameUI {
     game_state: GameUiState,
@@ -17,19 +12,18 @@ pub struct GameUI {
 }
 
 pub struct GameUiState {
-    pub player_hp_max: usize,
-    pub player_hp: usize,
+    pub player_hp_max: u32,
+    pub player_hp: u32,
     pub weapon_name: String,
-    pub max_ammo: usize, 
-    pub ammo: usize, 
+    pub max_ammo: usize,
+    pub ammo: usize,
 }
-
 
 impl GameUI {
     pub fn new(game_state: GameUiState, gfx: &mut Graphics) -> Self {
-        let font = gfx.create_font(include_bytes!("../../assets/Ubuntu-B.ttf")).unwrap();
-        
-
+        let font = gfx
+            .create_font(include_bytes!("../../assets/Ubuntu-B.ttf"))
+            .unwrap();
 
         Self {
             game_state,
@@ -53,14 +47,14 @@ impl GameUI {
         self.padding = padding;
     }
 
-    pub fn set_game_state(&mut self, game_state: GameUiState){
+    pub fn set_game_state(&mut self, game_state: GameUiState) {
         self.game_state = game_state
     }
 
     pub fn draw_health(&self, draw: &mut notan::draw::Draw, _width: usize, height: usize) {
         let proc = (self.game_state.player_hp as f32) / (self.game_state.player_hp_max as f32);
         let health_color = if proc > 0.5 {
-            health_to_color_gradient((proc-0.5) / 0.5, Color::YELLOW, Color::GREEN)
+            health_to_color_gradient((proc - 0.5) / 0.5, Color::YELLOW, Color::GREEN)
         } else {
             health_to_color_gradient((proc) / 0.5, Color::RED, Color::YELLOW)
         };
@@ -68,65 +62,59 @@ impl GameUI {
         let health_size = Vec2::new(self.size.x * proc, self.size.y);
 
         let position = Vec2::new(
-            (self.padding.x + self.border_size.x)  * self.scale.x,
-            (height as f32) - ((self.padding.y + self.size.y+ self.border_size.y) * self.scale.y) );
-
-
-        draw.rect( // Draw the health
-            position.into(),
-            (health_size * self.scale).into())
-
-            .color(health_color)
-            .corner_radius(0.0);
-
-
-
-
-        draw.rect( // Draw the lower thirds darker shading
-            (position + self.size * self.scale * Vec2::new(0.0, 0.7) ).into(),
-            (health_size * self.scale / Vec2::new(1.0, 3.0)).into())
-
-            .color(Color::new(0.22, 0.22, 0.22, 0.2))
-            .corner_radius(0.0);
-
-
-
-        draw.rect(// Draw the upper thirds light shading
-            (position).into(), 
-            (health_size * self.scale / Vec2::new(1.0, 3.0)).into())
-
-            .color(Color::new(1.0, 1.0, 1.0, 0.2))
-            .corner_radius(0.0);
-
-
-        draw.rect( // Draw border
-            (position - self.border_size / 2.0).into(),
-             (self.size * self.scale + self.border_size).into())
-
-             .stroke_color(Color::BLACK)
-             .fill_color(Color::TRANSPARENT)
-             .stroke(self.border_size.x)
-             .corner_radius(2.0);
-
-
-
-
-    }
-
-
-
-    pub fn draw_weapon_stats(&self, draw: &mut notan::draw::Draw, width: usize, height: usize) {
-        let position = Vec2::new(
-            width as f32 - 200.0,
-            height as f32 - 50.0,
+            (self.padding.x + self.border_size.x) * self.scale.x,
+            (height as f32) - ((self.padding.y + self.size.y + self.border_size.y) * self.scale.y),
         );
 
-        let ammo_text = format!("{:0>3} / {:0>3}", self.game_state.ammo, self.game_state.max_ammo );
+        draw.rect(
+            // Draw the health
+            position.into(),
+            (health_size * self.scale).into(),
+        )
+        .color(health_color)
+        .corner_radius(0.0);
 
-        draw.text(&self.font, &self.game_state.weapon_name).position(position.x, position.y);
-        draw.text(&self.font, &ammo_text).position(position.x + 120.0, position.y);
+        draw.rect(
+            // Draw the lower thirds darker shading
+            (position + self.size * self.scale * Vec2::new(0.0, 0.7)).into(),
+            (health_size * self.scale / Vec2::new(1.0, 3.0)).into(),
+        )
+        .color(Color::new(0.22, 0.22, 0.22, 0.2))
+        .corner_radius(0.0);
 
-        let  padding = 10.0 / self.game_state.max_ammo as f32;
+        draw.rect(
+            // Draw the upper thirds light shading
+            (position).into(),
+            (health_size * self.scale / Vec2::new(1.0, 3.0)).into(),
+        )
+        .color(Color::new(1.0, 1.0, 1.0, 0.2))
+        .corner_radius(0.0);
+
+        draw.rect(
+            // Draw border
+            (position - self.border_size / 2.0).into(),
+            (self.size * self.scale + self.border_size).into(),
+        )
+        .stroke_color(Color::BLACK)
+        .fill_color(Color::TRANSPARENT)
+        .stroke(self.border_size.x)
+        .corner_radius(2.0);
+    }
+
+    pub fn draw_weapon_stats(&self, draw: &mut notan::draw::Draw, width: usize, height: usize) {
+        let position = Vec2::new(width as f32 - 200.0, height as f32 - 50.0);
+
+        let ammo_text = format!(
+            "{:0>3} / {:0>3}",
+            self.game_state.ammo, self.game_state.max_ammo
+        );
+
+        draw.text(&self.font, &self.game_state.weapon_name)
+            .position(position.x, position.y);
+        draw.text(&self.font, &ammo_text)
+            .position(position.x + 120.0, position.y);
+
+        let padding = 10.0 / self.game_state.max_ammo as f32;
         let bullet_bar_size = Vec2::new(170.0 / self.game_state.max_ammo as f32, 5.0);
 
         for i in 0..self.game_state.max_ammo {
@@ -138,55 +126,34 @@ impl GameUI {
                 color = Color::ORANGE
             }
 
-            if  self.game_state.max_ammo - i > self.game_state.ammo {
-                color = Color::GRAY; 
+            if self.game_state.max_ammo - i > self.game_state.ammo {
+                color = Color::GRAY;
             }
 
             draw.rect(
-                (position.x + (bullet_bar_size.x + padding )* i as f32 , position.y + 20.0), 
-                 bullet_bar_size.into()
-            ).color(color).corner_radius(2.0);
-
+                (
+                    position.x + (bullet_bar_size.x + padding) * i as f32,
+                    position.y + 20.0,
+                ),
+                bullet_bar_size.into(),
+            )
+            .color(color)
+            .corner_radius(2.0);
         }
-
-
     }
-
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-fn health_to_color_gradient(proc: f32, start_color: Color, into_color: Color) -> Color{
+fn health_to_color_gradient(proc: f32, start_color: Color, into_color: Color) -> Color {
     let v0 = Vec3::new(start_color.r, start_color.g, start_color.b);
     let v1 = Vec3::new(into_color.r, into_color.g, into_color.b);
 
     let vec = v0 + proc * (v1 - v0);
-    
 
     let mut res = Color::new(0.0, 0.0, 0.0, 1.0);
 
     res.r = vec.x;
     res.g = vec.y;
     res.b = vec.z;
-
 
     res
 }
