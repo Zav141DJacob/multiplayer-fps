@@ -64,7 +64,7 @@ impl ServerSystems {
 
             for (entity, (_, bullet_pos)) in bullet_query {
                 for player_pos in &player_positions {
-                    if player_pos.distance(bullet_pos.0) > 0.2 {
+                    if player_pos.distance(bullet_pos.0) > 0.125 {
                         // todo
                         //  add take damage function here
                         to_remove.push(entity);

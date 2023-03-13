@@ -11,6 +11,7 @@ impl ClientSystems {
     pub fn run(ecs: &mut ClientEcs, dt: f32) {
         ClientSystems::apply_velocity(ecs, dt);
         ClientSystems::init_player(ecs, dt);
+        ClientSystems::init_bullet(ecs, dt);
         ClientSystems::animate_running(ecs, dt);
         ClientSystems::apply_animations(ecs, dt);
     }

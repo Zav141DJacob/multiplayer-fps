@@ -26,7 +26,6 @@ use crate::game::input::InputHandler;
 use crate::game::net::Connection;
 use crate::game::raycast::sprites::Sprite;
 use crate::game::texture::pixels::Pixels;
-use crate::game::texture::ATLAS_MONSTER;
 use common::ecs::components::{Player, Position, Health};
 use common::map::Map;
 use common::{FromClientMessage, FromServerMessage};
@@ -34,8 +33,7 @@ use fps_counter::FPSCounter;
 use glam::Vec2;
 use hecs::Entity;
 use itertools::Itertools;
-use crate::game::ecs::component::RenderSprite;
-use crate::game::ecs::systems::ClientSystems;
+use crate::game::ecs::component::{Height, RenderSprite, Scale};
 
 use self::gameui::{GameUI, GameUiState};
 
@@ -175,11 +173,20 @@ impl ProgramState for Game {
             &*self.ecs.resources.get::<Map>()?,
         );
 
-        let mut sprites = self.ecs.world.query_mut::<(&Position, &RenderSprite)>()
+        let mut sprites = self.ecs.world.query_mut::<(&Position, &RenderSprite, Option<&Scale>, Option<&Height>)>()
             .into_iter()
             .filter(|(entity, _)| self.my_entity != *entity)
-            .map(|(_, (pos, sprite))| (pos.0, sprite.tex))
-            .map(|(pos, tex)| Sprite::new(tex, pos, Vec2::ONE, 0.0))
+            .map(|(_, (pos, sprite, scale, height))| {
+                (
+                    pos.0,
+                    sprite.tex,
+                    scale.map(|v| v.0).unwrap_or(Vec2::ONE),
+                    height.map(|v| v.0).unwrap_or(0.0)
+                )
+            })
+            .map(|(pos, tex, scale, height)| {
+                Sprite::new(tex, pos, scale, height)
+            })
             .collect_vec();
 
         self.ray_caster

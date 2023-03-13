@@ -40,6 +40,10 @@ pub static TEX_TEST2: Lazy<TextureSampler> = Lazy::new(|| {
     TextureSampler::try_from(include_bytes!("../../../assets/test2.png").as_slice()).unwrap()
 });
 
+pub static TEX_BULLET: Lazy<TextureSampler> = Lazy::new(|| {
+    TextureSampler::try_from(include_bytes!("../../../assets/bullet.png").as_slice()).unwrap()
+});
+
 pub static ATLAS_PLAYER: Lazy<Vec<TextureSampler>> = Lazy::new(|| {
     TextureSampler::from_tiles(8, 7, 1, include_bytes!("../../../assets/player.png")).unwrap()
 });
