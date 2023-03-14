@@ -1,11 +1,10 @@
 use std::{
     fmt::{Display, Formatter},
-    net::{IpAddr, Ipv4Addr},
-    num::ParseIntError,
+    net::UdpSocket,
 };
 
 use admin_client::program::Program;
-use common::defaults::PORT;
+use common::defaults::{IP, PORT};
 use notan::{
     egui::{self, EguiPluginSugar, Id},
     prelude::{App, Assets, Color, Graphics, Plugins},
@@ -22,13 +21,13 @@ enum NextState {
 
 #[derive(Clone)]
 struct ErrorWindow {
-    error: ParseIntError,
+    error: String,
     id: u16,
     is_open: bool,
 }
 
 impl ErrorWindow {
-    pub fn new(error: ParseIntError, id: u16) -> ErrorWindow {
+    pub fn new(error: String, id: u16) -> ErrorWindow {
         ErrorWindow {
             error,
             id,
@@ -65,22 +64,43 @@ impl HostingMenu {
         }
     }
 
+    fn add_error(&mut self, error: String) {
+        let id = match self.errors.last() {
+            Some(error) => error.id + 1,
+            None => 0,
+        };
+
+        self.errors.push(ErrorWindow::new(error, id));
+    }
+
     fn process_inputs(&mut self) -> bool {
         self.processed_port = match self.port.parse() {
             Ok(p) => Some(p),
             Err(error) => {
-                let id = match self.errors.last() {
-                    Some(error) => error.id + 1,
-                    None => 0,
-                };
-
-                self.errors.push(ErrorWindow::new(error, id));
+                self.add_error(error.to_string());
                 return false;
             }
         };
 
+        if !udp_port_is_available(self.processed_port.unwrap()) {
+            self.add_error("Port is already used".to_string());
+            return false;
+        }
+
+        let mut p = Program::new(IP, self.processed_port.unwrap(), false);
+        if let Err(error) = p.run() {
+            self.add_error(error.to_string());
+            return false;
+        }
+
+        self.server = Some(p);
+        self.next_state = Some(NextState::Game);
         true
     }
+}
+
+fn udp_port_is_available(port: u16) -> bool {
+    UdpSocket::bind((IP, port)).is_ok()
 }
 
 impl ProgramState for HostingMenu {
@@ -119,19 +139,7 @@ impl ProgramState for HostingMenu {
 
                     // When you press enter it submits
                     if response.lost_focus() && ui.input().key_pressed(egui::Key::Enter) {
-                        if !self.process_inputs() {
-                            return;
-                        }
-
-                        let mut p = Program::new(
-                            "127.0.0.1".parse().unwrap(),
-                            self.processed_port.unwrap(),
-                            false,
-                        );
-                        p.run();
-                        self.server = Some(p);
-
-                        self.next_state = Some(NextState::Game);
+                        self.process_inputs();
                     }
 
                     ui.add_space(10.0);
@@ -139,19 +147,7 @@ impl ProgramState for HostingMenu {
                         ui.set_width(ui.available_width() / 4.0);
                         ui.horizontal(|ui| {
                             if ui.button("Host").clicked() {
-                                if !self.process_inputs() {
-                                    return;
-                                }
-
-                                let mut p = Program::new(
-                                    "127.0.0.1".parse().unwrap(),
-                                    self.processed_port.unwrap(),
-                                    false,
-                                );
-                                p.run();
-                                self.server = Some(p);
-
-                                self.next_state = Some(NextState::Game);
+                                self.process_inputs();
                             }
                             if ui.button("Back").clicked() {
                                 self.next_state = Some(NextState::Menu);
@@ -180,13 +176,9 @@ impl ProgramState for HostingMenu {
     ) -> Option<Box<dyn ProgramState>> {
         match self.next_state.take()? {
             NextState::Game => {
-                let state = Connecting::new(
-                    IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-                    self.processed_port.unwrap(),
-                    self.server.clone(),
-                )
-                .map(|v| v.into())
-                .unwrap_or_else(|err| ErrorState::from(&*err).into());
+                let state = Connecting::new(IP, self.processed_port.unwrap(), self.server.clone())
+                    .map(|v| v.into())
+                    .unwrap_or_else(|err| ErrorState::from(&*err).into());
                 Some(state)
             }
             NextState::Menu => Some(Menu::new().into()),

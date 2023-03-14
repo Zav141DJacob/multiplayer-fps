@@ -1,6 +1,6 @@
 use std::{
     net::{IpAddr, SocketAddr},
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex}, io,
 };
 
 use common::Signal;
@@ -34,10 +34,10 @@ impl Program {
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> io::Result<()> {
         let addr = SocketAddr::new(self.ip, self.port);
         println!("Starting server on {addr}");
-        let (mut server, mut logger_reciever) = Server::new(addr, true).unwrap();
+        let (mut server, mut logger_reciever) = Server::new(addr, true)?;
         self.server_handler = Some(server.handler.clone());
 
         tokio::spawn(async move {
@@ -52,6 +52,8 @@ impl Program {
                 }
             }
         });
+
+        Ok(())
     }
 
     pub fn is_running(&self) -> bool {
@@ -107,7 +109,7 @@ pub fn notan_setup(
 ) -> Box<dyn Fn(&mut App, &mut Assets, &mut Graphics, &mut Plugins) -> Program> {
     Box::new(move |_, _, _, _| {
         let mut p = Program::new(ip, port, should_exit_on_server_closing);
-        p.run();
+        p.run().unwrap();
         p
     })
 }
