@@ -91,35 +91,35 @@ impl ServerSystems {
         let cells: Vec<(Vec2, MapCell)> = vec![
             (
                 Vec2::new(x_floored_f, y_floored_f + 1.0),
-                map.cell(x_floored_int as usize, (y_floored_int + 1) as usize),
+                map.cell(x_floored_int as usize, (y_floored_int + 1) as usize).unwrap(),
             ),
             (
                 Vec2::new(x_floored_f + 1.0, y_floored_f + 1.0),
-                map.cell((x_floored_int + 1) as usize, (y_floored_int + 1) as usize),
+                map.cell((x_floored_int + 1) as usize, (y_floored_int + 1) as usize).unwrap(),
             ),
             (
                 Vec2::new(x_floored_f + 1.0, y_floored_f),
-                map.cell((x_floored_int + 1) as usize, y_floored_int as usize),
+                map.cell((x_floored_int + 1) as usize, y_floored_int as usize).unwrap(),
             ),
             (
                 Vec2::new(x_floored_f + 1.0, y_floored_f - 1.0),
-                map.cell((x_floored_int + 1) as usize, (y_floored_int - 1) as usize),
+                map.cell((x_floored_int + 1) as usize, (y_floored_int - 1) as usize).unwrap(),
             ),
             (
                 Vec2::new(x_floored_f, y_floored_f - 1.0),
-                map.cell(x_floored_int as usize, (y_floored_int - 1) as usize),
+                map.cell(x_floored_int as usize, (y_floored_int - 1) as usize).unwrap(),
             ),
             (
                 Vec2::new(x_floored_f - 1.0, y_floored_f - 1.0),
-                map.cell((x_floored_int - 1) as usize, (y_floored_int - 1) as usize),
+                map.cell((x_floored_int - 1) as usize, (y_floored_int - 1) as usize).unwrap(),
             ),
             (
                 Vec2::new(x_floored_f - 1.0, y_floored_f),
-                map.cell((x_floored_int - 1) as usize, y_floored_int as usize),
+                map.cell((x_floored_int - 1) as usize, y_floored_int as usize).unwrap(),
             ),
             (
                 Vec2::new(x_floored_f - 1.0, y_floored_f + 1.0),
-                map.cell((x_floored_int - 1) as usize, (y_floored_int + 1) as usize),
+                map.cell((x_floored_int - 1) as usize, (y_floored_int + 1) as usize).unwrap(),
             ),
         ];
 

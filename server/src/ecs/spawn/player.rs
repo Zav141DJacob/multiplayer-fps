@@ -33,7 +33,7 @@ pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs) -> Entity {
 }
 
 pub fn spawn_player(ecs: &mut ServerEcs) -> (Position, Entity) {
-    let pos = ecs.resources.get::<Map>().unwrap().random_empty_spot();
+    let pos = ecs.resources.get::<Map>().unwrap().random_empty_spot().unwrap();
 
     (pos, spawn_player_at(pos, ecs))
 }

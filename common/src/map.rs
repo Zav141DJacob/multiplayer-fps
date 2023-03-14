@@ -1,7 +1,7 @@
 use glam::Vec2;
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
-use std::{str::FromStr};
+use std::str::FromStr;
 
 use crate::ecs::components::Position;
 
@@ -12,10 +12,10 @@ pub struct Map {
     pub data: Vec<MapCell>,
 }
 
-#[derive(Debug, Clone, PartialEq )]
+#[derive(Debug, Clone, PartialEq)]
 struct Skip {
     pub x: usize,
-    pub y: usize
+    pub y: usize,
 }
 
 #[rustfmt::skip::macros(vec)]
@@ -46,12 +46,16 @@ impl Default for Map {
 }
 
 impl Map {
-    pub fn cell(&self, x: usize, y: usize) -> MapCell {
-        assert!(x < self.width);
-        assert!(y < self.height);
-        self.data[y * self.width + x]
+    /// Gets map piece from coordinates
+    pub fn cell(&self, x: usize, y: usize) -> Option<MapCell> {
+        if x < self.width || y < self.height {
+            None
+        } else {
+            Some(self.data[y * self.width + x])
+        }
     }
 
+    /// Creates an empty map
     pub fn new(width: usize, height: usize) -> Self {
         Self {
             width,
@@ -60,13 +64,24 @@ impl Map {
         }
     }
 
-    fn set(&mut self, x: usize, y: usize, value: MapCell) {
-        assert!(x < self.width);
-        assert!(y < self.height);
-        self.data[y * self.width + x] = value;
+    fn set(&mut self, x: usize, y: usize, value: MapCell) -> bool {
+        if x < self.width || y < self.height {
+            false
+        } else {
+            self.data[y * self.width + x] = value;
+            true
+        }
     }
 
-    fn divide(&mut self, x1: usize, x2: usize, y1: usize, y2: usize, mut skiplist: Vec<Skip>, horiz: bool) {
+    fn divide(
+        &mut self,
+        x1: usize,
+        x2: usize,
+        y1: usize,
+        y2: usize,
+        mut skiplist: Vec<Skip>,
+        horiz: bool,
+    ) {
         if x2 <= x1 || y2 <= y1 {
             return;
         }
@@ -79,7 +94,7 @@ impl Map {
         }
 
         let mut rng = thread_rng();
-    
+
         if horiz {
             let wall_y = y1 + (height / 2);
             let door_x1 = x1 + rng.gen_range(0..width);
@@ -95,7 +110,7 @@ impl Map {
                 skiplist.push(Skip { x: door_x2, y: wall_y + 1 });
             }
             for x in x1..x2 {
-                if !skiplist.contains(&Skip { x: x, y: wall_y }) {
+                if !skiplist.contains(&Skip { x, y: wall_y }) {
                     self.set(x, wall_y, MapCell::Wall(Wall::Textured(Textured::GrayBrick)));
                 }
             }
@@ -116,7 +131,7 @@ impl Map {
                 skiplist.push(Skip { x: wall_x + 1, y: door_y2 });
             }
             for y in y1..y2 {
-                if !skiplist.contains(&Skip { x: wall_x, y: y }) {
+                if !skiplist.contains(&Skip { x: wall_x, y }) {
                     self.set(wall_x, y, MapCell::Wall(Wall::Textured(Textured::GrayBrick)));
                 }
             }
@@ -124,7 +139,23 @@ impl Map {
             self.divide(wall_x + 1, x2, y1, y2, skiplist.clone(), !horiz);
         }
     }
-    
+
+    /// Colors map walls based on their location
+    pub fn color_corners(&mut self) {
+        for r in 0..self.width {
+            for c in 0..self.height {
+                if let Some(MapCell::Wall(_)) = self.cell(r, c) {
+                    if r > self.width / 2 {
+                        self.set(r, c, MapCell::Wall(Wall::Textured(Textured::RedBrick)));
+                    } else {
+                        self.set(r, c, MapCell::Wall(Wall::Textured(Textured::GrayBrick)));
+                    }
+                }
+            }
+        }
+    }
+
+    /// Generates map
     pub fn gen(width: usize, height: usize) -> Map {
         let mut map = Map::new(width, height);
         let skiplist: Vec<Skip> = Vec::new();
@@ -132,20 +163,13 @@ impl Map {
         for r in 0..map.width {
             for c in 0..map.height {
                 if r == 0 || c == 0 || r == map.height - 1 || c == map.width - 1 {
-                    map.set(r, c, MapCell::Wall(Wall::Textured(Textured::GrayBrick)))
+                    map.set(r, c, MapCell::Wall(Wall::Textured(Textured::GrayBrick)));
                 }
             }
         }
 
-        //Self::console_log_map(&map);
+        // map.color_corners();
         map
-    }
-
-    pub fn get_width(&self) -> usize {
-        self.width
-    }
-    pub fn get_height(&self) -> usize {
-        self.height
     }
 
     pub fn console_log_map(map: &Map) {
@@ -157,17 +181,17 @@ impl Map {
             } else {
                 print!(" ");
             }
-            if i % &map.width == 0 {
-                print!("\n");
+            if i % map.width == 0 {
+                println!();
             }
         }
     }
 
-    pub fn random_empty_spot(&self) -> Position {
+    pub fn random_empty_spot(&self) -> Option<Position> {
         let mut available_coords: Vec<Position> = Vec::new();
         for x in 0..self.width {
             for y in 0..self.height {
-                if self.cell(x, y) == MapCell::Empty {
+                if let Some(MapCell::Empty) = self.cell(x, y) {
                     available_coords.push(Position(Vec2 {
                         x: x as f32 + 0.5,
                         y: y as f32 + 0.5,
@@ -175,9 +199,12 @@ impl Map {
                 }
             }
         }
-        let rand_num: usize = rand::thread_rng().gen_range(0..available_coords.len());
 
-        available_coords[rand_num]
+        if available_coords.is_empty() {
+            None
+        } else {
+            Some(available_coords[thread_rng().gen_range(0..available_coords.len())])
+        }
     }
 }
 
@@ -208,9 +235,9 @@ impl FromStr for MapCell {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "empty" => Ok(Self::Empty),
-            "wall"  => Ok(Self::Wall(Wall::SolidColor([0.0, 0.0, 0.0]))),
-            "brick"  => Ok(Self::Wall(Wall::Textured(Textured::RedBrick))),
-            _       => Err("Invalid MapElement in MapElement::from_str()".to_string())
+            "wall" => Ok(Self::Wall(Wall::SolidColor([0.0, 0.0, 0.0]))),
+            "brick" => Ok(Self::Wall(Wall::Textured(Textured::RedBrick))),
+            _ => Err("Invalid MapElement in MapElement::from_str()".to_string()),
         }
     }
 }

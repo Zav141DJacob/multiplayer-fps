@@ -34,8 +34,8 @@ impl Minimap {
         let minimap_pos = Vec2::new(10.0, 10.0);
 
         let map_pixels = Pixels::new(
-            map.get_width() * map_ratio,
-            map.get_width() * map_ratio,
+            map.width * map_ratio,
+            map.width * map_ratio,
             gfx,
         );
 
@@ -64,7 +64,7 @@ impl Minimap {
                 let map_x = (x as f32 / self.map_ratio as f32).floor() as usize;
                 let map_y = (y as f32 / self.map_ratio as f32).floor() as usize;
 
-                let color = match self.map.cell(map_x, map_y) {
+                let color = match self.map.cell(map_x, map_y).unwrap() {
                     common::map::MapCell::Empty => None,
                     common::map::MapCell::Wall(Wall::SolidColor(wall_color)) => {
                         Some(wall_color.into())
@@ -116,10 +116,10 @@ impl Minimap {
     }
 
     pub fn get_width(&self) -> usize {
-        self.map.get_width() * self.map_ratio
+        self.map.width * self.map_ratio
     }
     pub fn get_height(&self) -> usize {
-        self.map.get_height() * self.map_ratio
+        self.map.height * self.map_ratio
     }
 
     pub fn draw(&self, draw: &mut notan::draw::Draw, width: usize, _height: usize) {

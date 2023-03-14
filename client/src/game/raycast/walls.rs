@@ -1,10 +1,10 @@
-use glam::{IVec2, Vec2};
-use notan::prelude::Color;
-use common::map::{Map, MapCell, Wall};
-use crate::game::raycast::{MAX_VIEW_DISTANCE, Perspective, RayCaster};
+use crate::game::raycast::{Perspective, RayCaster, MAX_VIEW_DISTANCE};
 use crate::game::texture::draw_column::DrawColumn;
 use crate::game::texture::get_wall_texture;
 use crate::game::texture::pixels::Pixels;
+use common::map::{Map, MapCell, Wall};
+use glam::{IVec2, Vec2};
+use notan::prelude::Color;
 
 struct Hit {
     t: f32,
@@ -35,33 +35,32 @@ impl RayCaster {
 
         // DRAW FOV RAYCAST
         for (ray_dir, column) in self.ray_gen.iter(camera_dir).zip(pixels.column_iter_mut()) {
-
             let hit = match ray_algorithm(camera_pos, ray_dir, map) {
                 None => {
                     // No hit, register max distance instead
                     self.minimap_rays.push(camera_pos + ray_dir * MAX_VIEW_DISTANCE);
                     self.depth_map.push(MAX_VIEW_DISTANCE);
-                    continue
+                    continue;
                 }
                 Some(hit) => {
                     self.minimap_rays.push(hit.pos);
                     self.depth_map.push(hit.t);
                     hit
-                },
+                }
             };
 
             // Hit confirmed beyond this point
 
             let wall_height = self.proj_dist / (hit.t * ray_dir.dot(camera_dir));
 
-            let set_color_fn = |current: &mut [u8; 4], new: [u8; 4]|  {
+            let set_color_fn = |current: &mut [u8; 4], new: [u8; 4]| {
                 *current = if matches!(hit.side, HitSide::Left | HitSide::Right) {
                     const DARKEN: u16 = (0.8 * 256.0) as u16;
                     [
                         (new[0] as u16 * DARKEN / 256) as u8,
                         (new[1] as u16 * DARKEN / 256) as u8,
                         (new[2] as u16 * DARKEN / 256) as u8,
-                        new[3]
+                        new[3],
                     ]
                 } else {
                     new
@@ -75,14 +74,13 @@ impl RayCaster {
 
             match wall {
                 Wall::SolidColor(wall_color) => {
-                    Color::from(wall_color)
-                        .draw_column(
-                            column,
-                            0.0,
-                            wall_height,
-                            perspective,
-                            set_color_fn,
-                        );
+                    Color::from(wall_color).draw_column(
+                        column,
+                        0.0,
+                        wall_height,
+                        perspective,
+                        set_color_fn,
+                    );
                 }
                 Wall::Textured(wall_type) => {
                     let texture = get_wall_texture(wall_type);
@@ -105,7 +103,6 @@ impl RayCaster {
                 }
             }
         }
-
     }
 }
 
@@ -165,9 +162,10 @@ fn ray_algorithm(
 
         let pos = ray_start + ray_dir * f_distance;
 
-        let cell = map.cell(map_check.x as usize, map_check.y as usize);
-
-        let cell = match cell {
+        let cell = match map
+            .cell(map_check.x as usize, map_check.y as usize)
+            .unwrap()
+        {
             MapCell::Empty => continue,
             cell => cell,
         };
