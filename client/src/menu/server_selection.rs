@@ -9,7 +9,10 @@ use notan::{
     prelude::{App, Assets, Color, Graphics, Plugins},
 };
 
-use crate::{connecting::Connecting, error::ErrorState, program::state::ProgramState};
+use crate::{
+    connecting::Connecting, error::ErrorState, errorwindow::ErrorWindows,
+    program::state::ProgramState,
+};
 
 use super::Menu;
 
@@ -18,26 +21,9 @@ enum NextState {
     Game,
 }
 
-#[derive(Clone)]
-struct ErrorWindow {
-    error: String,
-    id: u16,
-    is_open: bool,
-}
-
-impl ErrorWindow {
-    pub fn new(error: String, id: u16) -> ErrorWindow {
-        ErrorWindow {
-            error,
-            id,
-            is_open: true,
-        }
-    }
-}
-
 #[derive(Default)]
 pub struct ServerSelectionMenu {
-    errors: Vec<ErrorWindow>,
+    errors: ErrorWindows,
     next_state: Option<NextState>,
     ip: String,
 
@@ -57,21 +43,15 @@ impl ServerSelectionMenu {
             ip: format!("{IP}:{PORT}"),
 
             processed_ip: None,
-            errors: Vec::new(),
+            errors: ErrorWindows::new(),
         }
     }
 
     fn process_inputs(&mut self) -> bool {
-        let new_id = || match self.errors.last() {
-            Some(error) => error.id + 1,
-            None => 0,
-        };
-
         self.processed_ip = match self.ip.to_socket_addrs() {
             Ok(mut ip) => Some(ip.next().unwrap()),
             Err(error) => {
-                self.errors
-                    .push(ErrorWindow::new(error.to_string(), new_id()));
+                self.errors.add_error(error.to_string());
                 return false;
             }
         };
@@ -90,19 +70,14 @@ impl ProgramState for ServerSelectionMenu {
     ) -> anyhow::Result<()> {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                for error in self.errors.iter_mut() {
+                for error in self.errors.0.iter_mut() {
                     egui::Window::new("Error")
                         .id(Id::new(error.id))
                         .open(&mut error.is_open)
                         .show(ctx, |ui| ui.label(error.error.to_string()));
                 }
 
-                self.errors = self
-                    .errors
-                    .clone()
-                    .into_iter()
-                    .filter(|error| error.is_open)
-                    .collect();
+                self.errors.remove_closed();
 
                 ui.vertical_centered(|ui| {
                     ui.heading("Join Server");
