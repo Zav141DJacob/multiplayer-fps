@@ -24,4 +24,4 @@ EXPOSE 1337
 WORKDIR /app
 COPY --from=builder /build/target/release/server /usr/local/bin
 
-CMD [ "server" ]
+CMD [ "server", "--ip", "0.0.0.0" ]
