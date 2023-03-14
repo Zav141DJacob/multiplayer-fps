@@ -1,10 +1,10 @@
-use std::net::{IpAddr, SocketAddr};
-use anyhow::anyhow;
-use message_io::network::RemoteAddr;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use tokio::sync::mpsc::error::TryRecvError;
-use common::{FromClientMessage, FromServerMessage};
 use crate::client::Client;
+use anyhow::anyhow;
+use common::{FromClientMessage, FromServerMessage};
+use message_io::network::RemoteAddr;
+use std::net::{IpAddr, SocketAddr};
+use tokio::sync::mpsc::error::TryRecvError;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
 pub type ClientReceiver = UnboundedReceiver<FromServerMessage>;
 pub type ClientSender = UnboundedSender<FromClientMessage>;
@@ -29,11 +29,10 @@ impl Connection {
     }
 
     pub fn receive(&mut self) -> anyhow::Result<Option<FromServerMessage>> {
-        let res = self.receiver.try_recv();
-        match res {
+        match self.receiver.try_recv() {
             Ok(message) => Ok(Some(message)),
             Err(TryRecvError::Empty) => Ok(None),
-            Err(TryRecvError::Disconnected) => Err(anyhow!("Client disconnected from server"))
+            Err(TryRecvError::Disconnected) => Err(anyhow!("Client disconnected from server")),
         }
     }
 
