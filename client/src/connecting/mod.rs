@@ -25,6 +25,8 @@ pub struct Connecting {
     my_id: Option<u64>,
 
     exit: bool,
+
+    recieved_own_id: bool,
 }
 
 impl Display for Connecting {
@@ -49,6 +51,7 @@ impl Connecting {
             my_id: None,
 
             exit: false,
+            recieved_own_id: false,
         })
     }
 }
@@ -60,7 +63,8 @@ impl ProgramState for Connecting {
         _assets: &mut Assets,
         _plugins: &mut Plugins,
     ) -> anyhow::Result<()> {
-        let message = match self.connection.as_mut().unwrap().receive() {
+        let connection = self.connection.as_mut().unwrap();
+        let message = match connection.receive() {
             Ok(Some(message)) => message,
             Ok(None) => return Ok(()),
             Err(err) => {
@@ -70,6 +74,7 @@ impl ProgramState for Connecting {
 
         match message {
             FromServerMessage::OwnId(my_id) => {
+                self.recieved_own_id = true;
                 info!("Received OwnId");
                 self.my_id = Some(my_id);
             }
@@ -78,7 +83,11 @@ impl ProgramState for Connecting {
                 self.ecs.as_mut().unwrap().resources.insert(map);
             }
             FromServerMessage::Pong => {
-                info!("Pong")
+                info!("Pong");
+
+                if !self.recieved_own_id {
+                    connection.send(FromClientMessage::Join)?;
+                }
             }
             FromServerMessage::EcsChanges(changes) => {
                 info!("Received EcsChanges");
@@ -164,9 +173,7 @@ impl ProgramState for Connecting {
 
         let ecs = self.ecs.take()?;
         let connection = self.connection.take()?;
-        let game = Game::new(
-            app, gfx, ecs, connection, my_player_entity,
-        );
+        let game = Game::new(app, gfx, ecs, connection, my_player_entity);
 
         Some(game.into())
     }
