@@ -2925,6 +2925,7 @@ dependencies = [
  "glam 0.23.0",
  "hecs",
  "message-io",
+ "rand",
  "resources",
  "serde",
  "tokio",
