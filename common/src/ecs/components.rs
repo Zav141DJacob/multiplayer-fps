@@ -28,6 +28,7 @@ register_shared_components! {
     HeldWeapon,
     Player,
     Bullet,
+    Owner,
     WeaponCrate,
 }
 
@@ -46,8 +47,37 @@ bulk_attribute! {
         pub id: UserID,
     }
 
-    pub struct Bullet;
+    pub struct Bullet {
+        pub owner: UserID
+    }
+    pub struct Owner {
+        pub id: UserID,
+    }
     pub struct WeaponCrate (pub Gun);
+}
+
+impl Bullet {
+    pub fn new(id: UserID) -> Self {
+        Bullet { 
+            owner: id 
+        }
+    }
+}
+
+pub trait WithId {
+    fn id(&self) -> UserID;
+}
+
+impl WithId for Bullet {
+    fn id(&self) -> UserID {
+        self.owner
+    }
+}
+
+impl WithId for Player {
+    fn id(&self) -> UserID {
+        self.id
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]

@@ -1,7 +1,7 @@
 use crate::ecs::ServerEcs;
 use crate::{ecs::systems::ServerSystems};
 use common::defaults::PLAYER_SIZE;
-use common::ecs::components::{Position, Player, Bullet};
+use common::ecs::components::{Position, Player, Bullet, Owner, WithId};
 use common::map::{Map, MapCell, Wall};
 use glam::Vec2;
 use hecs::Entity;
@@ -18,8 +18,8 @@ impl ServerSystems {
 
         // let bullet_query = ecs.world.query::<(&Bullet, &mut Position)>();
 
-        Self::prepare_wall_collisions::<&Player>(ecs);
-        Self::prepare_wall_collisions::<&Bullet>(ecs);
+        Self::prepare_wall_collisions::<Player>(ecs);
+        Self::prepare_wall_collisions::<Bullet>(ecs);
         // Self::bullet_player_collisions(ecs);
     }
 
@@ -28,20 +28,20 @@ impl ServerSystems {
 
     // }
 
-    fn prepare_wall_collisions<T: hecs::Query + hecs::Component>(ecs: &mut ServerEcs) {
+    fn prepare_wall_collisions<T: hecs::Component + Clone + WithId>(ecs: &mut ServerEcs) {
         let generic_type = type_name::<T>().split("::").last().unwrap();
-        let query = ecs.world.query_mut::<(T, &mut Position)>();
+        let query = ecs.world.query_mut::<(&T, &mut Position)>();
         let map = ecs.resources.get::<Map>().unwrap().clone();
-        let mut player_positions: Vec<Vec2> = Vec::new();
+        let mut player_positions: Vec<(T, Vec2)> = Vec::new();
         let mut to_remove: Vec<Entity> = Vec::new();
-        for (entity, (_, pos)) in query {
+        for (entity, (t, pos)) in query {
             let mut pos = ecs.observer.observe_component(entity, pos);
             let pos = &mut pos.0;
             match generic_type {
                 "Player" => {
                     let to_pos = Self::wall_collision(map.clone(), pos, PLAYER_SIZE);
 
-                    player_positions.push(to_pos);
+                    player_positions.push((t.clone(), to_pos));
                     *pos = to_pos;
                 },
                 "Bullet" => {
@@ -60,16 +60,19 @@ impl ServerSystems {
         to_remove = Vec::new();
         if generic_type == "Player" {
             let bullet_query = ecs.world.query_mut::<(&Bullet, &Position)>();
+            // ToDo: finish damage collision
+            // for (entity, (bullet, bullet_pos)) in bullet_query {
+            //     for (player, player_pos) in &player_positions {
+            //         if player_pos.distance(bullet_pos.0) > 0.0 {
+            //             to_remove.push(entity);
 
-            for (entity, (_, bullet_pos)) in bullet_query {
-                for player_pos in &player_positions {
-                    // if player_pos.distance(bullet_pos.0) > 0.0 {
-                    //     // todo
-                    //     //  add take damage function here
-                    //     to_remove.push(entity);
-                    // }
-                }
-            }
+            //             if player.id() != bullet.id() {
+            //                 //todo
+            //                 // do dmg
+            //             }
+            //         }
+            //     }
+            // }
         }
         for e in to_remove {
             ecs.observed_world().despawn(e).unwrap();
@@ -107,23 +110,23 @@ impl ServerSystems {
             } else {
                 let side_vec = Self::side_vec_from_usize(cell_pos, i);
                 if let Some(side_vec) = side_vec {
-                    if Self::in_circle(&side_vec, &pos) {
+                    if Self::in_circle(&side_vec, &to_pos) {
                         match i {
                             0 => {
                                 to_pos.y = y_floored_f + (1.0 - size / 2.0);
-                                to_pos.x = pos.x;
+                                to_pos.x = to_pos.x;
                             },
                             3 => {
                                 to_pos.x = x_floored_f + (size / 2.0);
-                                to_pos.y = pos.y;
+                                to_pos.y = to_pos.y;
                             },
                             2 => {
                                 to_pos.y = y_floored_f + (size / 2.0);
-                                to_pos.x = pos.x;
+                                to_pos.x = to_pos.x;
                             },
                             1 => {
                                 to_pos.x = x_floored_f + (1.0 - size / 2.0); 
-                                to_pos.y = pos.y;
+                                to_pos.y = to_pos.y;
                             },
                             _ => panic!("AAAAAAAAAAAAAAA")
                         }
@@ -138,33 +141,82 @@ impl ServerSystems {
             } else {
                 let corner = Self::corner_from_usize(cell_pos, i);
                 if let Some(corner) = corner {
-                    let distance = pos.distance(corner);
-                    if distance < 1.0 {
+                    let distance = to_pos.distance(corner);
+                    if distance < size / 2.0 - 0.001 {
                         // size / 2.0
                         // to_pos = pos.rotate(Vec2::from_angle(pos.angle_between(corner)));
 
                         // dbg!(pos.dot(corner));
-                        dbg!(pos.angle_between(corner).to_degrees());
-                        // let angle_in_between = 90.0 * distance;
-                        // match i {
-                        //     0 => {
-                        //         to_pos.y = y_floored_f + (1.0 - size / 2.0);
-                        //         to_pos.x = pos.x;
-                        //     },
-                        //     1 => {
-                        //         to_pos.x = x_floored_f + (size / 2.0);
-                        //         to_pos.y = pos.y;
-                        //     },
-                        //     2 => {
-                        //         to_pos.y = y_floored_f + (size / 2.0);
-                        //         to_pos.x = pos.x;
-                        //     },
-                        //     3 => {
-                        //         to_pos.x = x_floored_f + (1.0 - size / 2.0); 
-                        //         to_pos.y = pos.y;
-                        //     },
-                        //     _ => panic!("AAAAAAAAAAAAAAA")
+
+                        let dink = (to_pos.y - corner.y).abs();
+                        let a: f32;
+                        if i == 0 || i == 3 {
+                            a = Vec2::new(corner.x, corner.y - dink).distance(to_pos);
+                        } else {
+                            a = Vec2::new(corner.x, corner.y + dink).distance(to_pos);
+                        }
+                        let b = ((size/2.0).powf(2.0) - a.powf(2.0)).sqrt();
+                        let change_y = b - dink;
+
+                        let a = change_y;
+                        let r = size / 2.0;
+                        let d = pos.distance(corner);
+
+                        let mut to_acos = (d.powf(2.0) + a.powf(2.0) - r.powf(2.0)) / (2.0 * a * d);
+                        if to_acos < -1.0 || to_acos > 1.0 {
+                            to_acos = to_acos - to_acos % 1.0;
+                        }
+
+                        let alpha = 360.0 - 90.0 - 
+                        to_acos.acos();
+
+                        dbg!(alpha);
+
+                        let determinant = (2.0 * d * alpha.cos()).powf(2.0) + 4.0 * (r.powf(2.0) - d.powf(2.0));
+                        dbg!(determinant);
+                        let x_1 = 
+                        (
+                            2.0 * d * alpha.cos() + determinant.sqrt()
+                        ) / 2.0; 
+                        let x_2 = 
+                        (
+                            2.0 * d * alpha.cos() - determinant.sqrt()
+                        ) / 2.0; 
+
+                        let x_max = x_1.max(x_2);
+                        dbg!(x_1, x_2);
+                        let change_x: f32;
+                        // if i == 0 || i == 1 {
+                        //     change_x = Vec2::new(corner.x + x_max, corner.y).distance(*pos);
+                        // } else {
+                        //     change_x = Vec2::new(corner.x - x_max, corner.y).distance(*pos);
                         // }
+                        change_x = x_max;
+                        dbg!(change_x, change_y);
+                        // dbg!(pos.angle_between(corner).to_degrees());
+                        // let angle_in_between = 90.0 * distance;
+                        match i {
+                            0 => {
+                                to_pos.y = to_pos.y - change_y;
+                                to_pos.x = to_pos.x - change_x;
+                            },
+                            1 => {
+                                to_pos.y = to_pos.y + change_y;
+                                to_pos.x = to_pos.x - change_x;
+                            },
+                            2 => {
+                                to_pos.y = to_pos.y + change_y;
+                                to_pos.x = to_pos.x + change_x;
+                            },
+
+                            // done, dont change
+                            3 => {
+                                to_pos.y = to_pos.y - change_y; 
+                                to_pos.x = to_pos.x + change_x;
+                            },
+                            _ => panic!("AAAAAAAAAAAAAAA")
+                        }
+                        dbg!(to_pos);
                     }
                 }
             }
@@ -176,7 +228,7 @@ impl ServerSystems {
         let mut return_vec: Vec<(Vec2, MapCell)> = Vec::new();
         if y_i + 1 >= map.get_height() {
             return_vec.push(
-                (Vec2::new(x_f, y_f + 1.0), MapCell::Wall(Wall::default()))
+                (Vec2::new(x_f, y_f + 1.0), MapCell::Empty)
             );
         } else {
             return_vec.push(
@@ -186,7 +238,7 @@ impl ServerSystems {
 
         if x_i + 1 >= map.get_width() {
             return_vec.push(
-                (Vec2::new(x_f + 1.0, y_f), MapCell::Wall(Wall::default()))
+                (Vec2::new(x_f + 1.0, y_f), MapCell::Empty)
             );
         } else {
             return_vec.push(
@@ -196,7 +248,7 @@ impl ServerSystems {
 
         if y_i as i32 - 1 < 0 {
             return_vec.push(
-                (Vec2::new(x_f, y_f - 1.0), MapCell::Wall(Wall::default()))
+                (Vec2::new(x_f, y_f - 1.0), MapCell::Empty)
             );
         } else {
             return_vec.push(
@@ -206,7 +258,7 @@ impl ServerSystems {
         
         if x_i as i32 - 1 < 0 {
             return_vec.push(
-                (Vec2::new(x_f - 1.0, y_f), MapCell::Wall(Wall::default()))
+                (Vec2::new(x_f - 1.0, y_f), MapCell::Empty)
             );
         } else {
             return_vec.push(
@@ -220,7 +272,7 @@ impl ServerSystems {
         let mut return_vec: Vec<(Vec2, MapCell)> = Vec::new();
         if x_i + 1 >= map.get_width() || y_i + 1 >= map.get_height() {
             return_vec.push(
-                (Vec2::new(x_f, y_f + 1.0), MapCell::Wall(Wall::default()))
+                (Vec2::new(x_f + 1.0, y_f + 1.0), MapCell::Wall(Wall::default()))
             );
         } else {
             return_vec.push(
@@ -230,7 +282,7 @@ impl ServerSystems {
 
         if x_i + 1 >= map.get_width() || y_i as i32 - 1 < 0 {
             return_vec.push(
-                (Vec2::new(x_f + 1.0, y_f), MapCell::Wall(Wall::default()))
+                (Vec2::new(x_f + 1.0, y_f - 1.0), MapCell::Wall(Wall::default()))
             );
         } else {
             return_vec.push(

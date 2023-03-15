@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use common::ecs::components::{Position, Bullet, LookDirection};
+use common::ecs::components::{Position, Bullet, LookDirection, Owner, Player};
 use hecs::Entity;
 use common::ecs::components::{Velocity};
 use common::ecs::timer::Timer;
@@ -8,12 +8,12 @@ use crate::ecs::components::BulletDespawn;
 
 use crate::ecs::ServerEcs;
 
-pub fn spawn_bullet(ecs: &mut ServerEcs, pos: Position, look_dir: LookDirection, range: f32, duration: Duration) -> Entity {
+pub fn spawn_bullet(player: Player, ecs: &mut ServerEcs, pos: Position, look_dir: LookDirection, range: f32, duration: Duration) -> Entity {
     let entity = ecs.world.reserve_entity();
 
     // Insert observed components
     ecs.observed_world().insert(entity, (
-        Bullet,
+        Bullet::new(player.id),
         Position(pos.0),
         Velocity(look_dir.0 * range),
     )).unwrap();
