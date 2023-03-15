@@ -18,15 +18,17 @@ impl ServerSystems {
     pub fn shoot_system(ecs: &mut ServerEcs, _dt: f32) {
         let query = ecs
             .world
-            .query_mut::<(&InputState, &LookDirection, &Position, &HeldWeapon)>()
+            .query_mut::<(&InputState, &LookDirection, &Position, &mut HeldWeapon)>()
             .without::<&Timer<ShootCooldown>>();
 
         let mut bullets = Vec::new();
         let mut cooldowns = Vec::new();
 
         for (entity, (input, look_dir, position, weapon)) in query {
+            let mut weapon = ecs.observer.observe_component(entity, weapon);
+
             // Check if shooting
-            if !input.shoot {
+            if !input.shoot || weapon.1 <= 0 {
                 continue;
             }
 
@@ -36,6 +38,9 @@ impl ServerSystems {
                 dir: *look_dir,
                 gun: weapon.0,
             });
+
+            // Subtract ammo
+            weapon.1 -= 1;
 
             // Set cooldown
             let cooldown = weapon.0.recharge();
@@ -84,7 +89,6 @@ impl ServerSystems {
                             Health(h.0 - 1),
                         )).unwrap();
                     }
-                    println!("a weapon was picked up");
                 }
             }
         }

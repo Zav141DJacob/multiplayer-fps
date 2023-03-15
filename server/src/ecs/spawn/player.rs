@@ -20,7 +20,7 @@ pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs) -> Entity {
         Health(DEFAULT_PLAYER_HP),
         Velocity(Vec2::ZERO),
         LookDirection(Vec2::from_angle(0.0)),
-        HeldWeapon(Gun::Pistol),
+        HeldWeapon(Gun::Pistol, Gun::Pistol.get_max_ammo()),
     )).unwrap();
 
     // Insert server-side components

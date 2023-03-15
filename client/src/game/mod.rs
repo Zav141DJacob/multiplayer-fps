@@ -27,7 +27,7 @@ use crate::game::input::InputHandler;
 use crate::game::net::Connection;
 use crate::game::raycast::sprites::Sprite;
 use crate::game::texture::pixels::Pixels;
-use common::ecs::components::{Health, Position, WeaponCrate};
+use common::ecs::components::{Health, Position, WeaponCrate, HeldWeapon};
 use common::map::Map;
 use common::{FromClientMessage, FromServerMessage};
 use fps_counter::FPSCounter;
@@ -233,9 +233,9 @@ impl ProgramState for Game {
         self.ui.set_game_state(GameUiState {
             player_hp_max: PLAYER_MAX_HP,
             player_hp: self.ecs.world.get::<&Health>(self.my_entity).unwrap().0,
-            weapon_name: "Scar".to_string(),
-            max_ammo: 25,
-            ammo: 15,
+            weapon_name: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().0.to_string(),
+            max_ammo: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().0.get_max_ammo(),
+            ammo: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().1,
         });
         // Draw UI
         self.ui.draw_health(&mut draw, width, height);

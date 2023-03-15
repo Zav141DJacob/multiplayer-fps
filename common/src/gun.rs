@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{time::Duration, fmt};
 use serde::{Serialize, Deserialize};
 
 use rand::Rng;
@@ -34,7 +34,23 @@ impl Gun {
             _ => unreachable!(),
         }
     }
+    pub fn get_max_ammo(&self) -> usize {
+        match self {
+            Gun::Pistol => 25,
+            Gun::MachineGun => 50,
+        }
+    }
 }
+
+impl fmt::Display for Gun {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Gun::Pistol => write!(f, "Glock 19"),
+            Gun::MachineGun => write!(f, "M2 Browning"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
