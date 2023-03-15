@@ -1,4 +1,4 @@
-use crate::client::Client;
+use crate::client::{Client, ClientError};
 use anyhow::anyhow;
 use common::{FromClientMessage, FromServerMessage};
 use message_io::network::RemoteAddr;
@@ -6,7 +6,7 @@ use std::net::{IpAddr, SocketAddr};
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
-pub type ClientReceiver = UnboundedReceiver<FromServerMessage>;
+pub type ClientReceiver = UnboundedReceiver<Result<FromServerMessage, ClientError>>;
 pub type ClientSender = UnboundedSender<FromClientMessage>;
 
 pub struct Connection {
@@ -30,9 +30,11 @@ impl Connection {
 
     pub fn receive(&mut self) -> anyhow::Result<Option<FromServerMessage>> {
         match self.receiver.try_recv() {
-            Ok(message) => Ok(Some(message)),
+            Ok(Ok(message)) => Ok(Some(message)),
             Err(TryRecvError::Empty) => Ok(None),
-            Err(TryRecvError::Disconnected) => Err(anyhow!("Client disconnected from server")),
+            Err(TryRecvError::Disconnected) | Ok(Err(ClientError::Disconnected)) => {
+                Err(anyhow!(ClientError::Disconnected))
+            }
         }
     }
 
