@@ -1,0 +1,13 @@
+version: "3.7"
+services:
+  fps-server:
+    container_name: fps-server
+    build: .
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+      - TZ=Estonia/Tallinn
+    ports:
+      - "1337:1337/udp"
+    restart: unless-stopped

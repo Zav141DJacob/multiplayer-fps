@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::io;
 use std::net::SocketAddr;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::constructed_message::ConstructMessage;
 use crate::ecs::spawn::weapon_crate::spawn_weapon_crates_init;
@@ -24,6 +24,8 @@ use crate::ecs::ServerEcs;
 use crate::events;
 
 pub struct Server {
+    last_tick: Instant,
+
     pub handler: NodeHandler<Signal>,
     listener: Option<NodeListener<Signal>>,
 
@@ -84,6 +86,7 @@ impl Server {
 
         Ok((
             Server {
+                last_tick: Instant::now(),
                 handler,
                 listener: Some(listener),
                 registered_clients: RegisteredClients::new(),
@@ -94,7 +97,9 @@ impl Server {
     }
 
     pub fn handle_ticks(&mut self) {
-        self.ecs.tick(1.0 / TICKS_PER_SECOND as f32);
+        let dt = self.last_tick.elapsed().as_secs_f32();
+        self.last_tick = Instant::now();
+        self.ecs.tick(dt);
 
         let protocols = self
             .ecs
@@ -118,33 +123,29 @@ impl Server {
         let logger = self.ecs.resources.get::<Logger>().unwrap().clone();
         let listener = self.listener.take().unwrap();
 
-        listener.for_each(move |event| {
-            match event {
-                NodeEvent::Signal(signal) => match signal {
-                    Signal::Tick => {
-                        self.handle_ticks();
-                    }
-                    _ => (), // I put the Signal enum inside common, so I would like some input on
-                             // if we should merge Signals from client as well
-                },
-                NodeEvent::Network(net_event) => {
-                    if let NetEvent::Message(endpoint, input_data) = net_event {
-                        let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
+        listener.for_each(move |event| match event {
+            NodeEvent::Signal(signal) => match signal {
+                Signal::Tick => {
+                    self.handle_ticks();
+                }
+            },
+            NodeEvent::Network(net_event) => {
+                if let NetEvent::Message(endpoint, input_data) = net_event {
+                    let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
 
-                        logger.log(format!("Event {message:?}"));
+                    logger.log(format!("Event {message:?}"));
 
-                        match message {
-                            FromClientMessage::Ping => {
-                                events::ping::execute(&logger, &self.handler, endpoint).unwrap()
-                            }
-                            FromClientMessage::Leave => {
-                                events::leave::execute(self, endpoint).unwrap()
-                            }
-                            FromClientMessage::Join => {
-                                events::join::execute(self, endpoint).unwrap();
-                            }
-                            FromClientMessage::UpdateInputs(updated_input_state) => {
-                                events::update_inputs::execute(self, updated_input_state, endpoint);
+                    match message {
+                        FromClientMessage::Ping => {
+                            events::ping::execute(&logger, &self.handler, endpoint).unwrap()
+                        }
+                        FromClientMessage::Leave => events::leave::execute(self, endpoint).unwrap(),
+                        FromClientMessage::Join => {
+                            events::join::execute(self, endpoint).unwrap();
+                        }
+                        FromClientMessage::UpdateInputs(updated_input_state) => {
+                            if let Err(err) = events::update_inputs::execute(self, updated_input_state, endpoint) {
+                                logger.log(format!("Warning: {err}"))
                             }
                         }
                     }

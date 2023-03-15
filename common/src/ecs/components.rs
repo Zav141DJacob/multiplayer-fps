@@ -41,7 +41,7 @@ bulk_attribute! {
     pub struct LookDirection (pub Vec2);
     pub struct Size (pub Vec2);
     pub struct Health (pub u32);
-    pub struct HeldWeapon (pub Gun);
+    pub struct HeldWeapon (pub Gun, pub usize);
 
     pub struct Player {
         pub id: UserID,

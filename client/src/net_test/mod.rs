@@ -7,13 +7,13 @@ use message_io::network::RemoteAddr;
 use notan::egui::{self, EguiPluginSugar, ScrollArea, TextEdit, Ui};
 use notan::prelude::{App, Assets, Color, Graphics, Plugins};
 use tokio::sync::mpsc::error::TryRecvError;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tracing::error;
 
-use common::{FromClientMessage, FromServerMessage};
+use common::FromClientMessage;
 
 use crate::args::ARGS;
 use crate::client::Client;
+use crate::game::net::{ClientReceiver, ClientSender};
 use crate::program::state::ProgramState;
 
 pub struct NetworkTest {
@@ -42,7 +42,7 @@ impl NetworkTest {
 
 struct Connection {
     client: Client,
-    receiver: UnboundedReceiver<FromServerMessage>,
+    receiver: ClientReceiver,
     sender_widget: SenderWidget,
 }
 
@@ -139,14 +139,12 @@ impl ProgramState for NetworkTest {
 }
 
 struct SenderWidget {
-    sender: UnboundedSender<FromClientMessage>,
+    sender: ClientSender,
 }
 
 impl SenderWidget {
-    fn new(sender: UnboundedSender<FromClientMessage>) -> Self {
-        Self {
-            sender,
-        }
+    fn new(sender: ClientSender) -> Self {
+        Self { sender }
     }
 
     fn show(&mut self, ui: &mut Ui) -> anyhow::Result<()> {

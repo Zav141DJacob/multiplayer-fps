@@ -1,17 +1,17 @@
 mod controls;
 pub(crate) mod ecs;
 mod gameui;
+mod input;
 mod minimap;
 pub(crate) mod net;
 mod raycast;
 mod texture;
-mod input;
 
 use crate::game::minimap::Minimap;
 use crate::game::raycast::*;
 use crate::program::state::ProgramState;
 use admin_client::program::Program;
-use common::defaults::{PLAYER_MAX_HP};
+use common::defaults::PLAYER_MAX_HP;
 use notan::app::{App, Color, Graphics, Plugins};
 
 use anyhow::Context;
@@ -21,20 +21,19 @@ use std::fmt::{Display, Formatter};
 
 use notan::egui::{EguiPluginSugar, Grid, Ui, Window};
 
+use crate::game::ecs::component::{Height, RenderSprite, Scale};
 use crate::game::ecs::{ClientEcs, MyEntity};
 use crate::game::input::InputHandler;
 use crate::game::net::Connection;
 use crate::game::raycast::sprites::Sprite;
 use crate::game::texture::pixels::Pixels;
-use crate::game::texture::ATLAS_MONSTER;
-use common::ecs::components::{Player, Position, Health, WeaponCrate};
+use common::ecs::components::{Health, Position, WeaponCrate, HeldWeapon};
 use common::map::Map;
 use common::{FromClientMessage, FromServerMessage};
 use fps_counter::FPSCounter;
 use glam::Vec2;
 use hecs::Entity;
 use itertools::Itertools;
-use crate::game::ecs::component::{Height, RenderSprite, Scale};
 
 use self::gameui::{GameUI, GameUiState};
 use self::texture::WEAPON_CRATE;
@@ -62,7 +61,11 @@ pub struct Game {
 
 impl Game {
     pub fn new(
-        app: &mut App, gfx: &mut Graphics, mut ecs: ClientEcs, connection: Connection, my_entity: Entity,
+        app: &mut App,
+        gfx: &mut Graphics,
+        mut ecs: ClientEcs,
+        connection: Connection,
+        my_entity: Entity,
     ) -> Self {
         let (width, height) = gfx.size();
         let (width, height) = (width as usize, height as usize);
@@ -71,6 +74,7 @@ impl Game {
 
         let pixels = Pixels::new(width, height, gfx);
         let mut minimap = Minimap::new(ecs.resources.get::<Map>().unwrap().clone(), gfx);
+        minimap.set_minimap_scale(Vec2::splat(1.0));
         minimap.set_floor_color(FLOOR_COLOR.into());
         minimap.render_map(gfx);
 
@@ -128,7 +132,8 @@ impl ProgramState for Game {
 
         self.input.tick(app);
         if let Some(state) = self.input.take_state() {
-            self.connection.send(FromClientMessage::UpdateInputs(state))?;
+            self.connection
+                .send(FromClientMessage::UpdateInputs(state))?;
         }
 
         let dt = app.system_timer.delta_f32();
@@ -148,10 +153,15 @@ impl ProgramState for Game {
             app.window().set_cursor(CursorIcon::None);
         }
 
-        let perspective = self.ray_caster.perspective(self.input.up_down_angle(), 0.6, 0.0);
+        let perspective = self
+            .ray_caster
+            .perspective(self.input.up_down_angle(), 0.6, 0.0);
         let horizon = (0.5 * self.pixels.height() as f32 + perspective.y_offset) as usize;
 
-        let my_pos = self.ecs.world.query_one_mut::<&Position>(self.my_entity)
+        let my_pos = self
+            .ecs
+            .world
+            .query_one_mut::<&Position>(self.my_entity)
             .context("Couldn't query for own player entity")?;
         let my_pos = my_pos.0;
         let my_dir = Vec2::from_angle(self.input.peek_state().look_angle);
@@ -175,7 +185,10 @@ impl ProgramState for Game {
             &*self.ecs.resources.get::<Map>()?,
         );
 
-        let mut sprites = self.ecs.world.query_mut::<(&Position, &RenderSprite, Option<&Scale>, Option<&Height>)>()
+        let mut sprites = self
+            .ecs
+            .world
+            .query_mut::<(&Position, &RenderSprite, Option<&Scale>, Option<&Height>)>()
             .into_iter()
             .filter(|(entity, _)| self.my_entity != *entity)
             .map(|(_, (pos, sprite, scale, height))| {
@@ -183,12 +196,10 @@ impl ProgramState for Game {
                     pos.0,
                     sprite.tex,
                     scale.map(|v| v.0).unwrap_or(Vec2::ONE),
-                    height.map(|v| v.0).unwrap_or(0.0)
+                    height.map(|v| v.0).unwrap_or(0.0),
                 )
             })
-            .map(|(pos, tex, scale, height)| {
-                Sprite::new(tex, pos, scale, height)
-            })
+            .map(|(pos, tex, scale, height)| Sprite::new(tex, pos, scale, height))
             .collect_vec();
 
         let mut crate_sprites = self
@@ -201,8 +212,13 @@ impl ProgramState for Game {
             .map(|pos| Sprite::new(&WEAPON_CRATE, pos, Vec2::new(0.5, 0.5), 0.0))
             .collect_vec();
 
-        self.ray_caster
-            .draw_sprites(&mut self.pixels, my_pos, my_dir, perspective, &mut crate_sprites);
+        self.ray_caster.draw_sprites(
+            &mut self.pixels,
+            my_pos,
+            my_dir,
+            perspective,
+            &mut crate_sprites,
+        );
 
         self.ray_caster
             .draw_sprites(&mut self.pixels, my_pos, my_dir, perspective, &mut sprites);
@@ -213,14 +229,13 @@ impl ProgramState for Game {
         self.pixels.flush(gfx);
         self.pixels.draw(&mut draw);
 
-
         // set UI game state
-        self.ui.set_game_state(GameUiState { 
-            player_hp_max: PLAYER_MAX_HP, 
-            player_hp: self.ecs.world.get::<&Health>(self.my_entity).unwrap().0, 
-            weapon_name: "Scar".to_string(), 
-            max_ammo: 25, 
-            ammo: 15 
+        self.ui.set_game_state(GameUiState {
+            player_hp_max: PLAYER_MAX_HP,
+            player_hp: self.ecs.world.get::<&Health>(self.my_entity).unwrap().0,
+            weapon_name: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().0.to_string(),
+            max_ammo: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().0.get_max_ammo(),
+            ammo: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().1,
         });
         // Draw UI
         self.ui.draw_health(&mut draw, width, height);
@@ -234,8 +249,8 @@ impl ProgramState for Game {
             width,
             height,
             my_pos,
-            Color::new(0.2, 0.2, 0.2, 1.0),
-            self.ray_caster.minimap_rays(),
+            Color::new(1.0, 1.0, 1.0, 0.1),
+            &self.ray_caster,
         );
 
         self.minimap
@@ -299,7 +314,13 @@ impl ProgramState for Game {
         Ok(())
     }
 
-    fn event(&mut self, _app: &mut App, _assets: &mut Assets, _plugins: &mut Plugins, event: Event) -> anyhow::Result<()> {
+    fn event(
+        &mut self,
+        _app: &mut App,
+        _assets: &mut Assets,
+        _plugins: &mut Plugins,
+        event: Event,
+    ) -> anyhow::Result<()> {
         self.input.handle_event(event);
         Ok(())
     }

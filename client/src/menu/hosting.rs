@@ -1,17 +1,19 @@
 use std::{
     fmt::{Display, Formatter},
-    net::{IpAddr, Ipv4Addr},
-    num::ParseIntError,
+    net::UdpSocket,
 };
 
 use admin_client::program::Program;
-use common::defaults::PORT;
+use common::defaults::{IP, PORT};
 use notan::{
     egui::{self, EguiPluginSugar, Id},
     prelude::{App, Assets, Color, Graphics, Plugins},
 };
 
-use crate::{connecting::Connecting, error::ErrorState, program::state::ProgramState};
+use crate::{
+    connecting::Connecting, error::ErrorState, errorwindow::ErrorWindows,
+    program::state::ProgramState,
+};
 
 use super::Menu;
 
@@ -20,25 +22,9 @@ enum NextState {
     Game,
 }
 
-#[derive(Clone)]
-struct ErrorWindow {
-    error: ParseIntError,
-    id: u16,
-    is_open: bool,
-}
-
-impl ErrorWindow {
-    pub fn new(error: ParseIntError, id: u16) -> ErrorWindow {
-        ErrorWindow {
-            error,
-            id,
-            is_open: true,
-        }
-    }
-}
 #[derive(Default)]
 pub struct HostingMenu {
-    errors: Vec<ErrorWindow>,
+    errors: ErrorWindows,
     next_state: Option<NextState>,
     port: String,
 
@@ -56,7 +42,7 @@ impl Display for HostingMenu {
 impl HostingMenu {
     pub fn new() -> HostingMenu {
         HostingMenu {
-            errors: Vec::new(),
+            errors: ErrorWindows::new(),
             next_state: None,
             port: PORT.to_string(),
             processed_port: None,
@@ -69,18 +55,30 @@ impl HostingMenu {
         self.processed_port = match self.port.parse() {
             Ok(p) => Some(p),
             Err(error) => {
-                let id = match self.errors.last() {
-                    Some(error) => error.id + 1,
-                    None => 0,
-                };
-
-                self.errors.push(ErrorWindow::new(error, id));
+                self.errors.add_error(error.to_string());
                 return false;
             }
         };
 
+        if !udp_port_is_available(self.processed_port.unwrap()) {
+            self.errors.add_error("Port is already used".to_string());
+            return false;
+        }
+
+        let mut p = Program::new(IP, self.processed_port.unwrap(), false);
+        if let Err(error) = p.run() {
+            self.errors.add_error(error.to_string());
+            return false;
+        }
+
+        self.server = Some(p);
+        self.next_state = Some(NextState::Game);
         true
     }
+}
+
+fn udp_port_is_available(port: u16) -> bool {
+    UdpSocket::bind((IP, port)).is_ok()
 }
 
 impl ProgramState for HostingMenu {
@@ -93,19 +91,14 @@ impl ProgramState for HostingMenu {
     ) -> anyhow::Result<()> {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                for error in self.errors.iter_mut() {
+                for error in self.errors.0.iter_mut() {
                     egui::Window::new("Error: Invalid port")
                         .id(Id::new(error.id))
                         .open(&mut error.is_open)
                         .show(ctx, |ui| ui.label(error.error.to_string()));
                 }
 
-                self.errors = self
-                    .errors
-                    .clone()
-                    .into_iter()
-                    .filter(|error| error.is_open)
-                    .collect();
+                self.errors.remove_closed();
 
                 ui.vertical_centered(|ui| {
                     ui.heading("Host Server");
@@ -119,19 +112,7 @@ impl ProgramState for HostingMenu {
 
                     // When you press enter it submits
                     if response.lost_focus() && ui.input().key_pressed(egui::Key::Enter) {
-                        if !self.process_inputs() {
-                            return;
-                        }
-
-                        let mut p = Program::new(
-                            "127.0.0.1".parse().unwrap(),
-                            self.processed_port.unwrap(),
-                            false,
-                        );
-                        p.run();
-                        self.server = Some(p);
-
-                        self.next_state = Some(NextState::Game);
+                        self.process_inputs();
                     }
 
                     ui.add_space(10.0);
@@ -139,19 +120,7 @@ impl ProgramState for HostingMenu {
                         ui.set_width(ui.available_width() / 4.0);
                         ui.horizontal(|ui| {
                             if ui.button("Host").clicked() {
-                                if !self.process_inputs() {
-                                    return;
-                                }
-
-                                let mut p = Program::new(
-                                    "127.0.0.1".parse().unwrap(),
-                                    self.processed_port.unwrap(),
-                                    false,
-                                );
-                                p.run();
-                                self.server = Some(p);
-
-                                self.next_state = Some(NextState::Game);
+                                self.process_inputs();
                             }
                             if ui.button("Back").clicked() {
                                 self.next_state = Some(NextState::Menu);
@@ -180,13 +149,9 @@ impl ProgramState for HostingMenu {
     ) -> Option<Box<dyn ProgramState>> {
         match self.next_state.take()? {
             NextState::Game => {
-                let state = Connecting::new(
-                    IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-                    self.processed_port.unwrap(),
-                    self.server.clone(),
-                )
-                .map(|v| v.into())
-                .unwrap_or_else(|err| ErrorState::from(&*err).into());
+                let state = Connecting::new(IP, self.processed_port.unwrap(), self.server.clone())
+                    .map(|v| v.into())
+                    .unwrap_or_else(|err| ErrorState::from(&*err).into());
                 Some(state)
             }
             NextState::Menu => Some(Menu::new().into()),

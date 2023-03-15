@@ -1,16 +1,22 @@
-use std::{net::SocketAddr, time::Duration};
+use core::time;
+use std::{error::Error, fmt::Display, net::SocketAddr};
 
+use chrono::{DateTime, Duration, Utc};
 use common::{FromClientMessage, FromServerMessage};
 use message_io::{
     network::{Endpoint, NetEvent, RemoteAddr, Transport},
     node::{self, NodeEvent, NodeHandler, NodeListener},
 };
-use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc;
+
+use crate::game::net::{ClientReceiver, ClientSender};
 
 enum Signal {
-    Ping, // TODO: remove ping in the future
+    Ping,
     Stop,
 }
+
+const DISCONNECT_TIME: i64 = 4;
 
 pub struct Client {
     handler: NodeHandler<Signal>,
@@ -25,6 +31,23 @@ impl Drop for Client {
         self.stop();
     }
 }
+
+#[derive(Debug)]
+pub enum ClientError {
+    Disconnected,
+}
+
+impl Display for ClientError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ClientError::Disconnected => {
+                write!(f, "Client disconnected from server")
+            }
+        }
+    }
+}
+
+impl Error for ClientError {}
 
 impl Client {
     pub fn new(remote_addr: RemoteAddr) -> anyhow::Result<Self> {
@@ -44,15 +67,10 @@ impl Client {
         self.handler.signals().send(Signal::Stop);
     }
 
-    pub fn start(
-        &mut self,
-    ) -> anyhow::Result<(
-        UnboundedReceiver<FromServerMessage>,
-        UnboundedSender<FromClientMessage>,
-    )> {
+    pub fn start(&mut self) -> anyhow::Result<(ClientReceiver, ClientSender)> {
         // Messages recieved
         let (from_server_sender, from_server_reciever) =
-            mpsc::unbounded_channel::<FromServerMessage>();
+            mpsc::unbounded_channel::<Result<FromServerMessage, ClientError>>();
         // Messages sent
         let (from_client_sender, mut from_client_reciever) =
             mpsc::unbounded_channel::<FromClientMessage>();
@@ -63,6 +81,8 @@ impl Client {
         // Handles sent messages
         let handler = self.handler.clone();
         let server_id = self.server_id;
+
+        let mut last_response: Option<DateTime<Utc>> = None;
 
         tokio::spawn(async move {
             while let Some(message) = from_client_reciever.recv().await {
@@ -86,7 +106,7 @@ impl Client {
         tokio::spawn(async move {
             listener.for_each(move |event| match event {
                 NodeEvent::Network(net_event) => match net_event {
-                    NetEvent::Connected(_, established) => {
+                    NetEvent::Connected(_, established) => { // pretty sure this never gets called as we are using udp
                         if established {
                             println!("Connected to server at {}", server_id.addr(),);
                             println!("Client identified by local port: {}", local_addr.port());
@@ -97,27 +117,34 @@ impl Client {
                     }
                     NetEvent::Accepted(_, _) => unreachable!(), // Only generated when a listener accepts
                     NetEvent::Message(_, input_data) => {
+                        last_response = Some(Utc::now());
+
                         from_server_sender
-                                .send(bincode::deserialize(input_data).unwrap()).expect("Failed to send message from server to client, this should never happen as messages shouldn't be sent here when listener has been closed")
+                                .send(Ok(bincode::deserialize(input_data).unwrap())).expect("Failed to send message from server to client, this should never happen as messages shouldn't be sent here when listener has been closed")
                     }
-                    NetEvent::Disconnected(_) => {
-                        // TODO: Im pretty sure this never gets called, please look into it
+                    NetEvent::Disconnected(_) => { // pretty sure this never gets called as we are using udp
                         println!("Server disconnected");
                         handler.stop();
                     }
                 },
                 NodeEvent::Signal(signal) => match signal {
-                    Signal::Ping => { // TODO: remove ping in the future
+                    Signal::Ping => {
                         if from_client_sender2.is_closed() {
                             return
                         }
 
-                        let message = FromClientMessage::Ping;
-                        let output_data = bincode::serialize(&message).unwrap();
+                        if let Some(time) = last_response {
+                            if time < (Utc::now() - Duration::seconds(DISCONNECT_TIME)) {
+                                from_server_sender.send(Err(ClientError::Disconnected)).unwrap();
+                                return
+                            }
+                        }
+
+                        let output_data = bincode::serialize(&FromClientMessage::Ping).unwrap();
                         handler.network().send(server_id, &output_data);
                         handler
                             .signals()
-                            .send_with_timer(Signal::Ping, Duration::from_secs(1));
+                            .send_with_timer(Signal::Ping, time::Duration::from_secs(1));
                     }
                     Signal::Stop => {
                         // Should never give an error but if it does it doesn't matter as its part of close process anyway

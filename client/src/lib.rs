@@ -9,6 +9,7 @@ pub mod program;
 mod helpers;
 mod connecting;
 mod error;
+mod errorwindow;
 
 /// Like [puffin::profile_scope], but allows chaining multiple scopes after each other, instead of inside another.
 #[macro_export]

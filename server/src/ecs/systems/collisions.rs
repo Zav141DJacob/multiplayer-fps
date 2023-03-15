@@ -1,7 +1,7 @@
+use crate::ecs::systems::ServerSystems;
 use crate::ecs::ServerEcs;
-use crate::{ecs::systems::ServerSystems};
 use common::defaults::PLAYER_SIZE;
-use common::ecs::components::{Position, Player, Bullet, Owner, WithId};
+use common::ecs::components::{Position, Player, Bullet, WithId, Health, Damage};
 use common::map::{Map, MapCell, Wall};
 use glam::Vec2;
 use hecs::Entity;
@@ -15,7 +15,6 @@ pub enum Direction {
 
 impl ServerSystems {
     pub fn collision_system(ecs: &mut ServerEcs, _dt: f32) {
-
         // let bullet_query = ecs.world.query::<(&Bullet, &mut Position)>();
 
         Self::prepare_wall_collisions::<Player>(ecs);
@@ -30,54 +29,65 @@ impl ServerSystems {
 
     fn prepare_wall_collisions<T: hecs::Component + Clone + WithId>(ecs: &mut ServerEcs) {
         let generic_type = type_name::<T>().split("::").last().unwrap();
-        let query = ecs.world.query_mut::<(&T, &mut Position)>();
         let map = ecs.resources.get::<Map>().unwrap().clone();
-        let mut player_positions: Vec<(T, Vec2)> = Vec::new();
+        // let mut player_positions: Vec<(T, Health, Vec2)> = Vec::new();
         let mut to_remove: Vec<Entity> = Vec::new();
-        for (entity, (t, pos)) in query {
-            let mut pos = ecs.observer.observe_component(entity, pos);
-            let pos = &mut pos.0;
+
+
+        let mut bullet_positions: Vec<(Entity, Bullet, Vec2, Damage)> = Vec::new();
+
+
+        if generic_type == "Player" {
+            let bullet_query = ecs.world.query_mut::<(&Bullet, &Position, &Damage)>();
+            for (entity, (bullet, bullet_pos, damage)) in bullet_query {
+                bullet_positions.push((entity, *bullet, bullet_pos.0, *damage));
+            }
+        }
+        let query = ecs.world.query_mut::<(&T, &mut Health, &mut Position)>();
+
+        for (entity, (t, health, pos)) in query {
+            
             match generic_type {
                 "Player" => {
-                    let to_pos = Self::wall_collision(map.clone(), pos, PLAYER_SIZE);
+                    let to_pos = Self::wall_collision(map.clone(), &pos.0, PLAYER_SIZE);
 
-                    player_positions.push((t.clone(), to_pos));
-                    *pos = to_pos;
-                },
+                    {
+                        let mut pos = ecs.observer.observe_component(entity, pos);
+                        let pos = &mut pos.0;
+
+
+                        *pos = to_pos;
+                    }
+                    {
+                        
+                        for (bullet_entity, bullet, bullet_pos, damage) in &bullet_positions {
+                            if bullet_pos.distance(to_pos) < PLAYER_SIZE / 2.0 {
+        
+                                if t.id() != bullet.id() {
+                                    to_remove.push(*bullet_entity);
+
+                                    let mut health = ecs.observer.observe_component(entity, health);
+                                    let health = &mut health.0;
+                                    dbg!(damage);
+                                    *health = health.clone() - damage.0 as u32;
+                                }
+                            }
+                        }
+                    }
+                }
                 "Bullet" => {
-                    let to_pos = Self::wall_collision(map.clone(), pos, 0.0);
+                    let to_pos = Self::wall_collision(map.clone(), &pos.0, 0.0);
 
-                    if *pos != to_pos {
+                    if pos.0 != to_pos {
                         to_remove.push(entity);
                     }
-                },
-                _ => panic!()
+                }
+                _ => panic!(),
             }
         }
         for e in to_remove {
-            ecs.observed_world().despawn(e).unwrap();
+            ecs.observed_world().despawn(e);
         }
-        to_remove = Vec::new();
-        if generic_type == "Player" {
-            let bullet_query = ecs.world.query_mut::<(&Bullet, &Position)>();
-            // ToDo: finish damage collision
-            // for (entity, (bullet, bullet_pos)) in bullet_query {
-            //     for (player, player_pos) in &player_positions {
-            //         if player_pos.distance(bullet_pos.0) > 0.0 {
-            //             to_remove.push(entity);
-
-            //             if player.id() != bullet.id() {
-            //                 //todo
-            //                 // do dmg
-            //             }
-            //         }
-            //     }
-            // }
-        }
-        for e in to_remove {
-            ecs.observed_world().despawn(e).unwrap();
-        }
-
     }
 
     fn wall_collision(map: Map, pos: &Vec2, size: f32) -> Vec2{
@@ -315,13 +325,19 @@ impl ServerSystems {
     //  Checks if a line is inside a circle
     // takes in the line and a position as a Vec2
     // https://math.stackexchange.com/questions/275529/check-if-line-intersects-with-circles-perimeter
-    pub fn in_circle(line: &[Vec2; 2], player_pos: &Vec2) -> bool{
+    pub fn in_circle(line: &[Vec2; 2], player_pos: &Vec2) -> bool {
         let radius = PLAYER_SIZE / 2.0;
 
         let a = line[0].x - line[1].x;
         let b = line[0].y - line[1].y;
-        let x = (a*a + b*b).sqrt();
-        return ((player_pos.x - line[0].x) * (line[1].y - line[0].y) - (player_pos.y -  line[0].y) * (line[1].x - line[0].x)).abs() / x <= radius;
+        let x = (a * a + b * b).sqrt();
+
+        (
+            (player_pos.x - line[0].x) *
+            (line[1].y - line[0].y) -
+            (player_pos.y - line[0].y) *
+            (line[1].x - line[0].x)
+        ).abs() / x <= radius
     }
 
     fn side_vec_from_usize(position: &Vec2, side: usize) -> Option<[Vec2; 2]> {
@@ -329,19 +345,19 @@ impl ServerSystems {
         match side {
             0 => Some([
                 Vec2::new(position.x, position.y),
-                Vec2::new(position.x + 1.0, position.y)
+                Vec2::new(position.x + 1.0, position.y),
             ]),
             3 => Some([
                 Vec2::new(position.x + 1.0, position.y),
-                Vec2::new(position.x + 1.0, position.y - 1.0)
+                Vec2::new(position.x + 1.0, position.y - 1.0),
             ]),
             2 => Some([
                 Vec2::new(position.x, position.y + 1.0),
-                Vec2::new(position.x + 1.0, position.y + 1.0)
+                Vec2::new(position.x + 1.0, position.y + 1.0),
             ]),
             1 => Some([
                 Vec2::new(position.x, position.y),
-                Vec2::new(position.x, position.y - 1.0)
+                Vec2::new(position.x, position.y - 1.0),
             ]),
             _ => None
         }

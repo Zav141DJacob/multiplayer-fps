@@ -79,7 +79,7 @@ impl Map {
         }
 
         let mut rng = thread_rng();
-    
+
         if horiz {
             let wall_y = y1 + (height / 2);
             let door_x1 = x1 + rng.gen_range(0..width);
@@ -95,7 +95,7 @@ impl Map {
                 skiplist.push(Skip { x: door_x2, y: wall_y + 1 });
             }
             for x in x1..x2 {
-                if !skiplist.contains(&Skip { x: x, y: wall_y }) {
+                if !skiplist.contains(&Skip { x, y: wall_y }) {
                     self.set(x, wall_y, MapCell::Wall(Wall::Textured(Textured::GrayBrick)));
                 }
             }
@@ -116,7 +116,7 @@ impl Map {
                 skiplist.push(Skip { x: wall_x + 1, y: door_y2 });
             }
             for y in y1..y2 {
-                if !skiplist.contains(&Skip { x: wall_x, y: y }) {
+                if !skiplist.contains(&Skip { x: wall_x, y }) {
                     self.set(wall_x, y, MapCell::Wall(Wall::Textured(Textured::GrayBrick)));
                 }
             }
@@ -124,7 +124,7 @@ impl Map {
             self.divide(wall_x + 1, x2, y1, y2, skiplist.clone(), !horiz);
         }
     }
-    
+
     pub fn gen(width: usize, height: usize) -> Map {
         let mut map = Map::new(width, height);
         let skiplist: Vec<Skip> = Vec::new();
@@ -157,8 +157,8 @@ impl Map {
             } else {
                 print!(" ");
             }
-            if i % &map.width == 0 {
-                print!("\n");
+            if i % map.width == 0 {
+                println!();
             }
         }
     }
