@@ -2,15 +2,14 @@ use crate::ecs::spawn::bullet::spawn_bullet;
 use crate::ecs::systems::ServerSystems;
 use crate::ecs::ServerEcs;
 use common::ecs::components::{ HeldWeapon, InputState, LookDirection, Position };
-use std::time::Duration;
 use common::ecs::timer::Timer;
+use common::gun::Gun;
 use crate::ecs::components::{BulletDespawn, ShootCooldown};
 
 struct BulletSpawn {
     pos: Position,
     dir: LookDirection,
-    range: f32,
-    duration: Duration,
+    gun: Gun,
 }
 
 impl ServerSystems {
@@ -31,13 +30,10 @@ impl ServerSystems {
             }
 
             // Spawn bullet
-            let range = weapon.0.range();
-            let duration = Duration::from_secs_f32(1.0);
             bullets.push(BulletSpawn {
                 pos: *position,
                 dir: *look_dir,
-                range,
-                duration,
+                gun: weapon.0,
             });
 
             // Set cooldown
@@ -46,7 +42,7 @@ impl ServerSystems {
         }
 
         for bullet in bullets {
-            spawn_bullet(ecs, bullet.pos, bullet.dir, bullet.range, bullet.duration);
+            spawn_bullet(ecs, bullet.pos, bullet.dir, bullet.gun);
         }
 
         for (entity, cooldown) in cooldowns {

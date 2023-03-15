@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::io;
 use std::net::SocketAddr;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::constructed_message::ConstructMessage;
 use crate::ecs::spawn::weapon_crate::spawn_weapon_crates_init;
@@ -24,6 +24,8 @@ use crate::ecs::ServerEcs;
 use crate::events;
 
 pub struct Server {
+    last_tick: Instant,
+
     pub handler: NodeHandler<Signal>,
     listener: Option<NodeListener<Signal>>,
 
@@ -84,6 +86,7 @@ impl Server {
 
         Ok((
             Server {
+                last_tick: Instant::now(),
                 handler,
                 listener: Some(listener),
                 registered_clients: RegisteredClients::new(),
@@ -94,7 +97,9 @@ impl Server {
     }
 
     pub fn handle_ticks(&mut self) {
-        self.ecs.tick(1.0 / TICKS_PER_SECOND as f32);
+        let dt = self.last_tick.elapsed().as_secs_f32();
+        self.last_tick = Instant::now();
+        self.ecs.tick(dt);
 
         let protocols = self
             .ecs
