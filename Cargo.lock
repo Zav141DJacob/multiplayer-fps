@@ -340,6 +340,7 @@ dependencies = [
  "admin-client",
  "anyhow",
  "bincode",
+ "chrono",
  "clap",
  "color-thief",
  "common",
