@@ -106,12 +106,12 @@ pub fn notan_setup(
     ip: IpAddr,
     port: u16,
     should_exit_on_server_closing: bool,
-) -> Box<dyn Fn(&mut App, &mut Assets, &mut Graphics, &mut Plugins) -> Program> {
-    Box::new(move |_, _, _, _| {
+) -> impl Fn(&mut App, &mut Assets, &mut Graphics, &mut Plugins) -> Program {
+    move |_, _, _, _| {
         let mut p = Program::new(ip, port, should_exit_on_server_closing);
         p.run().unwrap();
         p
-    })
+    }
 }
 
 pub fn notan_draw(

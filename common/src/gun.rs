@@ -1,14 +1,33 @@
-use std::{time::Duration, fmt};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use std::{fmt, time::Duration};
 
-use rand::Rng;
+use rand::{distributions::Standard, prelude::Distribution, Rng};
+
+use crate::ecs::components::HeldWeapon;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Gun {
     Pistol,
     MachineGun,
 }
+
+impl Distribution<Gun> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Gun {
+        match rng.gen_range(0..=1) {
+            0 => Gun::Pistol,
+            _ => Gun::MachineGun,
+        }
+    }
+}
+
 impl Gun {
+    pub fn to_held_weapon(&self) -> HeldWeapon {
+        HeldWeapon {
+            gun: *self,
+            ammo: self.get_max_ammo(),
+        }
+    }
+
     pub fn range(&self) -> f32 {
         match self {
             Gun::Pistol => 8.0,
@@ -26,14 +45,7 @@ impl Gun {
             Gun::MachineGun => Duration::from_secs_f32(0.1),
         }
     }
-    pub fn get_random_gun() -> Gun {
-        let index = rand::thread_rng().gen_range(0..=1);
-        match index {
-            0 => Gun::Pistol,
-            1 => Gun::MachineGun,
-            _ => unreachable!(),
-        }
-    }
+
     pub fn get_max_ammo(&self) -> usize {
         match self {
             Gun::Pistol => 25,
@@ -62,6 +74,6 @@ mod tests {
     #[test]
     fn test_machine_gun_recharge() {
         let machine_gun = Gun::MachineGun;
-        assert_eq!(machine_gun.recharge(), Duration::new(0,100_000_000));
+        assert_eq!(machine_gun.recharge(), Duration::new(0, 100_000_000));
     }
 }

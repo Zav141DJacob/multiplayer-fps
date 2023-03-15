@@ -233,9 +233,9 @@ impl ProgramState for Game {
         self.ui.set_game_state(GameUiState {
             player_hp_max: PLAYER_MAX_HP,
             player_hp: self.ecs.world.get::<&Health>(self.my_entity).unwrap().0,
-            weapon_name: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().0.to_string(),
-            max_ammo: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().0.get_max_ammo(),
-            ammo: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().1,
+            weapon_name: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().gun.to_string(),
+            max_ammo: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().gun.get_max_ammo(),
+            ammo: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().ammo,
         });
         // Draw UI
         self.ui.draw_health(&mut draw, width, height);

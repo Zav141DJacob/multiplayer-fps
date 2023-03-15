@@ -28,7 +28,7 @@ impl ServerSystems {
             let mut weapon = ecs.observer.observe_component(entity, weapon);
 
             // Check if shooting
-            if !input.shoot || weapon.1 <= 0 {
+            if !input.shoot || weapon.ammo == 0 {
                 continue;
             }
 
@@ -36,14 +36,14 @@ impl ServerSystems {
             bullets.push(BulletSpawn {
                 pos: Position(Vec2::new(position.0.x + (look_dir.0.x * 0.4), position.0.y + (look_dir.0.y * 0.4))),
                 dir: *look_dir,
-                gun: weapon.0,
+                gun: weapon.gun,
             });
 
             // Subtract ammo
-            weapon.1 -= 1;
+            weapon.ammo -= 1;
 
             // Set cooldown
-            let cooldown = weapon.0.recharge();
+            let cooldown = weapon.gun.recharge();
             cooldowns.push((entity, Timer::new(cooldown, ShootCooldown)));
         }
 
