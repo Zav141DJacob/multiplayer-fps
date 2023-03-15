@@ -26,9 +26,9 @@ register_shared_components! {
     Size,
     Health,
     HeldWeapon,
+    Damage,
     Player,
     Bullet,
-    Owner,
     WeaponCrate,
 }
 
@@ -42,6 +42,7 @@ bulk_attribute! {
     pub struct Size (pub Vec2);
     pub struct Health (pub u32);
     pub struct HeldWeapon (pub Gun, pub usize);
+    pub struct Damage(pub i8);
 
     pub struct Player {
         pub id: UserID,
@@ -49,9 +50,6 @@ bulk_attribute! {
 
     pub struct Bullet {
         pub owner: UserID
-    }
-    pub struct Owner {
-        pub id: UserID,
     }
     pub struct WeaponCrate (pub Gun);
 }
