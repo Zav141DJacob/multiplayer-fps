@@ -11,21 +11,27 @@ pub enum Gun {
 impl Gun {
     pub fn range(&self) -> f32 {
         match self {
-            Gun::Pistol => 3.0,
-            Gun::MachineGun => 5.0,
+            Gun::Pistol => 8.0,
+            Gun::MachineGun => 10.0,
         }
     }
+
+    pub fn bullet_speed(&self) -> f32 {
+        10.0
+    }
+
     pub fn recharge(&self) -> Duration {
         match self {
-            Gun::Pistol => Duration::new(1,0),
-            Gun::MachineGun => Duration::new(0,100_000_000),
+            Gun::Pistol => Duration::from_secs_f32(0.5),
+            Gun::MachineGun => Duration::from_secs_f32(0.1),
         }
     }
     pub fn get_random_gun() -> Gun {
         let index = rand::thread_rng().gen_range(0..=1);
         match index {
             0 => Gun::Pistol,
-            _ => Gun::MachineGun,
+            1 => Gun::MachineGun,
+            _ => unreachable!(),
         }
     }
 }
