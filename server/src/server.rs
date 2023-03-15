@@ -144,7 +144,9 @@ impl Server {
                             events::join::execute(self, endpoint).unwrap();
                         }
                         FromClientMessage::UpdateInputs(updated_input_state) => {
-                            events::update_inputs::execute(self, updated_input_state, endpoint);
+                            if let Err(err) = events::update_inputs::execute(self, updated_input_state, endpoint) {
+                                logger.log(format!("Warning: {err}"))
+                            }
                         }
                     }
                 }
