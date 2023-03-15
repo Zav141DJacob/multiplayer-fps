@@ -19,7 +19,7 @@ impl Gun {
     pub fn damage(&self) -> i8 {
         match self {
             Gun::Pistol => 10,
-            Gun::MachineGun => 10,
+            Gun::MachineGun => 7,
         }
     }
 
