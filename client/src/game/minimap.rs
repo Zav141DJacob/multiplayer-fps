@@ -5,6 +5,7 @@ use notan::{
     prelude::{Color, Graphics},
 };
 use glam::Vec2;
+use crate::game::raycast::RayCaster;
 use crate::game::texture::get_wall_texture;
 use crate::game::texture::pixels::Pixels;
 
@@ -155,11 +156,13 @@ impl Minimap {
         width: usize,
         _height: usize,
         vision_origin: Vec2,
-        mut vision_color: Color,
-        rays: &[Vec2],
+        vision_color: Color,
+        ray_caster: &RayCaster,
     ) {
         puffin::profile_function!();
-        if rays.is_empty() {
+        let rays = ray_caster.minimap_rays();
+        let depths = ray_caster.depth_map();
+        if ray_caster.minimap_rays().len() <= 1 {
             return
         }
 
@@ -170,27 +173,50 @@ impl Minimap {
             self.minimap_pos.y + self.border_size as f32,
         );
 
+        let mut path = draw.path();
+        path.fill();
+        path.fill_color(vision_color);
+
         let ray_start = minimap_translate + self.conver_ray_to_minimap_size(Vec2::new(vision_origin.x, vision_origin.y));
-        let ray_middle = self.conver_ray_to_minimap_size(rays[rays.len()/2]) + minimap_translate;
-        for (i, &ray_end) in rays.iter().enumerate() {
-            let ray_end = minimap_translate + self.conver_ray_to_minimap_size(ray_end);
+        path.move_to(ray_start.x, ray_start.y);
 
-            if i < (rays.len() / 2) {
-                vision_color.a = i as f32 / (rays.len() as f32);
+        let ray_end = minimap_translate + self.conver_ray_to_minimap_size(*rays.first().unwrap());
+        path.line_to(ray_end.x, ray_end.y);
+
+        let mut prev_slope = 0.0;
+        let mut only_this = true; // Whether the previous i depth was already drawn
+        const THRESH: f32 = 0.001;
+        for i in 1..rays.len() {
+            let prev_depth = depths[i-1];
+            let this_depth = depths[i];
+
+            let slope = this_depth - prev_depth;
+
+            if (slope - prev_slope).abs() > THRESH {
+                prev_slope = slope;
+
+                if !only_this {
+                    let ray_end = minimap_translate + self.conver_ray_to_minimap_size(rays[i-1]);
+                    path.line_to(ray_end.x, ray_end.y);
+                }
+                let ray_end = minimap_translate + self.conver_ray_to_minimap_size(rays[i]);
+                path.line_to(ray_end.x, ray_end.y);
+
+                only_this = true;
             } else {
-                vision_color.a =  1.0 - (i as f32 / (rays.len() as f32 ));
+                only_this = false;
             }
-
-            vision_color.a = vision_color.a.powf(1.0 / 1.1);
-
-            draw.line(ray_start.into(), ray_end.into()).color(vision_color);
-
-
-
-
         }
-        draw.line(ray_start.into(), ray_middle.into()).color(Color::GREEN);
 
+        if !only_this {
+            let ray_end = minimap_translate + self.conver_ray_to_minimap_size(*rays.last().unwrap());
+            path.line_to(ray_end.x, ray_end.y);
+        }
+
+        drop(path);
+
+        let ray_middle = self.conver_ray_to_minimap_size(rays[rays.len() / 2]) + minimap_translate;
+        draw.line(ray_start.into(), ray_middle.into()).color(Color::GREEN);
     }
 
     pub fn render_player_location(
