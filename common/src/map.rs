@@ -192,7 +192,11 @@ pub enum Wall {
     SolidColor([f32; 3]),
     Textured(Textured),
 }
-
+impl Default for Wall {
+    fn default() -> Self {
+        Wall::SolidColor([0.0; 3])
+    }
+}
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Textured {
     Redstone,

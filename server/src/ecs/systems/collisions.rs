@@ -1,13 +1,10 @@
-use std::collections::HashMap;
-// use std::iter::Map;
-
 use crate::ecs::ServerEcs;
 use crate::{ecs::systems::ServerSystems};
 use common::defaults::PLAYER_SIZE;
 use common::ecs::components::{Position, Player, Bullet};
-use common::map::{Map, MapCell};
+use common::map::{Map, MapCell, Wall};
 use glam::Vec2;
-use hecs::{QueryMut, Entity};
+use hecs::Entity;
 use std::any::type_name;
 pub enum Direction {
     Up,
@@ -80,66 +77,187 @@ impl ServerSystems {
 
     }
 
-    fn wall_collision(map: Map, pos: &mut Vec2, size: f32) -> Vec2{
+    fn wall_collision(map: Map, pos: &Vec2, size: f32) -> Vec2{
 
-            let mut to_pos = pos.clone();
+        let mut to_pos = pos.clone();
 
-            let x_floored_int = pos.x.floor() as i32;
-            let y_floored_int = pos.y.floor() as i32;
+        let x_floored_int = pos.x.floor() as i32;
+        let y_floored_int = pos.y.floor() as i32;
 
-            let x_floored_f = pos.x.floor();
-            let y_floored_f = pos.y.floor();
+        let x_floored_f = pos.x.floor();
+        let y_floored_f = pos.y.floor();
 
-            // let cell_position = Vec2::new(x_floored, y_floored);
+        let sides: Vec<(Vec2, MapCell)> = Self::get_sides(
+            &map, x_floored_f, 
+            y_floored_f, 
+            x_floored_int as usize, 
+            y_floored_int as usize
+        );
+        
+        let corners: Vec<(Vec2, MapCell)> = Self::get_corners(
+            &map, x_floored_f, 
+            y_floored_f, 
+            x_floored_int as usize, 
+            y_floored_int as usize
+        );
 
-            // dbg!(y_floored_int);
-            let cells: Vec<(Vec2, MapCell)> = vec![
-                (Vec2::new(x_floored_f, y_floored_f + 1.0), map.cell(x_floored_int as usize, (y_floored_int + 1) as usize)),
-                (Vec2::new(x_floored_f + 1.0, y_floored_f + 1.0), map.cell((x_floored_int + 1) as usize, (y_floored_int + 1) as usize)),
-                (Vec2::new(x_floored_f + 1.0, y_floored_f), map.cell((x_floored_int + 1) as usize, y_floored_int as usize)),
-                (Vec2::new(x_floored_f + 1.0, y_floored_f - 1.0), map.cell((x_floored_int + 1) as usize, (y_floored_int - 1) as usize)),
-                (Vec2::new(x_floored_f, y_floored_f - 1.0), map.cell(x_floored_int as usize, (y_floored_int - 1) as usize)),
-                (Vec2::new(x_floored_f - 1.0, y_floored_f - 1.0), map.cell((x_floored_int - 1) as usize, (y_floored_int - 1) as usize)),
-                (Vec2::new(x_floored_f - 1.0, y_floored_f), map.cell((x_floored_int - 1) as usize, y_floored_int as usize)),
-                (Vec2::new(x_floored_f - 1.0, y_floored_f + 1.0), map.cell((x_floored_int - 1) as usize, (y_floored_int + 1) as usize)),
-            ];
-            
-            for (i, (cell_pos, cell)) in cells.iter().enumerate() {
-                if let MapCell::Empty = cell {
-                } else {
-
-
-                    let side = Self::side_from_usize(i);
-                    if let Some(side) = side {
-                        let side_vec = Self::side_vec_from_side(cell_pos, &side);
-                        if let Some(side_vec) = side_vec {
-                            if Self::in_circle(&side_vec, &pos) {
-                                match side {
-                                    Direction::Up => {
-                                        to_pos.y = y_floored_f + (1.0 - size / 2.0);
-                                        to_pos.x = pos.x;
-                                    },
-                                    Direction::Right => {
-                                        to_pos.x = x_floored_f + (size / 2.0);
-                                        to_pos.y = pos.y;
-                                    },
-                                    Direction::Down => {
-                                        to_pos.y = y_floored_f + (size / 2.0);
-                                        to_pos.x = pos.x;
-                                    },
-                                    Direction::Left => {
-                                        to_pos.x = x_floored_f + (1.0 - size / 2.0); 
-                                        to_pos.y = pos.y;
-                                    }
-                                }
-                            }
+        // Sides
+        for (i, (cell_pos, cell)) in sides.iter().enumerate() {
+            if let MapCell::Empty = cell {
+            } else {
+                let side_vec = Self::side_vec_from_usize(cell_pos, i);
+                if let Some(side_vec) = side_vec {
+                    if Self::in_circle(&side_vec, &pos) {
+                        match i {
+                            0 => {
+                                to_pos.y = y_floored_f + (1.0 - size / 2.0);
+                                to_pos.x = pos.x;
+                            },
+                            3 => {
+                                to_pos.x = x_floored_f + (size / 2.0);
+                                to_pos.y = pos.y;
+                            },
+                            2 => {
+                                to_pos.y = y_floored_f + (size / 2.0);
+                                to_pos.x = pos.x;
+                            },
+                            1 => {
+                                to_pos.x = x_floored_f + (1.0 - size / 2.0); 
+                                to_pos.y = pos.y;
+                            },
+                            _ => panic!("AAAAAAAAAAAAAAA")
                         }
                     }
-                    
                 }
             }
-            to_pos
-        // }
+        }
+
+        // corners
+        for (i, (cell_pos, cell)) in corners.iter().enumerate() {
+            if let MapCell::Empty = cell {
+            } else {
+                let corner = Self::corner_from_usize(cell_pos, i);
+                if let Some(corner) = corner {
+                    let distance = pos.distance(corner);
+                    if distance < 1.0 {
+                        // size / 2.0
+                        // to_pos = pos.rotate(Vec2::from_angle(pos.angle_between(corner)));
+
+                        // dbg!(pos.dot(corner));
+                        dbg!(pos.angle_between(corner).to_degrees());
+                        // let angle_in_between = 90.0 * distance;
+                        // match i {
+                        //     0 => {
+                        //         to_pos.y = y_floored_f + (1.0 - size / 2.0);
+                        //         to_pos.x = pos.x;
+                        //     },
+                        //     1 => {
+                        //         to_pos.x = x_floored_f + (size / 2.0);
+                        //         to_pos.y = pos.y;
+                        //     },
+                        //     2 => {
+                        //         to_pos.y = y_floored_f + (size / 2.0);
+                        //         to_pos.x = pos.x;
+                        //     },
+                        //     3 => {
+                        //         to_pos.x = x_floored_f + (1.0 - size / 2.0); 
+                        //         to_pos.y = pos.y;
+                        //     },
+                        //     _ => panic!("AAAAAAAAAAAAAAA")
+                        // }
+                    }
+                }
+            }
+        }
+        to_pos
+    }
+
+    fn get_sides(map: &Map, x_f: f32, y_f: f32, x_i: usize, y_i: usize) -> Vec<(Vec2, MapCell)>{
+        let mut return_vec: Vec<(Vec2, MapCell)> = Vec::new();
+        if y_i + 1 >= map.get_height() {
+            return_vec.push(
+                (Vec2::new(x_f, y_f + 1.0), MapCell::Wall(Wall::default()))
+            );
+        } else {
+            return_vec.push(
+                (Vec2::new(x_f, y_f + 1.0), map.cell(x_i, y_i + 1))
+            );
+        }
+
+        if x_i + 1 >= map.get_width() {
+            return_vec.push(
+                (Vec2::new(x_f + 1.0, y_f), MapCell::Wall(Wall::default()))
+            );
+        } else {
+            return_vec.push(
+                (Vec2::new(x_f + 1.0, y_f), map.cell(x_i + 1, y_i))
+            );
+        }
+
+        if y_i as i32 - 1 < 0 {
+            return_vec.push(
+                (Vec2::new(x_f, y_f - 1.0), MapCell::Wall(Wall::default()))
+            );
+        } else {
+            return_vec.push(
+                (Vec2::new(x_f, y_f - 1.0), map.cell(x_i, y_i - 1))
+            );
+        }
+        
+        if x_i as i32 - 1 < 0 {
+            return_vec.push(
+                (Vec2::new(x_f - 1.0, y_f), MapCell::Wall(Wall::default()))
+            );
+        } else {
+            return_vec.push(
+                (Vec2::new(x_f - 1.0, y_f), map.cell(x_i - 1, y_i))
+            );
+        }
+        return_vec
+    }
+
+    fn get_corners(map: &Map, x_f: f32, y_f: f32, x_i: usize, y_i: usize) -> Vec<(Vec2, MapCell)> {
+        let mut return_vec: Vec<(Vec2, MapCell)> = Vec::new();
+        if x_i + 1 >= map.get_width() || y_i + 1 >= map.get_height() {
+            return_vec.push(
+                (Vec2::new(x_f, y_f + 1.0), MapCell::Wall(Wall::default()))
+            );
+        } else {
+            return_vec.push(
+                (Vec2::new(x_f + 1.0, y_f + 1.0), map.cell(x_i + 1, y_i + 1))
+            );
+        }
+
+        if x_i + 1 >= map.get_width() || y_i as i32 - 1 < 0 {
+            return_vec.push(
+                (Vec2::new(x_f + 1.0, y_f), MapCell::Wall(Wall::default()))
+            );
+        } else {
+            return_vec.push(
+                (Vec2::new(x_f + 1.0, y_f - 1.0), map.cell(x_i + 1, y_i - 1))
+            );
+        }
+
+        if x_i as i32 - 1 < 0 || y_i as i32 - 1 < 0 {
+            return_vec.push(
+                (Vec2::new(x_f - 1.0, y_f - 1.0), MapCell::Wall(Wall::default()))
+            );
+        } else {
+            return_vec.push(
+                (Vec2::new(x_f - 1.0, y_f - 1.0), map.cell(x_i - 1, y_i - 1))
+            );
+        }
+        
+        if x_i as i32 - 1 < 0 || y_i + 1 >= map.get_height() {
+            return_vec.push(
+                (Vec2::new(x_f - 1.0, y_f + 1.0), MapCell::Wall(Wall::default()))
+            );
+        } else {
+            return_vec.push(
+                (Vec2::new(x_f - 1.0, y_f + 1.0), map.cell(x_i - 1, y_i + 1))
+            );
+        }
+        return_vec
     }
 
     //  Checks if a line is inside a circle
@@ -154,38 +272,44 @@ impl ServerSystems {
         return ((player_pos.x - line[0].x) * (line[1].y - line[0].y) - (player_pos.y -  line[0].y) * (line[1].x - line[0].x)).abs() / x <= radius;
     }
 
-    pub fn side_vec_from_side(position: &Vec2, side: &Direction) -> Option<[Vec2; 2]> {
+    fn side_vec_from_usize(position: &Vec2, side: usize) -> Option<[Vec2; 2]> {
         
         match side {
-            Direction::Up => Some([
+            0 => Some([
                 Vec2::new(position.x, position.y),
                 Vec2::new(position.x + 1.0, position.y)
             ]),
-            Direction::Right => Some([
+            3 => Some([
                 Vec2::new(position.x + 1.0, position.y),
                 Vec2::new(position.x + 1.0, position.y - 1.0)
             ]),
-            Direction::Down => Some([
+            2 => Some([
                 Vec2::new(position.x, position.y + 1.0),
                 Vec2::new(position.x + 1.0, position.y + 1.0)
             ]),
-            Direction::Left => Some([
+            1 => Some([
                 Vec2::new(position.x, position.y),
                 Vec2::new(position.x, position.y - 1.0)
             ]),
             _ => None
         }
     }
-    pub fn side_from_usize(i: usize) -> Option<Direction>{
-        // 1 - down
-        // 3 - left
-        // 5 - up
-        // 7 - right
-        match i {
-            0 => Some(Direction::Up),
-            2 => Some(Direction::Left),
-            4 => Some(Direction::Down),
-            6 => Some(Direction::Right),
+
+    fn corner_from_usize(position: &Vec2, side: usize) -> Option<Vec2> {
+        
+        match side {
+            0 => Some(
+                Vec2::new(position.x, position.y)
+            ),
+            1 => Some(
+                Vec2::new(position.x, position.y + 1.0)
+            ),
+            2 => Some(
+                Vec2::new(position.x + 1.0, position.y + 1.0)
+            ),
+            3 => Some(
+                Vec2::new(position.x + 1.0, position.y)
+            ),
             _ => None
         }
     }

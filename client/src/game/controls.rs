@@ -60,7 +60,7 @@
 //     }
 //
 //     if app.keyboard.is_down(KeyCode::Right) {
-//         p.1.xy = p.1.xy.rotate(Vec2::from_angle(CAMERA_SENSITIVITY));
+        // p.1.xy = p.1.xy.rotate(Vec2::from_angle(CAMERA_SENSITIVITY));
 //     }
 //
 //     if app.keyboard.is_down(KeyCode::Up) {
