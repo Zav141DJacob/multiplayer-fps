@@ -20,5 +20,6 @@ impl ServerSystems {
         ServerSystems::pick_up_system(ecs, dt);
         ServerSystems::collision_system(ecs, dt);
         ServerSystems::respawn_system(ecs, dt);
+        ServerSystems::shoot_up_system(ecs, dt);
     }
 }

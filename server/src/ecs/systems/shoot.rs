@@ -1,16 +1,16 @@
+use glam::Vec2;
 use crate::ecs::spawn::bullet::spawn_bullet;
 use crate::ecs::systems::ServerSystems;
 use crate::ecs::ServerEcs;
-use common::ecs::components::{ HeldWeapon, InputState, LookDirection, Position };
-use std::time::Duration;
+use common::ecs::components::{HeldWeapon, InputState, LookDirection, Position, Bullet, Health};
 use common::ecs::timer::Timer;
+use common::gun::Gun;
 use crate::ecs::components::{BulletDespawn, ShootCooldown};
 
 struct BulletSpawn {
     pos: Position,
     dir: LookDirection,
-    range: f32,
-    duration: Duration,
+    gun: Gun,
 }
 
 impl ServerSystems {
@@ -31,13 +31,10 @@ impl ServerSystems {
             }
 
             // Spawn bullet
-            let range = weapon.0.range();
-            let duration = Duration::from_secs_f32(1.0);
             bullets.push(BulletSpawn {
-                pos: *position,
+                pos: Position(Vec2::new(position.0.x + (look_dir.0.x * 0.4), position.0.y + (look_dir.0.y * 0.4))),
                 dir: *look_dir,
-                range,
-                duration,
+                gun: weapon.0,
             });
 
             // Set cooldown
@@ -46,7 +43,7 @@ impl ServerSystems {
         }
 
         for bullet in bullets {
-            spawn_bullet(ecs, bullet.pos, bullet.dir, bullet.range, bullet.duration);
+            spawn_bullet(ecs, bullet.pos, bullet.dir, bullet.gun);
         }
 
         for (entity, cooldown) in cooldowns {
@@ -62,5 +59,34 @@ impl ServerSystems {
         Timer::<BulletDespawn>::system_with(&mut ecs.world, |world, entity, _| {
             ecs.observer.observe(world).despawn(entity).unwrap();
         });
+    }
+
+    pub fn shoot_up_system(ecs: &mut ServerEcs, _dt: f32) {
+        let player_query = ecs
+            .world
+            .query_mut::<(&Position, &Health)>()
+            .into_iter()
+            .map(|(e, (&p, &w))| (e, (p, w)))
+            .collect::<Vec<_>>();
+
+        let bullet_query = ecs
+            .world
+            .query_mut::<(&Position, &Bullet)>()
+            .into_iter()
+            .map(|(e, (&p, &c))| (e, p, c))
+            .collect::<Vec<_>>();
+
+        for (e, (p, h)) in player_query {
+            for c in &bullet_query {
+                if (p.0.x - c.1.0.x).abs() < 0.3 && (p.0.y - c.1.0.y).abs() < 0.3 {
+                    {
+                        ecs.observed_world().insert(e, (
+                            Health(h.0 - 1),
+                        )).unwrap();
+                    }
+                    println!("a weapon was picked up");
+                }
+            }
+        }
     }
 }

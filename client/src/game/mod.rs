@@ -74,6 +74,7 @@ impl Game {
 
         let pixels = Pixels::new(width, height, gfx);
         let mut minimap = Minimap::new(ecs.resources.get::<Map>().unwrap().clone(), gfx);
+        minimap.set_minimap_scale(Vec2::splat(1.0));
         minimap.set_floor_color(FLOOR_COLOR.into());
         minimap.render_map(gfx);
 
@@ -248,8 +249,8 @@ impl ProgramState for Game {
             width,
             height,
             my_pos,
-            Color::new(0.2, 0.2, 0.2, 1.0),
-            self.ray_caster.minimap_rays(),
+            Color::new(1.0, 1.0, 1.0, 0.1),
+            &self.ray_caster,
         );
 
         self.minimap
