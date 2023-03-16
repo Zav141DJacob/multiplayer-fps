@@ -202,24 +202,6 @@ impl ProgramState for Game {
             .map(|(pos, tex, scale, height)| Sprite::new(tex, pos, scale, height))
             .collect_vec();
 
-        let mut crate_sprites = self
-            .ecs
-            .world
-            .query_mut::<&Position>()
-            .with::<&WeaponCrate>()
-            .into_iter()
-            .map(|(_, pos)| pos.0)
-            .map(|pos| Sprite::new(&WEAPON_CRATE, pos, Vec2::new(0.5, 0.5), 0.0))
-            .collect_vec();
-
-        self.ray_caster.draw_sprites(
-            &mut self.pixels,
-            my_pos,
-            my_dir,
-            perspective,
-            &mut crate_sprites,
-        );
-
         self.ray_caster
             .draw_sprites(&mut self.pixels, my_pos, my_dir, perspective, &mut sprites);
 
@@ -256,19 +238,8 @@ impl ProgramState for Game {
         self.minimap
             .render_player_location(&mut draw, width, height, my_pos, Color::RED);
 
-        // Draw enemies on map
+        // Draw sprites on map
         for sprite in sprites.iter() {
-            self.minimap.render_entity_location(
-                &mut draw,
-                width,
-                height,
-                sprite.position,
-                sprite.texture.dominant().into(),
-            );
-        }
-
-        // Draw weapon crates on map
-        for sprite in crate_sprites.iter() {
             self.minimap.render_entity_location(
                 &mut draw,
                 width,
