@@ -62,14 +62,14 @@ impl ServerSystems {
                         
                         for (bullet_entity, bullet, bullet_pos, damage) in &bullet_positions {
                             if bullet_pos.distance(to_pos) < PLAYER_SIZE / 2.0 {
-        
+
                                 if t.id() != bullet.id() {
                                     to_remove.push(*bullet_entity);
 
                                     let mut health = ecs.observer.observe_component(entity, health);
                                     let health = &mut health.0;
                                     dbg!(damage);
-                                    *health = health.clone() - damage.0 as u32;
+                                    *health = health.clone().saturating_sub(damage.0 as u32);
                                 }
                             }
                         }
