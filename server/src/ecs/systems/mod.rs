@@ -18,8 +18,8 @@ impl ServerSystems {
         ServerSystems::shoot_cooldown_system(ecs, dt);
         ServerSystems::bullet_despawn_system(ecs, dt);
         ServerSystems::pick_up_system(ecs, dt);
-        ServerSystems::collision_system(ecs, dt);
         ServerSystems::respawn_system(ecs, dt);
-        ServerSystems::shoot_up_system(ecs, dt);
+        // ServerSystems::shoot_up_system(ecs, dt);
+        ServerSystems::collision_system(ecs, dt);
     }
 }
