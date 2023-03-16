@@ -21,7 +21,7 @@ impl ServerSystems {
                 drop(h);
 
                 let mut w = ecs.observer.observe_component(e, w);
-                w.1 = w.0.get_max_ammo();
+                w.ammo = w.gun.get_max_ammo();
             }
         }
     }

@@ -9,8 +9,8 @@ edition = "2021"
 server = { path = "../server" }
 common = { path = "../common" }
 
-clap = { version = "4.1.4", features = ["derive"] }
-tokio = { version = "1.25.0", features = ["full"] }
+clap = { version = "4.1", features = ["derive"] }
+tokio = { version = "1.25", features = ["full"] }
 
 notan = { version = "0.9", features = ["egui"] }
-message-io = "0.14.6"
+message-io = "0.14"
