@@ -6,7 +6,7 @@ use std::{
 use admin_client::program::Program;
 use common::defaults::{IP, PORT};
 use notan::{
-    egui::{self, EguiPluginSugar, Id},
+    egui::{self, EguiPluginSugar},
     prelude::{App, Assets, Color, Graphics, Plugins},
 };
 
@@ -93,14 +93,7 @@ impl ProgramState for HostingMenu {
     ) -> anyhow::Result<()> {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                for error in self.errors.0.iter_mut() {
-                    egui::Window::new("Error: Invalid port")
-                        .id(Id::new(error.id))
-                        .open(&mut error.is_open)
-                        .show(ctx, |ui| ui.label(error.error.to_string()));
-                }
-
-                self.errors.remove_closed();
+                self.errors.draw_errors(ctx);
 
                 ui.vertical_centered(|ui| {
                     ui.heading("Host Server");
@@ -154,9 +147,14 @@ impl ProgramState for HostingMenu {
     ) -> Option<Box<dyn ProgramState>> {
         match self.next_state.take()? {
             NextState::Game => {
-                let state = Connecting::new(IP, self.processed_port.unwrap(), self.server.clone(), &self.username)
-                    .map(|v| v.into())
-                    .unwrap_or_else(|err| ErrorState::from(&*err).into());
+                let state = Connecting::new(
+                    IP,
+                    self.processed_port.unwrap(),
+                    self.server.clone(),
+                    &self.username,
+                )
+                .map(|v| v.into())
+                .unwrap_or_else(|err| ErrorState::from(&*err).into());
                 Some(state)
             }
             NextState::Menu => Some(Menu::new().into()),

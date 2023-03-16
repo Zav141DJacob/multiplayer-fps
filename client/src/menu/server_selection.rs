@@ -5,7 +5,7 @@ use std::{
 
 use common::defaults::{IP, PORT};
 use notan::{
-    egui::{self, EguiPluginSugar, Id},
+    egui::{self, EguiPluginSugar},
     prelude::{App, Assets, Color, Graphics, Plugins},
 };
 
@@ -72,14 +72,7 @@ impl ProgramState for ServerSelectionMenu {
     ) -> anyhow::Result<()> {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                for error in self.errors.0.iter_mut() {
-                    egui::Window::new("Error")
-                        .id(Id::new(error.id))
-                        .open(&mut error.is_open)
-                        .show(ctx, |ui| ui.label(error.error.to_string()));
-                }
-
-                self.errors.remove_closed();
+                self.errors.draw_errors(ctx);
 
                 ui.vertical_centered(|ui| {
                     ui.heading("Join Server");

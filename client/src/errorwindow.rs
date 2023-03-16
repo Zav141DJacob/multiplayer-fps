@@ -1,3 +1,7 @@
+use notan::egui::Context;
+use notan::egui::Id;
+use notan::egui::Window;
+
 #[derive(Clone, Default)]
 pub struct ErrorWindows(pub Vec<ErrorWindow>);
 
@@ -22,6 +26,17 @@ impl ErrorWindows {
             .into_iter()
             .filter(|error| error.is_open)
             .collect();
+    }
+
+    pub fn draw_errors(&mut self, ctx: &Context) {
+        for error in self.0.iter_mut() {
+            Window::new("Error")
+                .id(Id::new(error.id))
+                .open(&mut error.is_open)
+                .show(ctx, |ui| ui.label(error.error.to_string()));
+        }
+
+        self.remove_closed();
     }
 }
 

@@ -6,22 +6,25 @@ use itertools::Itertools;
 use message_io::network::RemoteAddr;
 use notan::egui::{self, EguiPluginSugar, ScrollArea, TextEdit, Ui};
 use notan::prelude::{App, Assets, Color, Graphics, Plugins};
+use std::net::ToSocketAddrs;
 use tokio::sync::mpsc::error::TryRecvError;
 use tracing::error;
 
 use common::FromClientMessage;
 
-use crate::args::ARGS;
 use crate::client::Client;
+use crate::errorwindow::ErrorWindows;
 use crate::game::net::{ClientReceiver, ClientSender};
 use crate::program::state::ProgramState;
-use common::defaults::DEFAULT_PLAYER_NAME;
+use common::defaults::{DEFAULT_PLAYER_NAME, IP, PORT};
 
 pub struct NetworkTest {
-    ip: IpAddr,
-    port: u16,
     connection: Option<Connection>,
     log: VecDeque<String>,
+
+    ip: String,
+    processed_ip: SocketAddr,
+    errors: ErrorWindows,
 }
 
 impl Display for NetworkTest {
@@ -32,12 +35,27 @@ impl Display for NetworkTest {
 
 impl NetworkTest {
     pub fn new() -> Self {
+        let socketaddr = SocketAddr::new(IP, PORT);
+
         Self {
-            ip: ARGS.ip,
-            port: ARGS.port,
+            errors: ErrorWindows::new(),
+            processed_ip: socketaddr,
+            ip: socketaddr.to_string(),
             connection: None,
             log: VecDeque::with_capacity(1010),
         }
+    }
+
+    pub fn process_inputs(&mut self) -> bool {
+        self.processed_ip = match self.ip.to_socket_addrs() {
+            Ok(mut ip) => ip.next().unwrap(),
+            Err(error) => {
+                self.errors.add_error(error.to_string());
+                return false;
+            }
+        };
+
+        true
     }
 }
 
@@ -70,6 +88,8 @@ impl ProgramState for NetworkTest {
         plugins: &mut Plugins,
     ) -> anyhow::Result<()> {
         let mut output = plugins.egui(|ctx| {
+            self.errors.draw_errors(ctx);
+
             egui::CentralPanel::default().show(ctx, |ui| {
                 let text = self.log.iter().rev().join("\n");
                 let mut text = text.as_str();
@@ -83,17 +103,26 @@ impl ProgramState for NetworkTest {
             });
 
             egui::Window::new("Connection").show(ctx, |ui| {
-                ui.label(format!("IP: {}:{}", self.ip, self.port));
+                egui::TextEdit::singleline(&mut self.ip)
+                    .hint_text("IP")
+                    .show(ui);
+
                 if self.connection.is_none() {
                     if ui.button("CONNECT").clicked() {
-                        let conn = match Connection::new(self.ip, self.port, DEFAULT_PLAYER_NAME) {
-                            Ok(v) => v,
-                            Err(err) => {
-                                error!("Error connecting to server: {}", err);
-                                return;
-                            }
-                        };
-                        self.connection = Some(conn);
+                        if self.process_inputs() {
+                            let conn = match Connection::new(
+                                self.processed_ip.ip(),
+                                self.processed_ip.port(),
+                                DEFAULT_PLAYER_NAME,
+                            ) {
+                                Ok(v) => v,
+                                Err(err) => {
+                                    error!("Error connecting to server: {}", err);
+                                    return;
+                                }
+                            };
+                            self.connection = Some(conn);
+                        }
                     }
                 } else if ui.button("DISCONNECT").clicked() {
                     self.connection = None;
