@@ -15,6 +15,10 @@ pub struct Args {
     /// IP to connect to server on
     #[arg(short, long, default_value_t = IP)]
     pub ip: IpAddr,
+
+    /// If to enable debug features
+    #[arg(short, long, default_value_t = false)]
+    pub debug: bool
 }
 
 pub static ARGS: Lazy<Args> = Lazy::new(Args::parse);

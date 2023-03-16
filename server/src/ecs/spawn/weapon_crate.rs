@@ -6,7 +6,7 @@ use crate::ecs::ServerEcs;
 
 pub fn spawn_weapon_crate(ecs: &mut ServerEcs) -> Entity {
     let entity = ecs.world.reserve_entity();
-    let pos = ecs.resources.get::<Map>().unwrap().random_empty_spot();
+    let pos = ecs.resources.get::<Map>().unwrap().random_empty_spot().expect("Can't find a random spot");
 
     ecs.observed_world().insert(entity, (
         WeaponCrate(rand::random()),

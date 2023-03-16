@@ -40,6 +40,7 @@ impl Display for JoinError {
 pub fn execute(
     server: &mut Server,
     endpoint: Endpoint,
+    username: &str
 ) -> Result<(), JoinError> {
     let logger = server.ecs.resources.get::<Logger>().unwrap().clone();
 
@@ -51,7 +52,7 @@ pub fn execute(
         return Ok(());
     }
 
-    let (_, entity) = spawn_player(&mut server.ecs);
+    let (_, entity) = spawn_player(&mut server.ecs, username);
 
     FromServerMessage::OwnId(entity.to_bits().into())
         .construct()?

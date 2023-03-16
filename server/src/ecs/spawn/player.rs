@@ -13,7 +13,7 @@ use crate::ecs::ServerEcs;
 
 const DEFAULT_SPEED: f32 = 2.5;
 
-pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs) -> Entity {
+pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs, username: &str) -> Entity {
     let entity = ecs.world.reserve_entity();
     // Insert observed components
     ecs.observed_world()
@@ -22,6 +22,7 @@ pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs) -> Entity {
             (
                 Player {
                     id: entity.to_bits().into(),
+                    name: username.to_string(),
                 },
                 Position(pos.0),
                 Health(DEFAULT_PLAYER_HP),
@@ -40,8 +41,13 @@ pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs) -> Entity {
     entity
 }
 
-pub fn spawn_player(ecs: &mut ServerEcs) -> (Position, Entity) {
-    let pos = ecs.resources.get::<Map>().unwrap().random_empty_spot();
+pub fn spawn_player(ecs: &mut ServerEcs, username: &str) -> (Position, Entity) {
+    let pos = ecs
+        .resources
+        .get::<Map>()
+        .unwrap()
+        .random_empty_spot()
+        .expect("Can't find a random spot");
 
-    (pos, spawn_player_at(pos, ecs))
+    (pos, spawn_player_at(pos, ecs, username))
 }

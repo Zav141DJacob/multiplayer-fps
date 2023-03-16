@@ -25,8 +25,9 @@ pub struct Connecting {
     my_id: Option<u64>,
 
     exit: bool,
-
     recieved_own_id: bool,
+
+    username: String,
 }
 
 impl Display for Connecting {
@@ -36,8 +37,13 @@ impl Display for Connecting {
 }
 
 impl Connecting {
-    pub fn new(address: IpAddr, port: u16, server_ui: Option<Program>) -> anyhow::Result<Self> {
-        let connection = Connection::new(address, port)?;
+    pub fn new(
+        address: IpAddr,
+        port: u16,
+        server_ui: Option<Program>,
+        username: &str,
+    ) -> anyhow::Result<Self> {
+        let connection = Connection::new(address, port, username)?;
         let mut ecs = ClientEcs::default();
 
         if let Some(su) = server_ui {
@@ -52,6 +58,8 @@ impl Connecting {
 
             exit: false,
             recieved_own_id: false,
+
+            username: username.to_string(),
         })
     }
 }
@@ -86,7 +94,7 @@ impl ProgramState for Connecting {
                 info!("Pong");
 
                 if !self.recieved_own_id {
-                    connection.send(FromClientMessage::Join)?;
+                    connection.send(FromClientMessage::Join(self.username.to_string()))?;
                 }
             }
             FromServerMessage::EcsChanges(changes) => {
