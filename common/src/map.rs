@@ -1,5 +1,5 @@
 use glam::Vec2;
-use rand::{thread_rng, Rng};
+use rand::{thread_rng, Rng, seq::SliceRandom};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -228,11 +228,7 @@ impl Map {
             }
         }
 
-        if available_coords.is_empty() {
-            None
-        } else {
-            Some(available_coords[thread_rng().gen_range(0..available_coords.len())])
-        }
+        available_coords.choose(&mut thread_rng()).copied()
     }
 }
 
