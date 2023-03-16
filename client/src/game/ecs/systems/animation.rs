@@ -20,7 +20,7 @@ impl ClientSystems {
             }).collect();
 
         render_spriteless.into_iter().for_each(|entity| {
-            ecs.world.insert_one(entity, RenderSprite{
+            ecs.world.insert_one(entity, RenderSprite {
                 tex: &TEX_TEST1
             }).unwrap();
         });
@@ -39,7 +39,13 @@ impl ClientSystems {
                 let look_angle = -look_dir.0.angle_between(my_pos - pos.0);
 
                 sprite.tex = animated_texture_state.get_sprite(look_angle, dt);
-            })
+            });
+
+        ecs.world.query_mut::<(&mut AnimatedTextureState, &mut RenderSprite)>().without::<&LookDirection>()
+            .into_iter()
+            .for_each(|(_entity, (animated_texture_state, sprite))| {
+                sprite.tex = animated_texture_state.get_sprite(0.0, dt);
+            });
     }
 
     pub fn animate_running(ecs: &mut ClientEcs, _dt: f32) {

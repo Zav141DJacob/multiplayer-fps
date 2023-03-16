@@ -30,6 +30,7 @@ register_shared_components! {
     Player,
     Bullet,
     WeaponCrate,
+    DeadPlayer,
 }
 
 // This macro simply adds derives for all these structs.
@@ -55,6 +56,8 @@ bulk_attribute! {
         pub owner: UserID
     }
     pub struct WeaponCrate (pub Gun);
+    
+    pub struct DeadPlayer;
 }
 
 impl Bullet {
