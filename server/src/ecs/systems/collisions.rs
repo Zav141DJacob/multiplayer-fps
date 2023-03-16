@@ -187,19 +187,15 @@ trait WallCollision {
                         match i {
                             0 => {
                                 to_pos.y = y_floored_f + (1.0 - size / 2.0);
-                                to_pos.x = to_pos.x;
                             },
                             3 => {
                                 to_pos.x = x_floored_f + (size / 2.0);
-                                to_pos.y = to_pos.y;
                             },
                             2 => {
                                 to_pos.y = y_floored_f + (size / 2.0);
-                                to_pos.x = to_pos.x;
                             },
                             1 => {
                                 to_pos.x = x_floored_f + (1.0 - size / 2.0); 
-                                to_pos.y = to_pos.y;
                             },
                             _ => panic!("AAAAAAAAAAAAAAA")
                         }
