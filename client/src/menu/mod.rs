@@ -15,6 +15,7 @@ use crate::program::state::ProgramState;
 use self::hosting::HostingMenu;
 use self::server_selection::ServerSelectionMenu;
 use common::defaults::DEFAULT_PLAYER_NAME;
+use common::defaults::GAME_NAME;
 
 pub mod hosting;
 pub mod server_selection;
@@ -61,7 +62,7 @@ impl ProgramState for Menu {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.heading("Multiplayer FPS");
+                    ui.heading(GAME_NAME);
                     ui.add_space(10.0);
 
                     ui.vertical_centered(|ui| {

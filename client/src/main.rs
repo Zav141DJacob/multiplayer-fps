@@ -1,11 +1,11 @@
 use anyhow::anyhow;
+use client::program::Program;
+use common::defaults::GAME_NAME;
 use notan::draw::DrawConfig;
 use notan::egui::EguiConfig;
 use notan::prelude::WindowConfig;
 use tracing_subscriber::fmt::time;
 use tracing_subscriber::EnvFilter;
-
-use ::client::program::Program;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -22,14 +22,16 @@ async fn main() -> anyhow::Result<()> {
     #[allow(unused_mut)]
     let mut win = WindowConfig::new()
         .vsync(true)
-        .title("Multiplayer FPS")
+        .title(GAME_NAME)
         // .lazy_loop(true)
         .high_dpi(false)
         .resizable(false)
         .size(1280, 720);
 
     #[cfg(feature = "mouse-look")]
-    { win.fullscreen = true; }
+    {
+        win.fullscreen = true;
+    }
 
     notan::init_with(Program::notan_setup)
         .add_config(win)
