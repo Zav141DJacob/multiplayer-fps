@@ -48,23 +48,23 @@ bulk_attribute! {
         pub ammo: usize,
     }
 
-    pub struct Player {
-        pub id: UserID,
-    }
-
     pub struct Bullet {
         pub owner: UserID
     }
     pub struct WeaponCrate (pub Gun);
-    
+
     pub struct DeadPlayer;
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Player {
+    pub id: UserID,
+    pub name: String,
 }
 
 impl Bullet {
     pub fn new(id: UserID) -> Self {
-        Bullet { 
-            owner: id 
-        }
+        Bullet { owner: id }
     }
 }
 

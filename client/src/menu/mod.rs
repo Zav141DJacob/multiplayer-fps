@@ -13,6 +13,7 @@ use crate::program::state::ProgramState;
 
 use self::hosting::HostingMenu;
 use self::server_selection::ServerSelectionMenu;
+use common::defaults::DEFAULT_PLAYER_NAME;
 
 pub mod hosting;
 pub mod server_selection;
@@ -129,7 +130,7 @@ impl ProgramState for Menu {
     ) -> Option<Box<dyn ProgramState>> {
         match self.next_state.take()? {
             NextState::Game => {
-                let state = Connecting::new(IP, PORT, None)
+                let state = Connecting::new(IP, PORT, None, DEFAULT_PLAYER_NAME)
                     .map(|v| v.into())
                     .unwrap_or_else(|err| ErrorState::from(&*err).into());
                 Some(state)

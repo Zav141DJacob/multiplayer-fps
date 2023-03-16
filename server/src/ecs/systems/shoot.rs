@@ -2,7 +2,6 @@ use glam::Vec2;
 use crate::ecs::spawn::bullet::spawn_bullet;
 use crate::ecs::systems::ServerSystems;
 use crate::ecs::ServerEcs;
-use std::time::Duration;
 use common::ecs::components::{HeldWeapon, InputState, LookDirection, Position, Player, Bullet, Health};
 use common::ecs::timer::Timer;
 use common::gun::Gun;
@@ -36,7 +35,7 @@ impl ServerSystems {
 
             // Spawn bullet
             bullets.push(BulletSpawn {
-                player: *player,
+                player: player.clone(),
                 pos: Position(Vec2::new(position.0.x + (look_dir.0.x * 0.4), position.0.y + (look_dir.0.y * 0.4))),
                 dir: *look_dir,
                 gun: weapon.gun,

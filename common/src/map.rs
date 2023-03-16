@@ -1,7 +1,7 @@
 use glam::Vec2;
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
-use std::{str::FromStr};
+use std::str::FromStr;
 
 use crate::ecs::components::Position;
 
@@ -12,10 +12,10 @@ pub struct Map {
     pub data: Vec<MapCell>,
 }
 
-#[derive(Debug, Clone, PartialEq )]
+#[derive(Debug, Clone, PartialEq)]
 struct Skip {
     pub x: usize,
-    pub y: usize
+    pub y: usize,
 }
 
 #[rustfmt::skip::macros(vec)]
@@ -66,7 +66,15 @@ impl Map {
         self.data[y * self.width + x] = value;
     }
 
-    fn divide(&mut self, x1: usize, x2: usize, y1: usize, y2: usize, mut skiplist: Vec<Skip>, horiz: bool) {
+    fn divide(
+        &mut self,
+        x1: usize,
+        x2: usize,
+        y1: usize,
+        y2: usize,
+        mut skiplist: Vec<Skip>,
+        horiz: bool,
+    ) {
         if x2 <= x1 || y2 <= y1 {
             return;
         }
@@ -84,19 +92,41 @@ impl Map {
             let wall_y = y1 + (height / 2);
             let door_x1 = x1 + rng.gen_range(0..width);
             let door_x2 = x1 + rng.gen_range(0..width);
-            skiplist.push(Skip { x: door_x1, y: wall_y });
-            skiplist.push(Skip { x: door_x2, y: wall_y });
+            skiplist.push(Skip {
+                x: door_x1,
+                y: wall_y,
+            });
+            skiplist.push(Skip {
+                x: door_x2,
+                y: wall_y,
+            });
             if wall_y > 0 {
-                skiplist.push(Skip { x: door_x1, y: wall_y - 1 });
-                skiplist.push(Skip { x: door_x2, y: wall_y - 1 });
+                skiplist.push(Skip {
+                    x: door_x1,
+                    y: wall_y - 1,
+                });
+                skiplist.push(Skip {
+                    x: door_x2,
+                    y: wall_y - 1,
+                });
             }
             if wall_y < height - 1 {
-                skiplist.push(Skip { x: door_x1, y: wall_y + 1 });
-                skiplist.push(Skip { x: door_x2, y: wall_y + 1 });
+                skiplist.push(Skip {
+                    x: door_x1,
+                    y: wall_y + 1,
+                });
+                skiplist.push(Skip {
+                    x: door_x2,
+                    y: wall_y + 1,
+                });
             }
             for x in x1..x2 {
                 if !skiplist.contains(&Skip { x, y: wall_y }) {
-                    self.set(x, wall_y, MapCell::Wall(Wall::Textured(Textured::GrayBrick)));
+                    self.set(
+                        x,
+                        wall_y,
+                        MapCell::Wall(Wall::Textured(Textured::GrayBrick)),
+                    );
                 }
             }
             self.divide(x1, x2, y1, wall_y, skiplist.clone(), !horiz);
@@ -105,19 +135,41 @@ impl Map {
             let wall_x = x1 + (width / 2);
             let door_y1 = y1 + rng.gen_range(0..height);
             let door_y2 = y1 + rng.gen_range(0..height);
-            skiplist.push(Skip { x: wall_x, y: door_y1 });
-            skiplist.push(Skip { x: wall_x, y: door_y2 });
+            skiplist.push(Skip {
+                x: wall_x,
+                y: door_y1,
+            });
+            skiplist.push(Skip {
+                x: wall_x,
+                y: door_y2,
+            });
             if wall_x > 0 {
-                skiplist.push(Skip { x: wall_x - 1, y: door_y1 });
-                skiplist.push(Skip { x: wall_x - 1, y: door_y2 });
+                skiplist.push(Skip {
+                    x: wall_x - 1,
+                    y: door_y1,
+                });
+                skiplist.push(Skip {
+                    x: wall_x - 1,
+                    y: door_y2,
+                });
             }
             if wall_x < width - 1 {
-                skiplist.push(Skip { x: wall_x + 1, y: door_y1 });
-                skiplist.push(Skip { x: wall_x + 1, y: door_y2 });
+                skiplist.push(Skip {
+                    x: wall_x + 1,
+                    y: door_y1,
+                });
+                skiplist.push(Skip {
+                    x: wall_x + 1,
+                    y: door_y2,
+                });
             }
             for y in y1..y2 {
                 if !skiplist.contains(&Skip { x: wall_x, y }) {
-                    self.set(wall_x, y, MapCell::Wall(Wall::Textured(Textured::GrayBrick)));
+                    self.set(
+                        wall_x,
+                        y,
+                        MapCell::Wall(Wall::Textured(Textured::GrayBrick)),
+                    );
                 }
             }
             self.divide(x1, wall_x, y1, y2, skiplist.clone(), !horiz);
@@ -163,7 +215,7 @@ impl Map {
         }
     }
 
-    pub fn random_empty_spot(&self) -> Position {
+    pub fn random_empty_spot(&self) -> Option<Position> {
         let mut available_coords: Vec<Position> = Vec::new();
         for x in 0..self.width {
             for y in 0..self.height {
@@ -175,9 +227,12 @@ impl Map {
                 }
             }
         }
-        let rand_num: usize = rand::thread_rng().gen_range(0..available_coords.len());
 
-        available_coords[rand_num]
+        if available_coords.is_empty() {
+            None
+        } else {
+            Some(available_coords[thread_rng().gen_range(0..available_coords.len())])
+        }
     }
 }
 
@@ -212,9 +267,9 @@ impl FromStr for MapCell {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "empty" => Ok(Self::Empty),
-            "wall"  => Ok(Self::Wall(Wall::SolidColor([0.0, 0.0, 0.0]))),
-            "brick"  => Ok(Self::Wall(Wall::Textured(Textured::RedBrick))),
-            _       => Err("Invalid MapElement in MapElement::from_str()".to_string())
+            "wall" => Ok(Self::Wall(Wall::SolidColor([0.0, 0.0, 0.0]))),
+            "brick" => Ok(Self::Wall(Wall::Textured(Textured::RedBrick))),
+            _ => Err("Invalid MapElement in MapElement::from_str()".to_string()),
         }
     }
 }

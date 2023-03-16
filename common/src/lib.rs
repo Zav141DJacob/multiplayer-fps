@@ -7,11 +7,11 @@ pub mod ecs;
 pub mod map;
 pub mod gun;
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum FromClientMessage {
     Ping,
     Leave,
-    Join,
+    Join(String),
     UpdateInputs(InputState)
 }
 

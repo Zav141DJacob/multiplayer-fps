@@ -8,6 +8,7 @@ pub const MAP_HEIGHT: usize = 20;
 
 pub const PLAYER_MAX_HP: u32 = 100;
 pub const DEFAULT_PLAYER_HP: u32 = PLAYER_MAX_HP;
+pub const DEFAULT_PLAYER_NAME: &str = "Player";
 pub const PLAYER_SPEED: f32 = 0.1;
 pub const PLAYER_SIZE: f32 = 0.25;
 

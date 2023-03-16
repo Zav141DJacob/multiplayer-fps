@@ -15,6 +15,7 @@ use crate::args::ARGS;
 use crate::client::Client;
 use crate::game::net::{ClientReceiver, ClientSender};
 use crate::program::state::ProgramState;
+use common::defaults::DEFAULT_PLAYER_NAME;
 
 pub struct NetworkTest {
     ip: IpAddr,
@@ -47,10 +48,10 @@ struct Connection {
 }
 
 impl Connection {
-    fn new(ip: IpAddr, port: u16) -> anyhow::Result<Self> {
+    fn new(ip: IpAddr, port: u16, username: &str) -> anyhow::Result<Self> {
         let addr = RemoteAddr::Socket(SocketAddr::new(ip, port));
         let mut client = Client::new(addr)?;
-        let (receiver, sender) = client.start()?;
+        let (receiver, sender) = client.start(username)?;
 
         Ok(Self {
             client,
@@ -85,7 +86,7 @@ impl ProgramState for NetworkTest {
                 ui.label(format!("IP: {}:{}", self.ip, self.port));
                 if self.connection.is_none() {
                     if ui.button("CONNECT").clicked() {
-                        let conn = match Connection::new(self.ip, self.port) {
+                        let conn = match Connection::new(self.ip, self.port, DEFAULT_PLAYER_NAME) {
                             Ok(v) => v,
                             Err(err) => {
                                 error!("Error connecting to server: {}", err);
@@ -140,11 +141,15 @@ impl ProgramState for NetworkTest {
 
 struct SenderWidget {
     sender: ClientSender,
+    username: String,
 }
 
 impl SenderWidget {
     fn new(sender: ClientSender) -> Self {
-        Self { sender }
+        Self {
+            sender,
+            username: String::new(),
+        }
     }
 
     fn show(&mut self, ui: &mut Ui) -> anyhow::Result<()> {
@@ -155,8 +160,13 @@ impl SenderWidget {
             self.sender.send(FromClientMessage::Ping)?
         }
 
+        egui::TextEdit::singleline(&mut self.username)
+            .hint_text("Username")
+            .show(ui);
+
         if ui.button("Join").clicked() {
-            self.sender.send(FromClientMessage::Join)?
+            self.sender
+                .send(FromClientMessage::Join(self.username.to_string()))?
         }
 
         if ui.button("Leave").clicked() {

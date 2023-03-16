@@ -140,8 +140,8 @@ impl Server {
                             events::ping::execute(&logger, &self.handler, endpoint).unwrap()
                         }
                         FromClientMessage::Leave => events::leave::execute(self, endpoint).unwrap(),
-                        FromClientMessage::Join => {
-                            events::join::execute(self, endpoint).unwrap();
+                        FromClientMessage::Join(username) => {
+                            events::join::execute(self, endpoint, &username).unwrap();
                         }
                         FromClientMessage::UpdateInputs(updated_input_state) => {
                             if let Err(err) = events::update_inputs::execute(self, updated_input_state, endpoint) {

@@ -19,7 +19,7 @@ use notan::draw::CreateDraw;
 use notan::prelude::*;
 use std::fmt::{Display, Formatter};
 
-use notan::egui::{EguiPluginSugar, Grid, Ui, Window};
+use notan::egui::{Color32, EguiPluginSugar, Frame, Grid, Ui, Window};
 
 use crate::game::ecs::component::{Height, RenderSprite, Scale};
 use crate::game::ecs::{ClientEcs, MyEntity};
@@ -27,7 +27,7 @@ use crate::game::input::InputHandler;
 use crate::game::net::Connection;
 use crate::game::raycast::sprites::Sprite;
 use crate::game::texture::pixels::Pixels;
-use common::ecs::components::{Health, Position, WeaponCrate, HeldWeapon};
+use common::ecs::components::{Health, HeldWeapon, Player, Position};
 use common::map::Map;
 use common::{FromClientMessage, FromServerMessage};
 use fps_counter::FPSCounter;
@@ -36,7 +36,6 @@ use hecs::Entity;
 use itertools::Itertools;
 
 use self::gameui::{GameUI, GameUiState};
-use self::texture::WEAPON_CRATE;
 
 const CAMERA_SENSITIVITY: f32 = 0.08; // rad
 const FOV: f32 = 70.0;
@@ -215,9 +214,26 @@ impl ProgramState for Game {
         self.ui.set_game_state(GameUiState {
             player_hp_max: PLAYER_MAX_HP,
             player_hp: self.ecs.world.get::<&Health>(self.my_entity).unwrap().0,
-            weapon_name: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().gun.to_string(),
-            max_ammo: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().gun.get_max_ammo(),
-            ammo: self.ecs.world.get::<&HeldWeapon>(self.my_entity).unwrap().ammo,
+            weapon_name: self
+                .ecs
+                .world
+                .get::<&HeldWeapon>(self.my_entity)
+                .unwrap()
+                .gun
+                .to_string(),
+            max_ammo: self
+                .ecs
+                .world
+                .get::<&HeldWeapon>(self.my_entity)
+                .unwrap()
+                .gun
+                .get_max_ammo(),
+            ammo: self
+                .ecs
+                .world
+                .get::<&HeldWeapon>(self.my_entity)
+                .unwrap()
+                .ammo,
         });
         // Draw UI
         self.ui.draw_health(&mut draw, width, height);
@@ -270,6 +286,38 @@ impl ProgramState for Game {
 
                 if self.profiler {
                     puffin_egui::profiler_window(ctx);
+                }
+
+                let leaderboard_frame = Frame {
+                    fill: Color32::from_rgba_premultiplied(0, 0, 0, 150),
+                    rounding: 5.0.into(),
+                    inner_margin: 10.0.into(),
+                    outer_margin: 0.5.into(), // so the stroke is within the bounds
+                    ..Default::default()
+                };
+
+                if ctx.input().key_down(notan::egui::Key::Tab) {
+                    Window::new("leaderboard")
+                        .frame(leaderboard_frame)
+                        .collapsible(false)
+                        .resizable(false)
+                        .show(ctx, |ui| {
+                            for (_, player) in self.ecs.world.query::<&Player>().iter() {
+                                // TODO: get kill info from ECS
+                                let kills = 0;
+                                let deaths = 0;
+                                let kd = if kills == 0 && deaths == 0 {
+                                    0
+                                } else {
+                                    kills / deaths
+                                };
+
+                                ui.label(format!(
+                                    "[{}] K: {kills}, D: {deaths}, K/D: {kd}",
+                                    player.name
+                                ));
+                            }
+                        });
                 }
 
                 notan::egui::Area::new("fps-counter")

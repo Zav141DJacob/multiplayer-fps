@@ -26,6 +26,7 @@ pub struct ServerSelectionMenu {
     errors: ErrorWindows,
     next_state: Option<NextState>,
     ip: String,
+    username: String,
 
     processed_ip: Option<SocketAddr>,
 }
@@ -41,6 +42,7 @@ impl ServerSelectionMenu {
         ServerSelectionMenu {
             next_state: None,
             ip: format!("{IP}:{PORT}"),
+            username: String::new(),
 
             processed_ip: None,
             errors: ErrorWindows::new(),
@@ -86,6 +88,9 @@ impl ProgramState for ServerSelectionMenu {
                     ui.label("IP & Port:");
                     ui.text_edit_singleline(&mut self.ip);
 
+                    ui.label("Username");
+                    ui.text_edit_singleline(&mut self.username);
+
                     ui.add_space(10.0);
                     ui.vertical_centered(|ui| {
                         ui.set_width(ui.available_width() / 4.0);
@@ -125,7 +130,7 @@ impl ProgramState for ServerSelectionMenu {
         match self.next_state.take()? {
             NextState::Game => {
                 let processed = self.processed_ip.unwrap();
-                let state = Connecting::new(processed.ip(), processed.port(), None)
+                let state = Connecting::new(processed.ip(), processed.port(), None, &self.username)
                     .map(|v| v.into())
                     .unwrap_or_else(|err| ErrorState::from(&*err).into());
                 Some(state)
