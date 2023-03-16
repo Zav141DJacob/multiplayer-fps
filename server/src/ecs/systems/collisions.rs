@@ -302,7 +302,7 @@ impl WallCollision for Player {
         }
         let query = ecs.world.query_mut::<(&Player, &mut Health, &mut Position, &mut ShotBy)>();
 
-        for (entity, (t, health, pos, shot_by)) in query {
+        for (entity, (player, health, pos, shot_by)) in query {
             
             let to_pos = Self::shared_logic(map.clone(), &pos.0, PLAYER_SIZE);
 
@@ -318,7 +318,7 @@ impl WallCollision for Player {
                 for (bullet_entity, bullet, bullet_pos, damage) in &bullet_positions {
                     if bullet_pos.distance(to_pos) < PLAYER_SIZE / 2.0 {
 
-                        if t.id() != bullet.id() {
+                        if player.id() != bullet.id() {
                             to_remove.push(*bullet_entity);
 
                             {
@@ -327,7 +327,7 @@ impl WallCollision for Player {
 
                                 let mut health = ecs.observer.observe_component(entity, health);
                                 let health = &mut health.0;
-                                *health = health.clone() - damage.0 as u32;
+                                *health -= damage.0 as u32;
                             }
                             {
                                 let mut shot_by = ecs.observer.observe_component(entity, shot_by);
