@@ -6,6 +6,7 @@ use notan::prelude::{Assets, Color};
 
 use common::defaults::{IP, PORT};
 
+use crate::args::ARGS;
 use crate::connecting::Connecting;
 use crate::error::ErrorState;
 use crate::net_test::NetworkTest;
@@ -55,6 +56,7 @@ impl ProgramState for Menu {
         plugins: &mut Plugins,
     ) -> anyhow::Result<()> {
         let button_size = [100.0, 20.0];
+        let double_button_size = [208.0, 20.0];
 
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
@@ -85,17 +87,26 @@ impl ProgramState for Menu {
                         ui.set_width(egui_center_width(ui));
                         ui.horizontal(|ui| {
                             if ui
-                                .add_sized(button_size, egui::Button::new("Host Server"))
+                                .add_sized(
+                                    if ARGS.debug {
+                                        button_size
+                                    } else {
+                                        double_button_size
+                                    },
+                                    egui::Button::new("Host Server"),
+                                )
                                 .clicked()
                             {
                                 self.next_state = Some(NextState::HostingMenu);
                             }
 
-                            if ui
-                                .add_sized(button_size, egui::Button::new("Network Test"))
-                                .clicked()
-                            {
-                                self.next_state = Some(NextState::NetworkTest)
+                            if ARGS.debug {
+                                if ui
+                                    .add_sized(button_size, egui::Button::new("Network Test"))
+                                    .clicked()
+                                {
+                                    self.next_state = Some(NextState::NetworkTest)
+                                }
                             }
                         })
                     });

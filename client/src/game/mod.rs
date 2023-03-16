@@ -7,6 +7,7 @@ pub(crate) mod net;
 mod raycast;
 mod texture;
 
+use crate::args::ARGS;
 use crate::game::minimap::Minimap;
 use crate::game::raycast::*;
 use crate::program::state::ProgramState;
@@ -19,7 +20,7 @@ use notan::draw::CreateDraw;
 use notan::prelude::*;
 use std::fmt::{Display, Formatter};
 
-use notan::egui::{Color32, EguiPluginSugar, Frame, Grid, Ui, Window};
+use notan::egui::{Color32, EguiPluginSugar, Frame, Grid, Pos2, Ui, Window};
 
 use crate::game::ecs::component::{Height, RenderSprite, Scale};
 use crate::game::ecs::{ClientEcs, MyEntity};
@@ -279,10 +280,12 @@ impl ProgramState for Game {
                         .show(ctx, |ui| server_ui.draw(ui, app));
                 }
 
-                Window::new("Client debug")
-                    .collapsible(true)
-                    .resizable(false)
-                    .show(ctx, |ui| self.debug_ui(ui));
+                if ARGS.debug {
+                    Window::new("Client debug")
+                        .collapsible(true)
+                        .resizable(false)
+                        .show(ctx, |ui| self.debug_ui(ui));
+                }
 
                 if self.profiler {
                     puffin_egui::profiler_window(ctx);
@@ -301,6 +304,7 @@ impl ProgramState for Game {
                         .frame(leaderboard_frame)
                         .collapsible(false)
                         .resizable(false)
+                        .fixed_pos(Pos2 { x: 550.0, y: 5.0 })
                         .show(ctx, |ui| {
                             for (_, player) in self.ecs.world.query::<&Player>().iter() {
                                 // TODO: get kill info from ECS
