@@ -2,12 +2,14 @@ use glam::Vec2;
 use crate::ecs::spawn::bullet::spawn_bullet;
 use crate::ecs::systems::ServerSystems;
 use crate::ecs::ServerEcs;
-use common::ecs::components::{HeldWeapon, InputState, LookDirection, Position, Bullet, Health};
+use std::time::Duration;
+use common::ecs::components::{HeldWeapon, InputState, LookDirection, Position, Player, Bullet, Health};
 use common::ecs::timer::Timer;
 use common::gun::Gun;
 use crate::ecs::components::{BulletDespawn, ShootCooldown};
 
 struct BulletSpawn {
+    player: Player,
     pos: Position,
     dir: LookDirection,
     gun: Gun,
@@ -18,13 +20,13 @@ impl ServerSystems {
     pub fn shoot_system(ecs: &mut ServerEcs, _dt: f32) {
         let query = ecs
             .world
-            .query_mut::<(&InputState, &LookDirection, &Position, &mut HeldWeapon)>()
+            .query_mut::<(&Player, &InputState, &LookDirection, &Position, &mut HeldWeapon)>()
             .without::<&Timer<ShootCooldown>>();
 
         let mut bullets = Vec::new();
         let mut cooldowns = Vec::new();
 
-        for (entity, (input, look_dir, position, weapon)) in query {
+        for (entity, (player, input, look_dir, position, weapon)) in query {
             let mut weapon = ecs.observer.observe_component(entity, weapon);
 
             // Check if shooting
@@ -34,6 +36,7 @@ impl ServerSystems {
 
             // Spawn bullet
             bullets.push(BulletSpawn {
+                player: *player,
                 pos: Position(Vec2::new(position.0.x + (look_dir.0.x * 0.4), position.0.y + (look_dir.0.y * 0.4))),
                 dir: *look_dir,
                 gun: weapon.gun,
@@ -48,7 +51,7 @@ impl ServerSystems {
         }
 
         for bullet in bullets {
-            spawn_bullet(ecs, bullet.pos, bullet.dir, bullet.gun);
+            spawn_bullet(ecs, bullet.player, bullet.pos, bullet.dir, bullet.gun);
         }
 
         for (entity, cooldown) in cooldowns {
