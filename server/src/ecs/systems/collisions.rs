@@ -62,10 +62,11 @@ impl ServerSystems {
                             {
                                 to_remove.push(*bullet_entity);
 
-                                let mut health = ecs.observer.observe_component(entity, health);
-                                let health = &mut health.0;
-                                dbg!(damage);
-                                *health -= damage.0 as u32;
+                                    let mut health = ecs.observer.observe_component(entity, health);
+                                    let health = &mut health.0;
+                                    dbg!(damage);
+                                    *health = health.clone().saturating_sub(damage.0 as u32);
+                                }
                             }
                         }
                     }
