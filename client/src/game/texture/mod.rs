@@ -69,3 +69,14 @@ pub static ANIMATED_PLAYER: Lazy<AnimatedTexture> = Lazy::new(|| {
             vec![50],
         ])
 });
+
+pub static ANIMATED_DEATH: Lazy<AnimatedTexture> = Lazy::new(|| {
+    AnimatedTexture::new(&ATLAS_PLAYER)
+        .register_state("dying", 0.4, vec![
+            vec![40],
+            vec![41],
+            vec![42],
+            vec![43],
+            vec![44],
+        ])
+});

@@ -1,16 +1,17 @@
 use glam::Vec2;
 use itertools::Itertools;
-use common::ecs::components::{Bullet, Player, WeaponCrate};
+use common::ecs::components::{Bullet, DeadPlayer, Player, WeaponCrate};
 use crate::game::ecs::ClientEcs;
 use crate::game::ecs::component::{ClientInitialized, Height, RenderSprite, Scale};
 use crate::game::ecs::systems::ClientSystems;
-use crate::game::texture::{ANIMATED_PLAYER, TEX_BULLET, WEAPON_CRATE};
+use crate::game::texture::{ANIMATED_DEATH, ANIMATED_PLAYER, TEX_BULLET, WEAPON_CRATE};
 
 impl ClientSystems {
     pub fn client_init(ecs: &mut ClientEcs, _dt: f32) {
         Self::init_player(ecs);
         Self::init_bullet(ecs);
         Self::init_crate(ecs);
+        Self::init_death(ecs);
     }
 
     /// Move all entities with a position and velocity
@@ -55,6 +56,20 @@ impl ClientSystems {
             ecs.world.insert(entity, (
                 RenderSprite { tex: &WEAPON_CRATE },
                 Scale(Vec2::splat(0.5)),
+                ClientInitialized,
+            )).unwrap();
+        }
+    }
+
+    fn init_death(ecs: &mut ClientEcs) {
+        let entities = ecs.world.query_mut::<()>().with::<&DeadPlayer>().without::<&ClientInitialized>()
+            .into_iter()
+            .map(|(ent, _)| ent)
+            .collect_vec();
+
+        for entity in entities {
+            ecs.world.insert(entity, (
+                ANIMATED_DEATH.get_state("dying"),
                 ClientInitialized,
             )).unwrap();
         }
