@@ -108,21 +108,19 @@ impl ProgramState for NetworkTest {
                     .show(ui);
 
                 if self.connection.is_none() {
-                    if ui.button("CONNECT").clicked() {
-                        if self.process_inputs() {
-                            let conn = match Connection::new(
-                                self.processed_ip.ip(),
-                                self.processed_ip.port(),
-                                DEFAULT_PLAYER_NAME,
-                            ) {
-                                Ok(v) => v,
-                                Err(err) => {
-                                    error!("Error connecting to server: {}", err);
-                                    return;
-                                }
-                            };
-                            self.connection = Some(conn);
-                        }
+                    if ui.button("CONNECT").clicked() && self.process_inputs() {
+                        let conn = match Connection::new(
+                            self.processed_ip.ip(),
+                            self.processed_ip.port(),
+                            DEFAULT_PLAYER_NAME,
+                        ) {
+                            Ok(v) => v,
+                            Err(err) => {
+                                error!("Error connecting to server: {}", err);
+                                return;
+                            }
+                        };
+                        self.connection = Some(conn);
                     }
                 } else if ui.button("DISCONNECT").clicked() {
                     self.connection = None;

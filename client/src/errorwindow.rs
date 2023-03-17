@@ -19,6 +19,7 @@ impl ErrorWindows {
         self.0.push(ErrorWindow::new(error, id));
     }
 
+    /// Removes windows that have been closed
     pub fn remove_closed(&mut self) {
         self.0 = self
             .0
@@ -28,6 +29,7 @@ impl ErrorWindows {
             .collect();
     }
 
+    /// Displays errors using egui windows
     pub fn draw_errors(&mut self, ctx: &Context) {
         for error in self.0.iter_mut() {
             Window::new("Error")

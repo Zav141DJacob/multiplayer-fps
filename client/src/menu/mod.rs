@@ -101,13 +101,12 @@ impl ProgramState for Menu {
                                 self.next_state = Some(NextState::HostingMenu);
                             }
 
-                            if ARGS.debug {
-                                if ui
+                            if ARGS.debug
+                                && ui
                                     .add_sized(button_size, egui::Button::new("Network Test"))
                                     .clicked()
-                                {
-                                    self.next_state = Some(NextState::NetworkTest)
-                                }
+                            {
+                                self.next_state = Some(NextState::NetworkTest)
                             }
                         })
                     });
