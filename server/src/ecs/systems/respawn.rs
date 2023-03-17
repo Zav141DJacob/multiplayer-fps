@@ -19,7 +19,7 @@ impl ServerSystems {
                 death_positions.push(p.0);
 
                 let mut p = ecs.observer.observe_component(e, p);
-                *p = ecs.resources.get::<Map>().unwrap().random_empty_spot();
+                *p = ecs.resources.get::<Map>().unwrap().random_empty_spot().expect("Can't find a random spot");
                 drop(p);
 
                 let mut h = ecs.observer.observe_component(e, h);

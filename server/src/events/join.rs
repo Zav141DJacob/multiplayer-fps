@@ -1,12 +1,13 @@
-use std::{error::Error, fmt::Display};
+use common::defaults::DEFAULT_PLAYER_NAME;
 use message_io::network::Endpoint;
+use std::{error::Error, fmt::Display};
 
 use common::{map::Map, FromServerMessage};
 use resources::CantGetResource;
 
-use crate::server::{Logger, Server};
 use crate::constructed_message::ConstructMessage;
 use crate::ecs::spawn::player::spawn_player;
+use crate::server::{Logger, Server};
 
 #[derive(Debug)]
 pub enum JoinError {
@@ -37,10 +38,7 @@ impl Display for JoinError {
     }
 }
 // Registers user
-pub fn execute(
-    server: &mut Server,
-    endpoint: Endpoint,
-) -> Result<(), JoinError> {
+pub fn execute(server: &mut Server, endpoint: Endpoint, username: &str) -> Result<(), JoinError> {
     let logger = server.ecs.resources.get::<Logger>().unwrap().clone();
 
     if server.is_registered(endpoint) {
@@ -51,24 +49,25 @@ pub fn execute(
         return Ok(());
     }
 
-    let (_, entity) = spawn_player(&mut server.ecs);
+    let (_, entity) = spawn_player(
+        &mut server.ecs,
+        if username.is_empty() {
+            DEFAULT_PLAYER_NAME
+        } else {
+            username
+        },
+    );
 
     FromServerMessage::OwnId(entity.to_bits().into())
         .construct()?
         .send(&server.handler, endpoint);
 
     // Add player to the server clients
-    logger.log(format!(
-        "Added participant with ip {}",
-        endpoint.addr()
-    ));
+    logger.log(format!("Added participant with ip {}", endpoint.addr()));
 
     // Spawns player
 
-    server.registered_clients.insert(
-        endpoint,
-        entity,
-    );
+    server.registered_clients.insert(endpoint, entity);
 
     // Sending initial map to player
     // TODO: handle errors better

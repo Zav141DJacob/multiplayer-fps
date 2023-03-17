@@ -2,7 +2,7 @@ use crate::ecs::systems::ServerSystems;
 use crate::ecs::ServerEcs;
 use common::defaults::PLAYER_SIZE;
 use common::ecs::components::{Position, Player, Bullet, WithId, Health, Damage, ShotBy};
-use common::map::{Map, MapCell, Wall};
+use common::map::{Map, MapCell};
 use glam::Vec2;
 use hecs::Entity;
 trait WallCollision {
@@ -121,7 +121,7 @@ trait WallCollision {
             x_floored_int, 
             y_floored_int
         );
-        
+
         let corners: Vec<(Vec2, MapCell)> = Self::get_corners(
             &map, x_floored_f, 
             y_floored_f, 
@@ -181,12 +181,11 @@ trait WallCollision {
                         let d = pos.distance(corner);
 
                         let mut to_acos = (d.powf(2.0) + a.powf(2.0) - r.powf(2.0)) / (2.0 * a * d);
-                        if to_acos < -1.0 || to_acos > 1.0 {
+                        if !(-1.0..=1.0).contains(&to_acos) {
                             to_acos = to_acos - to_acos % 1.0;
                         }
 
-                        let alpha = 360.0 - 90.0 - 
-                        to_acos.acos();
+                        let alpha = 360.0 - 90.0 - to_acos.acos();
 
 
                         let determinant = (2.0 * d * alpha.cos()).powf(2.0) + 4.0 * (r.powf(2.0) - d.powf(2.0));
@@ -206,24 +205,24 @@ trait WallCollision {
                         change_x = x_max;
                         match i {
                             0 => {
-                                to_pos.y = to_pos.y - change_y;
-                                to_pos.x = to_pos.x - change_x;
-                            },
+                                to_pos.y -= change_y;
+                                to_pos.x -= change_x;
+                            }
                             1 => {
-                                to_pos.y = to_pos.y + change_y;
-                                to_pos.x = to_pos.x - change_x;
-                            },
+                                to_pos.y += change_y;
+                                to_pos.x -= change_x;
+                            }
                             2 => {
-                                to_pos.y = to_pos.y + change_y;
-                                to_pos.x = to_pos.x + change_x;
-                            },
+                                to_pos.y += change_y;
+                                to_pos.x += change_x;
+                            }
 
                             // done, dont change
                             3 => {
-                                to_pos.y = to_pos.y - change_y; 
-                                to_pos.x = to_pos.x + change_x;
-                            },
-                            _ => panic!("AAAAAAAAAAAAAAA")
+                                to_pos.y -= change_y;
+                                to_pos.x += change_x;
+                            }
+                            _ => panic!("AAAAAAAAAAAAAAA"),
                         }
                     }
                 }

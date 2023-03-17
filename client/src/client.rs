@@ -67,7 +67,7 @@ impl Client {
         self.handler.signals().send(Signal::Stop);
     }
 
-    pub fn start(&mut self) -> anyhow::Result<(ClientReceiver, ClientSender)> {
+    pub fn start(&mut self, username: &str) -> anyhow::Result<(ClientReceiver, ClientSender)> {
         // Messages recieved
         let (from_server_sender, from_server_reciever) =
             mpsc::unbounded_channel::<Result<FromServerMessage, ClientError>>();
@@ -76,7 +76,7 @@ impl Client {
             mpsc::unbounded_channel::<FromClientMessage>();
 
         // Sends join event
-        from_client_sender.send(FromClientMessage::Join)?;
+        from_client_sender.send(FromClientMessage::Join(username.to_string()))?;
 
         // Handles sent messages
         let handler = self.handler.clone();

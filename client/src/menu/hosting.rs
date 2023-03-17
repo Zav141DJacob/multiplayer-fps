@@ -6,7 +6,7 @@ use std::{
 use admin_client::program::Program;
 use common::defaults::{IP, PORT};
 use notan::{
-    egui::{self, EguiPluginSugar, Id},
+    egui::{self, EguiPluginSugar},
     prelude::{App, Assets, Color, Graphics, Plugins},
 };
 
@@ -27,6 +27,7 @@ pub struct HostingMenu {
     errors: ErrorWindows,
     next_state: Option<NextState>,
     port: String,
+    username: String,
 
     processed_port: Option<u16>,
 
@@ -45,6 +46,7 @@ impl HostingMenu {
             errors: ErrorWindows::new(),
             next_state: None,
             port: PORT.to_string(),
+            username: String::new(),
             processed_port: None,
 
             server: None,
@@ -91,20 +93,13 @@ impl ProgramState for HostingMenu {
     ) -> anyhow::Result<()> {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
-                for error in self.errors.0.iter_mut() {
-                    egui::Window::new("Error: Invalid port")
-                        .id(Id::new(error.id))
-                        .open(&mut error.is_open)
-                        .show(ctx, |ui| ui.label(error.error.to_string()));
-                }
-
-                self.errors.remove_closed();
+                self.errors.draw_errors(ctx);
 
                 ui.vertical_centered(|ui| {
                     ui.heading("Host Server");
                     ui.add_space(10.0);
 
-                    ui.label("Port:");
+                    ui.label("Port to host server on");
 
                     let response = ui.add(
                         egui::TextEdit::singleline(&mut self.port).hint_text(PORT.to_string()),
@@ -114,6 +109,9 @@ impl ProgramState for HostingMenu {
                     if response.lost_focus() && ui.input().key_pressed(egui::Key::Enter) {
                         self.process_inputs();
                     }
+
+                    ui.label("Username");
+                    ui.text_edit_singleline(&mut self.username);
 
                     ui.add_space(10.0);
                     ui.vertical_centered(|ui| {
@@ -149,9 +147,14 @@ impl ProgramState for HostingMenu {
     ) -> Option<Box<dyn ProgramState>> {
         match self.next_state.take()? {
             NextState::Game => {
-                let state = Connecting::new(IP, self.processed_port.unwrap(), self.server.clone())
-                    .map(|v| v.into())
-                    .unwrap_or_else(|err| ErrorState::from(&*err).into());
+                let state = Connecting::new(
+                    IP,
+                    self.processed_port.unwrap(),
+                    self.server.clone(),
+                    &self.username,
+                )
+                .map(|v| v.into())
+                .unwrap_or_else(|err| ErrorState::from(&*err).into());
                 Some(state)
             }
             NextState::Menu => Some(Menu::new().into()),

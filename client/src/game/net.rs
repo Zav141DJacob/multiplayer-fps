@@ -16,10 +16,10 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub fn new(ip: IpAddr, port: u16) -> anyhow::Result<Self> {
+    pub fn new(ip: IpAddr, port: u16, username: &str) -> anyhow::Result<Self> {
         let addr = RemoteAddr::Socket(SocketAddr::new(ip, port));
         let mut client = Client::new(addr)?;
-        let (receiver, sender) = client.start()?;
+        let (receiver, sender) = client.start(username)?;
 
         Ok(Self {
             client,
