@@ -131,7 +131,13 @@ impl Server {
             },
             NodeEvent::Network(net_event) => {
                 if let NetEvent::Message(endpoint, input_data) = net_event {
-                    let message: FromClientMessage = bincode::deserialize(input_data).unwrap();
+                    let message: FromClientMessage = match bincode::deserialize(input_data) {
+                        Ok(m) => m,
+                        Err(_) => {
+                            logger.log("Warning: Invalid message sent to server");
+                            return;
+                        }
+                    };
 
                     logger.log(format!("Event {message:?}"));
 
@@ -144,7 +150,9 @@ impl Server {
                             events::join::execute(self, endpoint, &username).unwrap();
                         }
                         FromClientMessage::UpdateInputs(updated_input_state) => {
-                            if let Err(err) = events::update_inputs::execute(self, updated_input_state, endpoint) {
+                            if let Err(err) =
+                                events::update_inputs::execute(self, updated_input_state, endpoint)
+                            {
                                 logger.log(format!("Warning: {err}"))
                             }
                         }
