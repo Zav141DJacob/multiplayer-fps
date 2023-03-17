@@ -15,5 +15,6 @@ pub const DEFAULT_PLAYER_HP: u32 = PLAYER_MAX_HP;
 pub const DEFAULT_PLAYER_NAME: &str = "Player";
 pub const PLAYER_SPEED: f32 = 0.1;
 pub const PLAYER_SIZE: f32 = 0.25;
+pub const WEAPON_CRATES_AMOUNT: u32 = 5;
 
 pub const TICKS_PER_SECOND: u64 = 144;
