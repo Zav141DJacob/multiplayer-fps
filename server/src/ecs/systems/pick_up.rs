@@ -1,9 +1,12 @@
-use crate::ecs::systems::ServerSystems;
 use crate::ecs::ServerEcs;
+use crate::ecs::{spawn::weapon_crate::spawn_weapon_crate, systems::ServerSystems};
+use crate::server::Logger;
 use common::ecs::components::{HeldWeapon, Position, WeaponCrate};
 
 impl ServerSystems {
     pub fn pick_up_system(ecs: &mut ServerEcs, _dt: f32) {
+        let logger = ecs.resources.get::<Logger>().unwrap().clone();
+
         let player_query = ecs
             .world
             .query_mut::<(&Position, &HeldWeapon)>()
@@ -26,7 +29,8 @@ impl ServerSystems {
                         .unwrap();
 
                     ecs.observed_world().despawn(c.0).unwrap();
-                    println!("a weapon was picked up");
+                    spawn_weapon_crate(ecs);
+                    logger.log("a weapon was picked up");
                 }
             }
         }
