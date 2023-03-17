@@ -212,29 +212,14 @@ impl ProgramState for Game {
         self.pixels.draw(&mut draw);
 
         // set UI game state
+        let (health, weapon) =
+            self.ecs.world.query_one_mut::<(&Health, &HeldWeapon)>(self.my_entity).unwrap();
         self.ui.set_game_state(GameUiState {
             player_hp_max: PLAYER_MAX_HP,
-            player_hp: self.ecs.world.get::<&Health>(self.my_entity).unwrap().0,
-            weapon_name: self
-                .ecs
-                .world
-                .get::<&HeldWeapon>(self.my_entity)
-                .unwrap()
-                .gun
-                .to_string(),
-            max_ammo: self
-                .ecs
-                .world
-                .get::<&HeldWeapon>(self.my_entity)
-                .unwrap()
-                .gun
-                .get_max_ammo(),
-            ammo: self
-                .ecs
-                .world
-                .get::<&HeldWeapon>(self.my_entity)
-                .unwrap()
-                .ammo,
+            player_hp: health.0,
+            weapon_name: weapon.gun.to_string(),
+            max_ammo: weapon.gun.get_max_ammo(),
+            ammo: weapon.ammo,
         });
         // Draw UI
         self.ui.draw_health(&mut draw, width, height);
