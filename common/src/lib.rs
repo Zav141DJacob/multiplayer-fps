@@ -6,6 +6,7 @@ pub mod defaults;
 pub mod ecs;
 pub mod map;
 pub mod gun;
+mod maze;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum FromClientMessage {

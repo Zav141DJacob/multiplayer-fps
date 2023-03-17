@@ -443,6 +443,7 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
  "derive_more",
  "glam 0.23.0",
  "hecs",
