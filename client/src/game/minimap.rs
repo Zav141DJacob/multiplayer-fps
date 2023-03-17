@@ -62,8 +62,8 @@ impl Minimap {
 
         for x in 0..self.get_height() {
             for y in 0..self.get_width() {
-                let map_x = (x as f32 / self.map_ratio as f32).floor() as usize;
-                let map_y = (y as f32 / self.map_ratio as f32).floor() as usize;
+                let map_x = (x as f32 / self.map_ratio as f32).floor() as i32;
+                let map_y = (y as f32 / self.map_ratio as f32).floor() as i32;
 
                 let color = match self.map.cell(map_x, map_y) {
                     common::map::MapCell::Empty => None,

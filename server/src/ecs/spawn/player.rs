@@ -1,5 +1,5 @@
 use crate::ecs::components::Speed;
-use common::ecs::components::{InputState, Velocity};
+use common::ecs::components::{InputState, Velocity, Kills, Deaths, ShotBy};
 use common::gun::Gun;
 use common::{
     defaults::DEFAULT_PLAYER_HP,
@@ -29,6 +29,11 @@ pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs, username: &str) -> En
                 Velocity(Vec2::ZERO),
                 LookDirection(Vec2::from_angle(0.0)),
                 Gun::Pistol.to_held_weapon(),
+                ShotBy {
+                    id: None,
+                },
+                Kills(0),
+                Deaths(0),
             ),
         )
         .unwrap();
