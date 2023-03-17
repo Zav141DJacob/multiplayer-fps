@@ -165,7 +165,7 @@ fn ray_algorithm(
 
         let pos = ray_start + ray_dir * f_distance;
 
-        let cell = map.cell(map_check.x as usize, map_check.y as usize);
+        let cell = map.cell(map_check.x, map_check.y);
 
         let cell = match cell {
             MapCell::Empty => continue,

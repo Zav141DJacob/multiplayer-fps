@@ -11,7 +11,7 @@ impl ServerSystems {
         let player_query = ecs
             .world
             .query_mut::<(&mut Position, &mut Health, &mut HeldWeapon, &mut Deaths, &ShotBy)>();
-        let mut killers: Vec<u64> = Vec::new();
+        let mut killers: Vec<Option<u64>> = Vec::new();
         let mut death_positions = vec![];
 
         for (e, (p, h, w, d, s_b)) in player_query {
@@ -41,11 +41,14 @@ impl ServerSystems {
         for (entity, (player, kills)) in ecs.world.query_mut::<(&Player, &mut Kills)>() {
             
             for killer in &killers {
-                if player.id == *killer {
-                    let mut kills = ecs.observer.observe_component(entity, kills);
-                    kills.0 += 1;
-                    break;
+                if killer.is_some() {
+                    if player.id == killer.unwrap() {
+                        let mut kills = ecs.observer.observe_component(entity, kills);
+                        kills.0 += 1;
+                        break;
+                    }
                 }
+                
                 // let my_pos = ecs
                 // .world
                 // .query_one_mut::<&Position>(killer)

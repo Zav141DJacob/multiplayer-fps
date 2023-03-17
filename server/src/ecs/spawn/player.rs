@@ -29,7 +29,7 @@ pub fn spawn_player_at(pos: Position, ecs: &mut ServerEcs) -> Entity {
                 LookDirection(Vec2::from_angle(0.0)),
                 Gun::Pistol.to_held_weapon(),
                 ShotBy {
-                    id: 0,
+                    id: None,
                 },
                 Kills(0),
                 Deaths(0),

@@ -7,91 +7,43 @@ use glam::Vec2;
 use hecs::Entity;
 trait WallCollision {
     fn prepare_wall_collisions(ecs: &mut ServerEcs);
-    fn get_sides(map: &Map, x_f: f32, y_f: f32, x_i: usize, y_i: usize) -> Vec<(Vec2, MapCell)>{
+    fn get_sides(map: &Map, x_f: f32, y_f: f32, x_i: i32, y_i: i32) -> Vec<(Vec2, MapCell)>{
         let mut return_vec: Vec<(Vec2, MapCell)> = Vec::new();
-        if y_i + 1 >= map.get_height() {
-            return_vec.push(
-                (Vec2::new(x_f, y_f + 1.0), MapCell::Empty)
-            );
-        } else {
             return_vec.push(
                 (Vec2::new(x_f, y_f + 1.0), map.cell(x_i, y_i + 1))
             );
-        }
 
-        if x_i + 1 >= map.get_width() {
-            return_vec.push(
-                (Vec2::new(x_f + 1.0, y_f), MapCell::Empty)
-            );
-        } else {
             return_vec.push(
                 (Vec2::new(x_f + 1.0, y_f), map.cell(x_i + 1, y_i))
             );
-        }
 
-        if y_i as i32 - 1 < 0 {
-            return_vec.push(
-                (Vec2::new(x_f, y_f - 1.0), MapCell::Empty)
-            );
-        } else {
             return_vec.push(
                 (Vec2::new(x_f, y_f - 1.0), map.cell(x_i, y_i - 1))
             );
-        }
         
-        if x_i as i32 - 1 < 0 {
-            return_vec.push(
-                (Vec2::new(x_f - 1.0, y_f), MapCell::Empty)
-            );
-        } else {
             return_vec.push(
                 (Vec2::new(x_f - 1.0, y_f), map.cell(x_i - 1, y_i))
             );
-        }
         return_vec
     }
 
-    fn get_corners(map: &Map, x_f: f32, y_f: f32, x_i: usize, y_i: usize) -> Vec<(Vec2, MapCell)> {
+    fn get_corners(map: &Map, x_f: f32, y_f: f32, x_i: i32, y_i: i32) -> Vec<(Vec2, MapCell)> {
         let mut return_vec: Vec<(Vec2, MapCell)> = Vec::new();
-        if x_i + 1 >= map.get_width() || y_i + 1 >= map.get_height() {
-            return_vec.push(
-                (Vec2::new(x_f + 1.0, y_f + 1.0), MapCell::Wall(Wall::default()))
-            );
-        } else {
             return_vec.push(
                 (Vec2::new(x_f + 1.0, y_f + 1.0), map.cell(x_i + 1, y_i + 1))
             );
-        }
 
-        if x_i + 1 >= map.get_width() || y_i as i32 - 1 < 0 {
-            return_vec.push(
-                (Vec2::new(x_f + 1.0, y_f - 1.0), MapCell::Wall(Wall::default()))
-            );
-        } else {
             return_vec.push(
                 (Vec2::new(x_f + 1.0, y_f - 1.0), map.cell(x_i + 1, y_i - 1))
             );
-        }
 
-        if x_i as i32 - 1 < 0 || y_i as i32 - 1 < 0 {
-            return_vec.push(
-                (Vec2::new(x_f - 1.0, y_f - 1.0), MapCell::Wall(Wall::default()))
-            );
-        } else {
             return_vec.push(
                 (Vec2::new(x_f - 1.0, y_f - 1.0), map.cell(x_i - 1, y_i - 1))
             );
-        }
         
-        if x_i as i32 - 1 < 0 || y_i + 1 >= map.get_height() {
-            return_vec.push(
-                (Vec2::new(x_f - 1.0, y_f + 1.0), MapCell::Wall(Wall::default()))
-            );
-        } else {
             return_vec.push(
                 (Vec2::new(x_f - 1.0, y_f + 1.0), map.cell(x_i - 1, y_i + 1))
             );
-        }
         return_vec
     }
 
@@ -166,15 +118,15 @@ trait WallCollision {
         let sides: Vec<(Vec2, MapCell)> = Self::get_sides(
             &map, x_floored_f, 
             y_floored_f, 
-            x_floored_int as usize, 
-            y_floored_int as usize
+            x_floored_int, 
+            y_floored_int
         );
         
         let corners: Vec<(Vec2, MapCell)> = Self::get_corners(
             &map, x_floored_f, 
             y_floored_f, 
-            x_floored_int as usize, 
-            y_floored_int as usize
+            x_floored_int, 
+            y_floored_int
         );
 
         // Sides
@@ -249,7 +201,6 @@ trait WallCollision {
                         ) / 2.0; 
 
                         let x_max = x_1.max(x_2);
-                        dbg!(x_1, x_2);
                         let change_x: f32;
 
                         change_x = x_max;
@@ -274,7 +225,6 @@ trait WallCollision {
                             },
                             _ => panic!("AAAAAAAAAAAAAAA")
                         }
-                        dbg!(to_pos);
                     }
                 }
             }
@@ -332,7 +282,7 @@ impl WallCollision for Player {
                             {
                                 let mut shot_by = ecs.observer.observe_component(entity, shot_by);
                                 let shot_by = &mut shot_by.id;
-                                *shot_by = bullet.id();
+                                *shot_by = Some(bullet.id());
 
                             }
                         }

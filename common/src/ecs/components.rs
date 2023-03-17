@@ -47,7 +47,7 @@ bulk_attribute! {
     pub struct Health (pub u32);
     pub struct Damage(pub i8);
     pub struct ShotBy {
-        pub id: UserID
+        pub id: Option<UserID>
     }
     pub struct Kills(pub i32);
     pub struct Deaths(pub i32);

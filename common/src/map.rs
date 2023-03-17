@@ -46,10 +46,15 @@ impl Default for Map {
 }
 
 impl Map {
-    pub fn cell(&self, x: usize, y: usize) -> MapCell {
-        assert!(x < self.width);
-        assert!(y < self.height);
-        self.data[y * self.width + x]
+    pub fn cell(&self, x: i32, y: i32) -> MapCell {
+        if x > self.width as i32 || y > self.height as i32 {
+            return MapCell::Empty;
+        }
+        if x < 0 || y < 0 {
+            return MapCell::Empty;
+        }
+        // assert!(y < self.height);
+        self.data[(y as usize) * self.width + x as usize]
     }
 
     pub fn new(width: usize, height: usize) -> Self {
@@ -167,7 +172,7 @@ impl Map {
         let mut available_coords: Vec<Position> = Vec::new();
         for x in 0..self.width {
             for y in 0..self.height {
-                if self.cell(x, y) == MapCell::Empty {
+                if self.cell(x as i32, y as i32) == MapCell::Empty {
                     available_coords.push(Position(Vec2 {
                         x: x as f32 + 0.5,
                         y: y as f32 + 0.5,
