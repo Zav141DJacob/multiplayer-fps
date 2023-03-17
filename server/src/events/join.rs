@@ -70,7 +70,6 @@ pub fn execute(server: &mut Server, endpoint: Endpoint, username: &str) -> Resul
     server.registered_clients.insert(endpoint, entity);
 
     // Sending initial map to player
-    // TODO: handle errors better
     logger.log(format!("Sending map to IP {}", endpoint.addr()));
 
     FromServerMessage::SendMap(server.ecs.resources.get::<Map>()?.clone())

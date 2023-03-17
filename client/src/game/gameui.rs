@@ -1,3 +1,5 @@
+use common::defaults::PLAYER_MAX_HP;
+use common::gun::Gun;
 use glam::{Vec2, Vec3};
 use notan::draw::{CreateFont, DrawShapes, DrawTextSection, Font};
 use notan::prelude::{Color, Graphics};
@@ -17,6 +19,18 @@ pub struct GameUiState {
     pub weapon_name: String,
     pub max_ammo: usize,
     pub ammo: usize,
+}
+
+impl GameUiState {
+    pub fn new() -> Self {
+        GameUiState {
+            player_hp_max: PLAYER_MAX_HP,
+            player_hp: PLAYER_MAX_HP,
+            weapon_name: Gun::Pistol.to_string(),
+            max_ammo: Gun::Pistol.get_max_ammo(),
+            ammo: Gun::Pistol.get_max_ammo(),
+        }
+    }
 }
 
 impl GameUI {

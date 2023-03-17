@@ -28,7 +28,7 @@ use crate::game::input::InputHandler;
 use crate::game::net::Connection;
 use crate::game::raycast::sprites::Sprite;
 use crate::game::texture::pixels::Pixels;
-use common::ecs::components::{Health, HeldWeapon, Player, Position};
+use common::ecs::components::{Deaths, Health, HeldWeapon, Kills, Player, Position};
 use common::map::Map;
 use common::{FromClientMessage, FromServerMessage};
 use fps_counter::FPSCounter;
@@ -82,19 +82,7 @@ impl Game {
 
         let ray_caster = RayCaster::new(width, height, FOV);
 
-        let player_hp = *ecs.world.get::<&Health>(my_entity).unwrap();
-
-        // TODO: link rest of the info to ecs
-        let ui_game_state = GameUiState {
-            player_hp_max: PLAYER_MAX_HP,
-            player_hp: player_hp.0,
-            weapon_name: "SCAR".to_string(),
-            max_ammo: 25,
-            ammo: 15,
-        };
-
-        // TODO: make GameUi actually use ecs
-        let ui = GameUI::new(ui_game_state, gfx);
+        let ui = GameUI::new(GameUiState::new(), gfx);
 
         let input = InputHandler::new(app);
 
@@ -212,8 +200,11 @@ impl ProgramState for Game {
         self.pixels.draw(&mut draw);
 
         // set UI game state
-        let (health, weapon) =
-            self.ecs.world.query_one_mut::<(&Health, &HeldWeapon)>(self.my_entity).unwrap();
+        let (health, weapon) = self
+            .ecs
+            .world
+            .query_one_mut::<(&Health, &HeldWeapon)>(self.my_entity)
+            .unwrap();
         self.ui.set_game_state(GameUiState {
             player_hp_max: PLAYER_MAX_HP,
             player_hp: health.0,
@@ -291,19 +282,18 @@ impl ProgramState for Game {
                         .resizable(false)
                         .fixed_pos(Pos2 { x: 550.0, y: 5.0 })
                         .show(ctx, |ui| {
-                            for (_, player) in self.ecs.world.query::<&Player>().iter() {
-                                // TODO: get kill info from ECS
-                                let kills = 0;
-                                let deaths = 0;
-                                let kd = if kills == 0 && deaths == 0 {
+                            for (_, (player, kills, deaths)) in
+                                self.ecs.world.query::<(&Player, &Kills, &Deaths)>().iter()
+                            {
+                                let kd = if kills.0 == 0 || deaths.0 == 0 {
                                     0
                                 } else {
-                                    kills / deaths
+                                    kills.0 / deaths.0
                                 };
 
                                 ui.label(format!(
-                                    "[{}] K: {kills}, D: {deaths}, K/D: {kd}",
-                                    player.name
+                                    "[{}] K: {}, D: {}, K/D: {kd}",
+                                    player.name, kills.0, deaths.0,
                                 ));
                             }
                         });
