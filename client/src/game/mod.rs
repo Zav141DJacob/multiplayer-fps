@@ -285,10 +285,10 @@ impl ProgramState for Game {
                             for (_, (player, kills, deaths)) in
                                 self.ecs.world.query::<(&Player, &Kills, &Deaths)>().iter()
                             {
-                                let kd = if kills.0 == 0 || deaths.0 == 0 {
-                                    0
+                                let kd: f32 = if kills.0 == 0 || deaths.0 == 0 {
+                                    0.0
                                 } else {
-                                    kills.0 / deaths.0
+                                    kills.0 as f32 / deaths.0 as f32
                                 };
 
                                 ui.label(format!(

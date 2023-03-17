@@ -222,7 +222,7 @@ impl WallCollision for Player {
 
                             let mut health = ecs.observer.observe_component(entity, health);
                             let health = &mut health.0;
-                            *health -= damage.0 as u32;
+                            *health = health.saturating_sub(damage.0 as u32);
                         }
                         {
                             let mut shot_by = ecs.observer.observe_component(entity, shot_by);
