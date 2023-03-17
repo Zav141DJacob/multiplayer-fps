@@ -83,7 +83,7 @@ impl Map {
         let all_walls: Vec<_> = (1..map.height-1).flat_map(|y| {
             (1..map.width-1).map(move |x| (x, y))
         })
-            .filter(|&(x, y)| !matches!(map.cell(x, y), MapCell::Empty))
+            .filter(|&(x, y)| !matches!(map.cell(x as i32, y as i32), MapCell::Empty))
             .collect();
 
         let walls_to_remove = (all_walls.len() as f32 * MAP_OPENNESS) as usize;
