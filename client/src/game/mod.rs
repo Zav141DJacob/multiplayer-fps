@@ -1,4 +1,3 @@
-mod controls;
 pub(crate) mod ecs;
 mod gameui;
 mod input;
