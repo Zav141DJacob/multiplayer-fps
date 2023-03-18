@@ -49,7 +49,7 @@ impl Default for Map {
 
 impl Map {
     pub fn cell(&self, x: i32, y: i32) -> MapCell {
-        if x > self.width as i32 || y > self.height as i32 {
+        if x >= self.width as i32 || y >= self.height as i32 {
             return MapCell::Empty;
         }
         if x < 0 || y < 0 {
