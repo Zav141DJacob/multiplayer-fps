@@ -12,7 +12,7 @@ use crate::game::minimap::Minimap;
 use crate::game::raycast::*;
 use crate::program::state::ProgramState;
 use admin_client::program::Program;
-use common::defaults::PLAYER_MAX_HP;
+use common::defaults::{MINIMAP_SCALE, PLAYER_MAX_HP};
 use notan::app::{App, Color, Graphics, Plugins};
 
 use anyhow::Context;
@@ -74,7 +74,7 @@ impl Game {
 
         let pixels = Pixels::new(width, height, gfx);
         let mut minimap = Minimap::new(ecs.resources.get::<Map>().unwrap().clone(), gfx);
-        minimap.set_minimap_scale(Vec2::splat(1.0));
+        minimap.set_minimap_scale(Vec2::splat(MINIMAP_SCALE));
         minimap.set_floor_color(FLOOR_COLOR.into());
         minimap.render_map(gfx);
 
