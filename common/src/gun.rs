@@ -51,7 +51,7 @@ impl Gun {
         match self {
             Gun::Pistol => 10,
             Gun::MachineGun => 7,
-            Gun::Sniper => 80,
+            Gun::Sniper => 100,
             Gun::Shotgun => 50,
             Gun::SubMachineGun => 10,
             Gun::AssaultRifle => 15,
@@ -64,11 +64,11 @@ impl Gun {
 
     pub fn recharge(&self) -> Duration {
         match self {
-            Gun::Pistol => Duration::from_secs_f32(0.5),
+            Gun::Pistol => Duration::from_secs_f32(0.2),
             Gun::MachineGun => Duration::from_secs_f32(0.1),
             Gun::Sniper => Duration::from_secs_f32(1.5),
-            Gun::Shotgun => Duration::from_secs_f32(0.5),
-            Gun::SubMachineGun => Duration::from_secs_f32(0.25),
+            Gun::Shotgun => Duration::from_secs_f32(0.2),
+            Gun::SubMachineGun => Duration::from_secs_f32(0.05),
             Gun::AssaultRifle => Duration::from_secs_f32(0.15),
         }
     }
