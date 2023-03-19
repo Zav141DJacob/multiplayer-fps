@@ -3,6 +3,7 @@ use hecs::{Component, Entity, World};
 
 #[derive(Debug, Clone)]
 pub struct Timer<T> {
+    start_time: Instant,
     end_time: Instant,
     data: T,
 }
@@ -10,8 +11,10 @@ pub struct Timer<T> {
 impl<T: Component> Timer<T> {
     /// Creates a new timer with a given data value.
     pub fn new(duration: Duration, data: T) -> Timer<T> {
-        let end_time = Instant::now() + duration;
+        let start_time = Instant::now();
+        let end_time = start_time + duration;
         Self {
+            start_time,
             end_time,
             data,
         }
@@ -60,5 +63,11 @@ impl<T: Component> Timer<T> {
             .filter(|(_, timer)| timer.end_time <= now)
             .map(|(entity, _)| entity)
             .collect()
+    }
+
+    /// Returns the progress of this timer as a f32 in the range 0.0..1.0
+    pub fn progress(&self) -> f32 {
+        let now = Instant::now();
+        (now - self.start_time).as_secs_f32() / (self.end_time - self.start_time).as_secs_f32()
     }
 }
