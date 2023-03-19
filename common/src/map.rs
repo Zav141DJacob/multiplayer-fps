@@ -81,7 +81,8 @@ impl Map {
 
         // Remove some of the walls to make the map more open
         let all_walls: Vec<_> = (1..map.height-1).flat_map(|y| {
-            (1..map.width-1).map(move |x| (x, y))
+            let x = y % 2;
+            (1+x..map.width-1).step_by(2).map(move |x| (x, y))
         })
             .filter(|&(x, y)| !matches!(map.cell(x as i32, y as i32), MapCell::Empty))
             .collect();
