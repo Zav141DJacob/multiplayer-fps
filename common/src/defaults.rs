@@ -1,5 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr};
 
+pub const QUICK_JOIN_IP: &str = "fps.catnip.ee";
+
 pub const GAME_NAME: &str = "Multiplayer FPS";
 
 pub const IP: IpAddr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
