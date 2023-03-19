@@ -13,9 +13,9 @@ pub enum Gun {
 
 impl Distribution<Gun> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Gun {
-        match rng.gen_range(0..=1) {
-            0 => Gun::Pistol,
-            _ => Gun::MachineGun,
+        match rng.gen_range(0..=0) {
+            0 => Gun::MachineGun,
+            _ => unreachable!(),
         }
     }
 }
@@ -24,7 +24,7 @@ impl Gun {
     pub fn to_held_weapon(&self) -> HeldWeapon {
         HeldWeapon {
             gun: *self,
-            ammo: self.get_max_ammo(),
+            ammo: self.max_ammo(),
         }
     }
 
@@ -35,10 +35,10 @@ impl Gun {
         }
     }
 
-    pub fn damage(&self) -> i8 {
+    pub fn damage(&self) -> f32 {
         match self {
-            Gun::Pistol => 10,
-            Gun::MachineGun => 7,
+            Gun::Pistol => 10.0,
+            Gun::MachineGun => 7.0,
         }
     }
 
@@ -53,10 +53,23 @@ impl Gun {
         }
     }
 
-    pub fn get_max_ammo(&self) -> usize {
+    pub fn max_ammo(&self) -> usize {
         match self {
-            Gun::Pistol => 25,
+            Gun::Pistol => 0,
             Gun::MachineGun => 50,
+        }
+    }
+
+    pub fn spread(&self) -> Option<f32> {
+        match self {
+            Gun::MachineGun => Some(f32::to_radians(2.0)),
+            _ => None,
+        }
+    }
+
+    pub fn pellets(&self) -> usize {
+        match self {
+            _ => 1,
         }
     }
 }
