@@ -53,13 +53,20 @@ impl Gun {
             Gun::MachineGun => 7,
             Gun::Sniper => 100,
             Gun::Shotgun => 50,
-            Gun::SubMachineGun => 10,
+            Gun::SubMachineGun => 6,
             Gun::AssaultRifle => 15,
         }
     }
 
     pub fn bullet_speed(&self) -> f32 {
-        10.0
+        match self {
+            Gun::Pistol => 10.0,
+            Gun::MachineGun => 10.0,
+            Gun::Sniper => 20.0,
+            Gun::Shotgun => 8.0,
+            Gun::SubMachineGun => 10.0,
+            Gun::AssaultRifle => 12.0,
+        }
     }
 
     pub fn recharge(&self) -> Duration {
