@@ -118,10 +118,15 @@ impl GameUI {
     pub fn draw_weapon_stats(&self, draw: &mut notan::draw::Draw, width: usize, height: usize) {
         let position = Vec2::new(width as f32 - 200.0, height as f32 - 50.0);
 
-        let ammo_text = format!(
-            "{:0>3} / {:0>3}",
-            self.game_state.ammo, self.game_state.max_ammo
-        );
+
+        let mut ammo_text = "∞".to_string();
+
+        if self.game_state.max_ammo != 0 {
+            ammo_text = format!(
+                "{:0>3} / {:0>3}",
+                self.game_state.ammo, self.game_state.max_ammo
+            );
+        }
 
         draw.text(&self.font, &self.game_state.weapon_name)
             .position(position.x, position.y);

@@ -8,13 +8,21 @@ use crate::ecs::components::HeldWeapon;
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Gun {
     Pistol,
+    Sniper,
+    Shotgun,
+    SubMachineGun,
+    AssaultRifle,
     MachineGun,
 }
 
 impl Distribution<Gun> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Gun {
-        match rng.gen_range(0..=1) {
+        match rng.gen_range(0..=5) {
             0 => Gun::Pistol,
+            1 => Gun::Sniper,
+            2 => Gun::Shotgun,
+            3 => Gun::SubMachineGun,
+            4 => Gun::AssaultRifle,
             _ => Gun::MachineGun,
         }
     }
@@ -32,6 +40,10 @@ impl Gun {
         match self {
             Gun::Pistol => 8.0,
             Gun::MachineGun => 10.0,
+            Gun::Sniper => 100.0,
+            Gun::Shotgun => 5.0,
+            Gun::SubMachineGun => 9.0,
+            Gun::AssaultRifle => 15.0,
         }
     }
 
@@ -39,6 +51,10 @@ impl Gun {
         match self {
             Gun::Pistol => 10,
             Gun::MachineGun => 7,
+            Gun::Sniper => 80,
+            Gun::Shotgun => 50,
+            Gun::SubMachineGun => 10,
+            Gun::AssaultRifle => 15,
         }
     }
 
@@ -50,6 +66,10 @@ impl Gun {
         match self {
             Gun::Pistol => Duration::from_secs_f32(0.5),
             Gun::MachineGun => Duration::from_secs_f32(0.1),
+            Gun::Sniper => Duration::from_secs_f32(1.5),
+            Gun::Shotgun => Duration::from_secs_f32(0.5),
+            Gun::SubMachineGun => Duration::from_secs_f32(0.25),
+            Gun::AssaultRifle => Duration::from_secs_f32(0.15),
         }
     }
 
@@ -57,6 +77,10 @@ impl Gun {
         match self {
             Gun::Pistol => 25,
             Gun::MachineGun => 50,
+            Gun::Sniper => 5,
+            Gun::Shotgun => 2,
+            Gun::SubMachineGun => 36,
+            Gun::AssaultRifle => 26,
         }
     }
 }
@@ -66,6 +90,10 @@ impl fmt::Display for Gun {
         match self {
             Gun::Pistol => write!(f, "Glock 19"),
             Gun::MachineGun => write!(f, "M2 Browning"),
+            Gun::Sniper => write!(f, "barrett m82A1"),
+            Gun::Shotgun => write!(f, "Browning BSS"),
+            Gun::SubMachineGun => write!(f, "KRISS Vector"),
+            Gun::AssaultRifle => write!(f, "Remington ACR"),
         }
     }
 }
