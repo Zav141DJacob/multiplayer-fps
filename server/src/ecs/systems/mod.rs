@@ -6,6 +6,7 @@ mod shoot;
 mod pick_up;
 mod collisions;
 mod respawn;
+mod ammo;
 
 /// Server-side systems are implemented onto this
 pub struct ServerSystems;
@@ -19,7 +20,7 @@ impl ServerSystems {
         ServerSystems::bullet_despawn_system(ecs, dt);
         ServerSystems::pick_up_system(ecs, dt);
         ServerSystems::respawn_system(ecs, dt);
-        // ServerSystems::shoot_up_system(ecs, dt);
         ServerSystems::collision_system(ecs, dt);
+        ServerSystems::reset_to_pistol(ecs, dt);
     }
 }

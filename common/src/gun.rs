@@ -17,13 +17,13 @@ pub enum Gun {
 
 impl Distribution<Gun> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Gun {
-        match rng.gen_range(0..=5) {
-            0 => Gun::Pistol,
-            1 => Gun::Sniper,
-            2 => Gun::Shotgun,
-            3 => Gun::SubMachineGun,
-            4 => Gun::AssaultRifle,
-            _ => Gun::MachineGun,
+        match rng.gen_range(0..=4) {
+            0 => Gun::Sniper,
+            1 => Gun::Shotgun,
+            2 => Gun::SubMachineGun,
+            3 => Gun::AssaultRifle,
+            4 => Gun::MachineGun,
+            _ => unreachable!(),
         }
     }
 }
@@ -32,7 +32,7 @@ impl Gun {
     pub fn to_held_weapon(&self) -> HeldWeapon {
         HeldWeapon {
             gun: *self,
-            ammo: self.get_max_ammo(),
+            ammo: self.max_ammo(),
         }
     }
 
@@ -47,14 +47,14 @@ impl Gun {
         }
     }
 
-    pub fn damage(&self) -> i8 {
+    pub fn damage(&self) -> f32 {
         match self {
-            Gun::Pistol => 10,
-            Gun::MachineGun => 7,
-            Gun::Sniper => 100,
-            Gun::Shotgun => 50,
-            Gun::SubMachineGun => 6,
-            Gun::AssaultRifle => 15,
+            Gun::Pistol => 10.0,
+            Gun::MachineGun => 7.0,
+            Gun::Sniper => 100.0,
+            Gun::Shotgun => 50.0,
+            Gun::SubMachineGun => 6.0,
+            Gun::AssaultRifle => 15.0,
         }
     }
 
@@ -80,14 +80,27 @@ impl Gun {
         }
     }
 
-    pub fn get_max_ammo(&self) -> usize {
+    pub fn max_ammo(&self) -> usize {
         match self {
-            Gun::Pistol => 25,
+            Gun::Pistol => 0,
             Gun::MachineGun => 50,
             Gun::Sniper => 5,
             Gun::Shotgun => 2,
             Gun::SubMachineGun => 36,
             Gun::AssaultRifle => 26,
+        }
+    }
+
+    pub fn spread(&self) -> Option<f32> {
+        match self {
+            Gun::MachineGun => Some(f32::to_radians(2.0)),
+            _ => None,
+        }
+    }
+
+    pub fn pellets(&self) -> usize {
+        match self {
+            _ => 1,
         }
     }
 }

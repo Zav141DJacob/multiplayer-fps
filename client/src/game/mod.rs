@@ -208,7 +208,7 @@ impl ProgramState for Game {
             player_hp_max: PLAYER_MAX_HP,
             player_hp: health.0,
             weapon_name: weapon.gun.to_string(),
-            max_ammo: weapon.gun.get_max_ammo(),
+            max_ammo: weapon.gun.max_ammo(),
             ammo: weapon.ammo,
         });
         // Draw UI

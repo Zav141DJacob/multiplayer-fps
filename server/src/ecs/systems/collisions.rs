@@ -1,10 +1,12 @@
 use crate::ecs::systems::ServerSystems;
 use crate::ecs::ServerEcs;
 use common::defaults::PLAYER_SIZE;
-use common::ecs::components::{Bullet, Damage, Health, Player, Position, ShotBy, WithId};
+use common::ecs::components::{Bullet, Health, Player, Position, WithId};
 use common::map::{Map, MapCell};
 use glam::Vec2;
 use hecs::Entity;
+use crate::ecs::components::{Damage, ShotBy};
+
 trait WallCollision {
     fn prepare_wall_collisions(ecs: &mut ServerEcs);
     fn get_sides(map: &Map, x_f: f32, y_f: f32, x_i: i32, y_i: i32) -> Vec<(Vec2, MapCell)> {
@@ -216,19 +218,14 @@ impl WallCollision for Player {
                     {
                         to_remove.push(*bullet_entity);
 
-                        {
-                            //ToDo
-                            //  add this code into another function (ie. do_damage())
+                        let shot_by = &mut shot_by.id;
+                        *shot_by = Some(bullet.id());
 
-                            let mut health = ecs.observer.observe_component(entity, health);
-                            let health = &mut health.0;
-                            *health = health.saturating_sub(damage.0 as u32);
-                        }
-                        {
-                            let mut shot_by = ecs.observer.observe_component(entity, shot_by);
-                            let shot_by = &mut shot_by.id;
-                            *shot_by = Some(bullet.id());
-                        }
+                        //ToDo
+                        //  add this code into another function (ie. do_damage())
+
+                        let mut health = ecs.observer.observe_component(entity, health);
+                        health.0 -= damage.0;
                     }
                 }
             }
