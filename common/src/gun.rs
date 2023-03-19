@@ -93,13 +93,17 @@ impl Gun {
 
     pub fn spread(&self) -> Option<f32> {
         match self {
-            Gun::MachineGun => Some(f32::to_radians(2.0)),
+            Gun::MachineGun => Some(f32::to_radians(3.0)),
+            Gun::Shotgun => Some(f32::to_radians(5.0)),
+            Gun::SubMachineGun => Some(f32::to_radians(4.0)),
+            Gun::AssaultRifle => Some(f32::to_radians(2.0)),
             _ => None,
         }
     }
 
     pub fn pellets(&self) -> usize {
         match self {
+            Gun::Shotgun => 16,
             _ => 1,
         }
     }
