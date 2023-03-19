@@ -38,12 +38,12 @@ impl Gun {
 
     pub fn range(&self) -> f32 {
         match self {
-            Gun::Pistol => 8.0,
-            Gun::MachineGun => 10.0,
-            Gun::Sniper => 100.0,
-            Gun::Shotgun => 5.0,
-            Gun::SubMachineGun => 9.0,
-            Gun::AssaultRifle => 15.0,
+            Gun::Pistol => 5.0,
+            Gun::MachineGun => 6.0,
+            Gun::Sniper => 10.0,
+            Gun::Shotgun => 4.0,
+            Gun::SubMachineGun => 5.0,
+            Gun::AssaultRifle => 7.0,
         }
     }
 
@@ -51,7 +51,7 @@ impl Gun {
         match self {
             Gun::Pistol => 10.0,
             Gun::MachineGun => 7.0,
-            Gun::Sniper => 100.0,
+            Gun::Sniper => 20.0,
             Gun::Shotgun => 100.0,
             Gun::SubMachineGun => 6.0,
             Gun::AssaultRifle => 15.0,
@@ -66,6 +66,17 @@ impl Gun {
             Gun::Shotgun => 8.0,
             Gun::SubMachineGun => 10.0,
             Gun::AssaultRifle => 12.0,
+        }
+    }
+
+    pub fn dmg_drop_off(&self) -> f32 {
+        match self {
+            Gun::Pistol => 0.8,
+            Gun::MachineGun => 0.8,
+            Gun::Sniper => 5.0,
+            Gun::Shotgun => 0.1,
+            Gun::SubMachineGun => 0.7,
+            Gun::AssaultRifle => 0.8,
         }
     }
 
@@ -93,9 +104,9 @@ impl Gun {
 
     pub fn spread(&self) -> Option<f32> {
         match self {
-            Gun::MachineGun => Some(f32::to_radians(3.0)),
+            Gun::MachineGun => Some(f32::to_radians(2.5)),
             Gun::Shotgun => Some(f32::to_radians(5.0)),
-            Gun::SubMachineGun => Some(f32::to_radians(4.0)),
+            Gun::SubMachineGun => Some(f32::to_radians(3.0)),
             Gun::AssaultRifle => Some(f32::to_radians(2.0)),
             _ => None,
         }
@@ -106,6 +117,15 @@ impl Gun {
             Gun::Shotgun => 16,
             _ => 1,
         }
+    }
+
+    pub fn damage_with_drop_off(&self, distance:f32) -> f32 {      
+        let dmg_per_pellet = self.damage() / self.pellets() as f32;
+
+
+
+
+        lerp(dmg_per_pellet, dmg_per_pellet * self.dmg_drop_off(), distance)
     }
 }
 
@@ -135,4 +155,8 @@ mod tests {
         let machine_gun = Gun::MachineGun;
         assert_eq!(machine_gun.recharge(), Duration::new(0, 100_000_000));
     }
+}
+
+fn lerp(a: f32, b: f32, t: f32) -> f32 {
+    a + (b - a) * t
 }

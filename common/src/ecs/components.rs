@@ -51,7 +51,8 @@ bulk_attribute! {
     }
 
     pub struct Bullet {
-        pub owner: UserID
+        pub owner: UserID,
+        pub gun: Gun,
     }
     pub struct WeaponCrate (pub Gun);
 
@@ -65,8 +66,8 @@ pub struct Player {
 }
 
 impl Bullet {
-    pub fn new(id: UserID) -> Self {
-        Bullet { owner: id }
+    pub fn new(id: UserID, gun: Gun) -> Self {
+        Bullet { owner: id, gun }
     }
 }
 

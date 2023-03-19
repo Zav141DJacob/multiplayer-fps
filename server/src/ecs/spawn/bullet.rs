@@ -6,14 +6,13 @@ use rand::{Rng, thread_rng};
 use common::ecs::components::{Velocity};
 use common::ecs::timer::Timer;
 use common::gun::Gun;
-use crate::ecs::components::{BulletDespawn, Damage};
+use crate::ecs::components::{BulletDespawn};
 
 use crate::ecs::ServerEcs;
 
 pub fn spawn_bullet(ecs: &mut ServerEcs, player: Player, pos: Position, dir: LookDirection, gun: Gun) {
     assert!(dir.0.is_normalized());
     let mut rng = thread_rng();
-    let damage_per_pellet = gun.damage() / gun.pellets() as f32;
 
     for _ in 0..gun.pellets() {
         let entity = ecs.world.reserve_entity();
@@ -26,14 +25,13 @@ pub fn spawn_bullet(ecs: &mut ServerEcs, player: Player, pos: Position, dir: Loo
 
         // Insert observed components
         ecs.observed_world().insert(entity, (
-            Bullet::new(player.id),
+            Bullet::new(player.id, gun),
             Position(pos.0),
             Velocity(dir * gun.bullet_speed()),
         )).unwrap();
 
         // Insert server-side components
         ecs.world.insert(entity, (
-            Damage(damage_per_pellet),
             Timer::new(Duration::from_secs_f32(gun.range() / gun.bullet_speed()), BulletDespawn),
         )).unwrap();
     }

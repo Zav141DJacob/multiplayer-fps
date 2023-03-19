@@ -6,9 +6,6 @@ use common::UserID;
 pub struct Speed (pub f32);
 
 #[derive(Debug, Clone, Copy)]
-pub struct Damage(pub f32);
-
-#[derive(Debug, Clone, Copy)]
 pub struct ShotBy {
     pub id: Option<UserID>
 }
