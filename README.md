@@ -5,13 +5,13 @@
 
 ## Main menu guide:
 ### Quick Play
-Connects to server on localhost with default username
+Connects to default server, you will most likely want to click this.
 
 ### Join Server
 Allows you to choose a server by IP or domain and assign yourself a username, ``fps.catnip.ee:1337`` to join the publicly hosted server.
 
 ### Host server
-Helps you host server on localhost via GUI
+Helps you host server locally via GUI
 
 ## Game controls:
 - WASD to walk around
