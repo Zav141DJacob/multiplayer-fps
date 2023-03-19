@@ -52,7 +52,7 @@ impl Gun {
             Gun::Pistol => 10.0,
             Gun::MachineGun => 7.0,
             Gun::Sniper => 100.0,
-            Gun::Shotgun => 50.0,
+            Gun::Shotgun => 100.0,
             Gun::SubMachineGun => 6.0,
             Gun::AssaultRifle => 15.0,
         }
