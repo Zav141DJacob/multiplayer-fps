@@ -2,7 +2,6 @@ use std::time::Duration;
 use glam::Vec2;
 
 use common::ecs::components::{Position, Bullet, LookDirection, Player};
-use hecs::Entity;
 use rand::{Rng, thread_rng};
 use common::ecs::components::{Velocity};
 use common::ecs::timer::Timer;
@@ -14,6 +13,7 @@ use crate::ecs::ServerEcs;
 pub fn spawn_bullet(ecs: &mut ServerEcs, player: Player, pos: Position, dir: LookDirection, gun: Gun) {
     assert!(dir.0.is_normalized());
     let mut rng = thread_rng();
+    let damage_per_pellet = gun.damage() / gun.pellets() as f32;
 
     for _ in 0..gun.pellets() {
         let entity = ecs.world.reserve_entity();
@@ -33,7 +33,7 @@ pub fn spawn_bullet(ecs: &mut ServerEcs, player: Player, pos: Position, dir: Loo
 
         // Insert server-side components
         ecs.world.insert(entity, (
-            Damage(gun.damage()),
+            Damage(damage_per_pellet),
             Timer::new(Duration::from_secs_f32(gun.range() / gun.bullet_speed()), BulletDespawn),
         )).unwrap();
     }
