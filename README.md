@@ -18,3 +18,11 @@ Helps you host server locally via GUI
 - Arrows to control camera
 - Click to shoot
 - Hold tab to see leaderboard
+
+## FAQ
+### How to run your own server?
+``cargo run --release --bin server``
+
+### What are the audit questions?
+[Click here to see the audit questions](https://github.com/01-edu/public/tree/master/subjects/multiplayer-fps/audit)
+
