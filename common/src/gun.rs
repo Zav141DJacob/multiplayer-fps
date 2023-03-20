@@ -38,12 +38,12 @@ impl Gun {
 
     pub fn range(&self) -> f32 {
         match self {
-            Gun::Pistol => 5.0,
-            Gun::MachineGun => 6.0,
+            Gun::Pistol => 10.0,
+            Gun::MachineGun => 10.0,
             Gun::Sniper => 10.0,
-            Gun::Shotgun => 4.0,
-            Gun::SubMachineGun => 5.0,
-            Gun::AssaultRifle => 7.0,
+            Gun::Shotgun => 10.0,
+            Gun::SubMachineGun => 10.0,
+            Gun::AssaultRifle => 10.0,
         }
     }
 
