@@ -16,7 +16,7 @@ Helps you host server locally via GUI
 ## Game controls:
 - WASD to walk around
 - Arrows to control camera
-- Click to shoot
+- Space to shoot
 - Hold tab to see leaderboard
 
 ## FAQ

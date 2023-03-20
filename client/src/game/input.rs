@@ -95,9 +95,11 @@ impl InputHandler {
             Event::KeyUp {key} => {
                 self.handle_key(key, false)
             }
+            #[cfg(feature = "mouse-look")]
             Event::MouseDown { button, .. } => {
                 self.handle_click(button, true)
             }
+            #[cfg(feature = "mouse-look")]
             Event::MouseUp { button, .. } => {
                 self.handle_click(button, false)
             },
