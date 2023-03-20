@@ -134,7 +134,7 @@ impl fmt::Display for Gun {
         match self {
             Gun::Pistol => write!(f, "Glock 19"),
             Gun::MachineGun => write!(f, "M2 Browning"),
-            Gun::Sniper => write!(f, "barrett m82A1"),
+            Gun::Sniper => write!(f, "Barrett m82A1"),
             Gun::Shotgun => write!(f, "Browning BSS"),
             Gun::SubMachineGun => write!(f, "KRISS Vector"),
             Gun::AssaultRifle => write!(f, "Remington ACR"),
