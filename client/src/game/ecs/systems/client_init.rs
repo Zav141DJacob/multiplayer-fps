@@ -40,7 +40,7 @@ impl ClientSystems {
             ecs.world.insert(entity, (
                 RenderSprite { tex: &TEX_BULLET },
                 Scale(Vec2::splat(BULLET_SCALE)),
-                Height(0.5 - BULLET_SCALE / 2.0),
+                Height(0.45 - BULLET_SCALE / 2.0),
                 ClientInitialized,
             )).unwrap();
         }

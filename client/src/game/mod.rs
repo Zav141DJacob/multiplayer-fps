@@ -142,7 +142,7 @@ impl ProgramState for Game {
 
         let perspective = self
             .ray_caster
-            .perspective(self.input.up_down_angle(), 0.6, 0.0);
+            .perspective(self.input.up_down_angle(), 0.65, 0.0);
         let horizon = (0.5 * self.pixels.height() as f32 + perspective.y_offset) as usize;
 
         let my_pos = self
