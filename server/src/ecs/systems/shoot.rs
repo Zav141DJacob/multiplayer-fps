@@ -2,7 +2,7 @@ use glam::Vec2;
 use crate::ecs::spawn::bullet::spawn_bullet;
 use crate::ecs::systems::ServerSystems;
 use crate::ecs::ServerEcs;
-use common::ecs::components::{HeldWeapon, InputState, LookDirection, Position, Player, Bullet, Health};
+use common::ecs::components::{HeldWeapon, InputState, LookDirection, Position, Player};
 use common::ecs::timer::Timer;
 use common::gun::Gun;
 use crate::ecs::components::{BulletDespawn, ShootCooldown};

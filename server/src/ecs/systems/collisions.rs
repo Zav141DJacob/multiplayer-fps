@@ -235,7 +235,7 @@ impl WallCollision for Player {
             }
         }
         for e in to_remove {
-            ecs.observed_world().despawn(e);
+            ecs.observed_world().despawn(e).ok();
         }
     }
 }

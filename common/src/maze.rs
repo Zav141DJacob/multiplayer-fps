@@ -2,7 +2,7 @@ use bitflags::bitflags;
 use rand::{Rng, thread_rng};
 use rand::prelude::SliceRandom;
 use crate::defaults::MAP_DEFAULT_WALL;
-use crate::map::{Map, MapCell, Textured, Wall};
+use crate::map::{Map, MapCell, Wall};
 
 pub struct Maze {
     width: usize,

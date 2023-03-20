@@ -1,7 +1,7 @@
 use glam::Vec2;
 use rand::{thread_rng, seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+
 use rand::distributions::Standard;
 use rand::prelude::Distribution;
 use crate::defaults::{MAP_BRANCHING, MAP_DEFAULT_WALL, MAP_OPENNESS, MAP_SECTOR_COUNT, MAP_SECTOR_MAX_SIZE, MAP_SECTOR_MIN_SIZE};

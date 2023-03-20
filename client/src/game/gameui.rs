@@ -66,7 +66,7 @@ impl GameUI {
     }
 
     pub fn draw_health(&self, draw: &mut notan::draw::Draw, _width: usize, height: usize) {
-        let proc = (self.game_state.player_hp as f32) / (self.game_state.player_hp_max as f32);
+        let proc = self.game_state.player_hp / self.game_state.player_hp_max;
         let health_color = if proc > 0.5 {
             health_to_color_gradient((proc - 0.5) / 0.5, Color::YELLOW, Color::GREEN)
         } else {
