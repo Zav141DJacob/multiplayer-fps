@@ -5,6 +5,7 @@ use notan::{
     prelude::{Color, Graphics},
 };
 use glam::Vec2;
+use crate::args::ARGS;
 use crate::game::raycast::RayCaster;
 use crate::game::texture::get_wall_texture;
 use crate::game::texture::pixels::Pixels;
@@ -215,8 +216,10 @@ impl Minimap {
 
         drop(path);
 
-        let ray_middle = self.conver_ray_to_minimap_size(rays[rays.len() / 2]) + minimap_translate;
-        draw.line(ray_start.into(), ray_middle.into()).color(Color::GREEN);
+        if ARGS.debug {
+            let ray_middle = self.conver_ray_to_minimap_size(rays[rays.len() / 2]) + minimap_translate;
+            draw.line(ray_start.into(), ray_middle.into()).color(Color::GREEN);
+        }
     }
 
     pub fn render_player_location(
