@@ -139,7 +139,7 @@ impl Server {
                         }
                     };
 
-                    logger.log(format!("Event {message:?}"));
+                    // logger.log(format!("Event {message:?}"));
 
                     match message {
                         FromClientMessage::Ping => {
