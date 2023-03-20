@@ -22,9 +22,9 @@ Helps you host server locally via GUI
 
 ## FAQ
 ### How to run your own server?
-``cargo run --release --bin server``
+``cargo run --release --bin admin-client``
 
-(or ``cargo run --release --bin admin-client`` if you prefer GUI)
+(or ``cargo run --release --bin server`` if you prefer CLI exclusively)
 
 ### What are the audit questions?
 [Click here to see the audit questions](https://github.com/01-edu/public/tree/master/subjects/multiplayer-fps/audit)
