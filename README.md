@@ -24,6 +24,8 @@ Helps you host server locally via GUI
 ### How to run your own server?
 ``cargo run --release --bin server``
 
+(or ``cargo run --release --bin admin-client`` if you prefer GUI)
+
 ### What are the audit questions?
 [Click here to see the audit questions](https://github.com/01-edu/public/tree/master/subjects/multiplayer-fps/audit)
 
