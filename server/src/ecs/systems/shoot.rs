@@ -29,7 +29,7 @@ impl ServerSystems {
             let mut weapon = ecs.observer.observe_component(entity, weapon);
 
             // Check if shooting
-            if !input.shoot || weapon.ammo == 0 {
+            if !input.shoot || weapon.gun.max_ammo() != 0 && weapon.ammo == 0 {
                 continue;
             }
 
@@ -42,7 +42,7 @@ impl ServerSystems {
             });
 
             // Subtract ammo
-            weapon.ammo -= 1;
+            weapon.ammo = weapon.ammo.saturating_sub(1);
 
             // Set cooldown
             let cooldown = weapon.gun.recharge();
@@ -66,33 +66,5 @@ impl ServerSystems {
         Timer::<BulletDespawn>::system_with(&mut ecs.world, |world, entity, _| {
             ecs.observer.observe(world).despawn(entity).unwrap();
         });
-    }
-
-    pub fn shoot_up_system(ecs: &mut ServerEcs, _dt: f32) {
-        let player_query = ecs
-            .world
-            .query_mut::<(&Position, &Health)>()
-            .into_iter()
-            .map(|(e, (&p, &w))| (e, (p, w)))
-            .collect::<Vec<_>>();
-
-        let bullet_query = ecs
-            .world
-            .query_mut::<(&Position, &Bullet)>()
-            .into_iter()
-            .map(|(e, (&p, &c))| (e, p, c))
-            .collect::<Vec<_>>();
-
-        for (e, (p, h)) in player_query {
-            for c in &bullet_query {
-                if (p.0.x - c.1.0.x).abs() < 0.3 && (p.0.y - c.1.0.y).abs() < 0.3 {
-                    {
-                        ecs.observed_world().insert(e, (
-                            Health(h.0 - 1),
-                        )).unwrap();
-                    }
-                }
-            }
-        }
     }
 }

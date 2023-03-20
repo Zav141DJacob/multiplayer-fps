@@ -1,10 +1,13 @@
 use crate::ecs::systems::ServerSystems;
 use crate::ecs::ServerEcs;
 use common::defaults::PLAYER_SIZE;
-use common::ecs::components::{Bullet, Damage, Health, Player, Position, ShotBy, WithId};
+use common::ecs::components::{Bullet, Health, Player, Position, WithId};
+use common::ecs::timer::Timer;
 use common::map::{Map, MapCell};
 use glam::Vec2;
 use hecs::Entity;
+use crate::ecs::components::{ShotBy, BulletDespawn};
+
 trait WallCollision {
     fn prepare_wall_collisions(ecs: &mut ServerEcs);
     fn get_sides(map: &Map, x_f: f32, y_f: f32, x_i: i32, y_i: i32) -> Vec<(Vec2, MapCell)> {
@@ -189,12 +192,12 @@ impl WallCollision for Player {
         // let mut player_positions: Vec<(T, Health, Vec2)> = Vec::new();
         let mut to_remove: Vec<Entity> = Vec::new();
 
-        let mut bullet_positions: Vec<(Entity, Bullet, Vec2, Damage)> = Vec::new();
+        let mut bullet_positions = Vec::new();
 
         {
-            let bullet_query = ecs.world.query_mut::<(&Bullet, &Position, &Damage)>();
-            for (entity, (bullet, bullet_pos, damage)) in bullet_query {
-                bullet_positions.push((entity, *bullet, bullet_pos.0, *damage));
+            let bullet_query = ecs.world.query_mut::<(&Bullet, &Position, &Timer<BulletDespawn>)>();
+            for (entity, (bullet, bullet_pos, timer)) in bullet_query {
+                bullet_positions.push((entity, *bullet, bullet_pos.0, timer.progress()));
             }
         }
         let query = ecs
@@ -211,24 +214,22 @@ impl WallCollision for Player {
                 *pos = to_pos;
             }
             {
-                for (bullet_entity, bullet, bullet_pos, damage) in &bullet_positions {
+                for (bullet_entity, bullet, bullet_pos, time) in &bullet_positions {
                     if bullet_pos.distance(to_pos) < PLAYER_SIZE / 2.0 && player.id() != bullet.id()
                     {
                         to_remove.push(*bullet_entity);
 
-                        {
-                            //ToDo
-                            //  add this code into another function (ie. do_damage())
+                        let shot_by = &mut shot_by.id;
+                        *shot_by = Some(bullet.id());
 
-                            let mut health = ecs.observer.observe_component(entity, health);
-                            let health = &mut health.0;
-                            *health = health.saturating_sub(damage.0 as u32);
-                        }
-                        {
-                            let mut shot_by = ecs.observer.observe_component(entity, shot_by);
-                            let shot_by = &mut shot_by.id;
-                            *shot_by = Some(bullet.id());
-                        }
+
+                        let dmg = bullet.gun.damage_with_drop_off(*time);
+
+                        //ToDo
+                        //  add this code into another function (ie. do_damage())
+
+                        let mut health = ecs.observer.observe_component(entity, health);
+                        health.0 -= dmg;
                     }
                 }
             }

@@ -26,8 +26,6 @@ register_shared_components! {
     Size,
     Health,
     HeldWeapon,
-    Damage,
-    ShotBy,
     Kills,
     Deaths,
     Player,
@@ -44,11 +42,7 @@ bulk_attribute! {
     pub struct Velocity (pub Vec2);
     pub struct LookDirection (pub Vec2);
     pub struct Size (pub Vec2);
-    pub struct Health (pub u32);
-    pub struct Damage(pub i8);
-    pub struct ShotBy {
-        pub id: Option<UserID>
-    }
+    pub struct Health (pub f32);
     pub struct Kills(pub i32);
     pub struct Deaths(pub i32);
     pub struct HeldWeapon {
@@ -57,7 +51,8 @@ bulk_attribute! {
     }
 
     pub struct Bullet {
-        pub owner: UserID
+        pub owner: UserID,
+        pub gun: Gun,
     }
     pub struct WeaponCrate (pub Gun);
 
@@ -71,8 +66,8 @@ pub struct Player {
 }
 
 impl Bullet {
-    pub fn new(id: UserID) -> Self {
-        Bullet { owner: id }
+    pub fn new(id: UserID, gun: Gun) -> Self {
+        Bullet { owner: id, gun }
     }
 }
 
