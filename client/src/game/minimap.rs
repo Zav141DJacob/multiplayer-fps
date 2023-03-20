@@ -29,7 +29,7 @@ impl Minimap {
         let border_size = 3;
         let border_color = Color::GRAY;
 
-        let map_ratio = 10;
+        let map_ratio = 8;
         let floor_color = Color::BLACK;
 
         let minimap_scale = Vec2::new(2.0, 2.0);
@@ -255,7 +255,7 @@ impl Minimap {
             self.minimap_pos.y + self.border_size as f32,
         );
 
-        let entity_size = Vec2::new(1.0, 1.0) * self.minimap_scale;
+        let entity_size = Vec2::new(2.0, 2.0) * self.minimap_scale;
         let entity_pos = minimap_translate + self.conver_ray_to_minimap_size(entity_pos);
         let entity_pos = entity_pos - (entity_size / 2.0);
 
