@@ -93,6 +93,11 @@ impl TextureSampler {
         Ok(res)
     }
 
+    pub fn set_dominant(mut self, color: [u8; 4]) -> Self {
+        self.dominant = color;
+        self
+    }
+
     /// Get the dominant color of this texture
     pub fn dominant(&self) -> [u8; 4] {
         self.dominant

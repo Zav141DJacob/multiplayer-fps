@@ -1,8 +1,10 @@
 use glam::Vec2;
-use rand::{thread_rng, seq::SliceRandom};
+use rand::{thread_rng, seq::SliceRandom, Rng};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use crate::defaults::{MAP_BRANCHING, MAP_OPENNESS};
+use rand::distributions::Standard;
+use rand::prelude::Distribution;
+use crate::defaults::{MAP_BRANCHING, MAP_DEFAULT_WALL, MAP_OPENNESS, MAP_SECTOR_COUNT, MAP_SECTOR_MAX_SIZE, MAP_SECTOR_MIN_SIZE};
 
 use crate::ecs::components::Position;
 use crate::maze::Maze;
@@ -25,8 +27,8 @@ impl Default for Map {
     fn default() -> Self {
         let e = MapCell::Empty;
         let w = MapCell::Wall(Wall::SolidColor([1.0, 1.0, 1.0]));
-        let b = MapCell::Wall(Wall::Textured(Textured::Redstone));
-        let t = MapCell::Wall(Wall::Textured(Textured::GrayBrick));
+        let b = MapCell::Wall(Wall::Textured(MAP_DEFAULT_WALL));
+        let t = b;
         let temp_map = vec![
             t, t, t, t, t, t, t, t, t, t,
             t, e, t, e, e, e, e, e, e, t,
@@ -94,6 +96,30 @@ impl Map {
             *map.cell_mut(x, y) = MapCell::Empty;
         }
 
+        // Make some walls in the map a different texture
+        for _ in 0..MAP_SECTOR_COUNT {
+            let tex = loop {
+                let tex = rng.gen();
+                if tex != MAP_DEFAULT_WALL {
+                    break tex;
+                }
+            };
+
+            let width = rng.gen_range(MAP_SECTOR_MIN_SIZE..MAP_SECTOR_MAX_SIZE);
+            let height = rng.gen_range(MAP_SECTOR_MIN_SIZE..MAP_SECTOR_MAX_SIZE);
+
+            let x = rng.gen_range(0..=map.width-width);
+            let y = rng.gen_range(0..=map.height-height);
+
+            for y in y..y+height {
+                for x in x..x+width {
+                    if let MapCell::Wall(Wall::Textured(this_tex)) = map.cell_mut(x, y) {
+                        *this_tex = tex;
+                    }
+                }
+            }
+        }
+
         map
     }
 
@@ -154,22 +180,28 @@ impl Default for Wall {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Textured {
-    Redstone,
-    GrayBrick,
-    RedBrick,
+    Brick1,
+    Brick2,
     Door,
-    Green,
-    Graystone,
+    Industrial,
+    Rocky,
+    Techy,
+    Urban,
+    Wood,
 }
 
-impl FromStr for MapCell {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "empty" => Ok(Self::Empty),
-            "wall" => Ok(Self::Wall(Wall::SolidColor([0.0, 0.0, 0.0]))),
-            "brick" => Ok(Self::Wall(Wall::Textured(Textured::RedBrick))),
-            _ => Err("Invalid MapElement in MapElement::from_str()".to_string()),
+impl Distribution<Textured> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Textured {
+        let i = rng.gen_range(0..=6);
+        match i {
+            0 => Textured::Brick1,
+            1 => Textured::Brick2,
+            2 => Textured::Industrial,
+            3 => Textured::Rocky,
+            4 => Textured::Techy,
+            5 => Textured::Urban,
+            6 => Textured::Wood,
+            _ => unreachable!(),
         }
     }
 }
