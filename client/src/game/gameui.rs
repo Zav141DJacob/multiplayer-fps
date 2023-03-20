@@ -14,8 +14,8 @@ pub struct GameUI {
 }
 
 pub struct GameUiState {
-    pub player_hp_max: u32,
-    pub player_hp: u32,
+    pub player_hp_max: f32,
+    pub player_hp: f32,
     pub weapon_name: String,
     pub max_ammo: usize,
     pub ammo: usize,
@@ -27,8 +27,8 @@ impl GameUiState {
             player_hp_max: PLAYER_MAX_HP,
             player_hp: PLAYER_MAX_HP,
             weapon_name: Gun::Pistol.to_string(),
-            max_ammo: Gun::Pistol.get_max_ammo(),
-            ammo: Gun::Pistol.get_max_ammo(),
+            max_ammo: Gun::Pistol.max_ammo(),
+            ammo: Gun::Pistol.max_ammo(),
         }
     }
 }
@@ -118,10 +118,15 @@ impl GameUI {
     pub fn draw_weapon_stats(&self, draw: &mut notan::draw::Draw, width: usize, height: usize) {
         let position = Vec2::new(width as f32 - 200.0, height as f32 - 50.0);
 
-        let ammo_text = format!(
-            "{:0>3} / {:0>3}",
-            self.game_state.ammo, self.game_state.max_ammo
-        );
+
+        let mut ammo_text = "∞".to_string();
+
+        if self.game_state.max_ammo != 0 {
+            ammo_text = format!(
+                "{:0>3} / {:0>3}",
+                self.game_state.ammo, self.game_state.max_ammo
+            );
+        }
 
         draw.text(&self.font, &self.game_state.weapon_name)
             .position(position.x, position.y);

@@ -15,6 +15,7 @@ pub struct InputHandler {
     up_down_angle: f32,
 
     mouse_locked: bool,
+    slow_look: bool,
 
     #[cfg(feature = "mouse-look")]
     mouse: MouseController,
@@ -27,6 +28,7 @@ impl InputHandler {
             state: Default::default(),
             up_down_angle: 0.0,
             mouse_locked: false,
+            slow_look: false,
             #[cfg(feature = "mouse-look")]
             mouse: MouseController::new(_app),
         }
@@ -66,6 +68,10 @@ impl InputHandler {
             return
         }
 
+        if self.slow_look {
+            look /= 3.0;
+        }
+
         self.apply_look_delta(look * dt * KB_LOOK_SENSITIVITY);
         self.dirty = true;
 
@@ -95,9 +101,11 @@ impl InputHandler {
             Event::KeyUp {key} => {
                 self.handle_key(key, false)
             }
+            #[cfg(feature = "mouse-look")]
             Event::MouseDown { button, .. } => {
                 self.handle_click(button, true)
             }
+            #[cfg(feature = "mouse-look")]
             Event::MouseUp { button, .. } => {
                 self.handle_click(button, false)
             },
@@ -139,6 +147,10 @@ impl InputHandler {
             }
             KeyCode::Space => {
                 self.state.shoot = pressed;
+            }
+            KeyCode::LShift | KeyCode::RShift => {
+                self.slow_look = pressed;
+                return false;
             }
             KeyCode::Escape => {
                 self.mouse_locked = false;
