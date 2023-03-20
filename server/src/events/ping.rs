@@ -9,7 +9,7 @@ pub fn execute(
     handler: &NodeHandler<Signal>,
     endpoint: Endpoint,
 ) -> Result<(), bincode::Error> {
-    // logger.log(format!("Ping from {}", endpoint.addr()));
+    logger.log(format!("Ping from {}", endpoint.addr()));
 
     FromServerMessage::Pong.construct()?.send(handler, endpoint);
 
