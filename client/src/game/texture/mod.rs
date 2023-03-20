@@ -13,24 +13,60 @@ pub mod draw_column;
 pub mod animated_texture;
 
 pub fn get_wall_texture(tex: Textured) -> &'static TextureSampler {
-    // return &TEX_TEST2;
     match tex {
-        Textured::Redstone => &ATLAS_WALL[0],
-        Textured::GrayBrick => &ATLAS_WALL[1],
-        Textured::RedBrick => &ATLAS_WALL[2],
-        Textured::Door => &ATLAS_WALL[3],
-        Textured::Green => &ATLAS_WALL[4],
-        Textured::Graystone => &ATLAS_WALL[5],
+        Textured::Brick1 => &TEX_BRICK1,
+        Textured::Brick2 => &TEX_BRICK2,
+        Textured::Door => &TEX_DOOR,
+        Textured::Industrial => &TEX_INDUSTRIAL,
+        Textured::Rocky => &TEX_ROCKY,
+        Textured::Techy => &TEX_TECHY,
+        Textured::Urban => &TEX_URBAN,
+        Textured::Wood => &TEX_WOOD,
     }
 }
 
-pub static ATLAS_WALL: Lazy<Vec<TextureSampler>> = Lazy::new(|| {
-    TextureSampler::from_tiles(6, 1, 0, include_bytes!("../../../assets/walltext.png")).unwrap()
+
+pub static TEX_BRICK1: Lazy<TextureSampler> = Lazy::new(|| {
+    TextureSampler::try_from(include_bytes!("../../../assets/walls/bricks/ROUNDBRICKS.png").as_slice()).unwrap()
 });
 
-pub static ATLAS_MONSTER: Lazy<Vec<TextureSampler>> = Lazy::new(|| {
-    TextureSampler::from_tiles(4, 1, 0, include_bytes!("../../../assets/monsters.png")).unwrap()
+pub static TEX_BRICK2: Lazy<TextureSampler> = Lazy::new(|| {
+    TextureSampler::try_from(include_bytes!("../../../assets/walls/bricks/REDBRICKS.png").as_slice()).unwrap()
+        .set_dominant([147, 42, 32, 255])
 });
+
+pub static TEX_DOOR: Lazy<TextureSampler> = Lazy::new(|| {
+    TextureSampler::try_from(include_bytes!("../../../assets/walls/doors/CREAKYDOOR.png").as_slice()).unwrap()
+});
+
+pub static TEX_INDUSTRIAL: Lazy<TextureSampler> = Lazy::new(|| {
+    TextureSampler::try_from(include_bytes!("../../../assets/walls/industrial/CROSSCUBE.png").as_slice()).unwrap()
+});
+
+pub static TEX_ROCKY: Lazy<TextureSampler> = Lazy::new(|| {
+    TextureSampler::try_from(include_bytes!("../../../assets/walls/rocks/GRAYROCKS.png").as_slice()).unwrap()
+});
+
+pub static TEX_TECHY: Lazy<TextureSampler> = Lazy::new(|| {
+    TextureSampler::try_from(include_bytes!("../../../assets/walls/tech/HEXAGONS.png").as_slice()).unwrap()
+});
+
+pub static TEX_URBAN: Lazy<TextureSampler> = Lazy::new(|| {
+    TextureSampler::try_from(include_bytes!("../../../assets/walls/urban/GRAYWALL.png").as_slice()).unwrap()
+});
+
+pub static TEX_WOOD: Lazy<TextureSampler> = Lazy::new(|| {
+    TextureSampler::try_from(include_bytes!("../../../assets/walls/wood/WOODA.png").as_slice()).unwrap()
+});
+
+
+// pub static ATLAS_WALL: Lazy<Vec<TextureSampler>> = Lazy::new(|| {
+//     TextureSampler::from_tiles(6, 1, 0, include_bytes!("../../../assets/walltext.png")).unwrap()
+// });
+//
+// pub static ATLAS_MONSTER: Lazy<Vec<TextureSampler>> = Lazy::new(|| {
+//     TextureSampler::from_tiles(4, 1, 0, include_bytes!("../../../assets/monsters.png")).unwrap()
+// });
 
 pub static WEAPON_CRATE: Lazy<TextureSampler> = Lazy::new(|| {
     TextureSampler::try_from(include_bytes!("../../../assets/weapon_crate.png").as_slice()).unwrap()

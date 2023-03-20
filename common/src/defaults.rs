@@ -1,4 +1,5 @@
 use std::net::{IpAddr, Ipv4Addr};
+use crate::map::Textured;
 
 pub const QUICK_JOIN_IP: &str = "fps.catnip.ee";
 
@@ -11,6 +12,11 @@ pub const MAP_WIDTH: usize = 13; // Must be odd
 pub const MAP_HEIGHT: usize = MAP_WIDTH; // Must be odd
 pub const MAP_BRANCHING: f32 = 0.5; // 0.0..=1.0
 pub const MAP_OPENNESS: f32 = 0.3; // 0.0..=1.0
+
+pub const MAP_DEFAULT_WALL: Textured = Textured::Brick2;
+pub const MAP_SECTOR_COUNT: usize = 5;
+pub const MAP_SECTOR_MIN_SIZE: usize = 4;
+pub const MAP_SECTOR_MAX_SIZE: usize = 7;
 
 pub const MINIMAP_SCALE: f32 = 2.0;
 

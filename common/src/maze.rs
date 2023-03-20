@@ -1,6 +1,7 @@
 use bitflags::bitflags;
 use rand::{Rng, thread_rng};
 use rand::prelude::SliceRandom;
+use crate::defaults::MAP_DEFAULT_WALL;
 use crate::map::{Map, MapCell, Textured, Wall};
 
 pub struct Maze {
@@ -126,7 +127,7 @@ impl Maze {
 impl From<Maze> for Map {
     fn from(maze: Maze) -> Self {
         let mut map = Map::new(maze.width * 2 + 1, maze.height * 2 + 1);
-        map.data.fill(MapCell::Wall(Wall::Textured(Textured::GrayBrick)));
+        map.data.fill(MapCell::Wall(Wall::Textured(MAP_DEFAULT_WALL)));
 
         for maze_y in 0..maze.height {
             for maze_x in 0..maze.width {
