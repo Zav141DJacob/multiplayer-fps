@@ -39,8 +39,8 @@ use self::gameui::{GameUI, GameUiState};
 
 const CAMERA_SENSITIVITY: f32 = 0.08; // rad
 const FOV: f32 = 70.0;
-const CEILING_COLOR: [u8; 4] = [100, 100, 170, 255];
-const FLOOR_COLOR: [u8; 4] = [60, 120, 60, 255];
+const CEILING_COLOR: [u8; 4] = [110, 110, 190, 255];
+const FLOOR_COLOR: [u8; 4] = [90, 90, 90, 255];
 
 pub struct Game {
     ecs: ClientEcs,
