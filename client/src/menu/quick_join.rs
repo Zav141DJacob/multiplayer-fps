@@ -9,7 +9,10 @@ use notan::{
     prelude::{App, Assets, Color, Graphics, Plugins},
 };
 
-use crate::{connecting::Connecting, error::ErrorState, program::state::ProgramState};
+use crate::{
+    connecting::Connecting, error::ErrorState, errorwindow::ErrorWindows,
+    program::state::ProgramState,
+};
 
 use super::Menu;
 
@@ -20,6 +23,7 @@ enum NextState {
 
 #[derive(Default)]
 pub struct QuickJoinMenu {
+    errors: ErrorWindows,
     username: String,
     next_state: Option<NextState>,
 }
@@ -33,8 +37,26 @@ impl Display for QuickJoinMenu {
 impl QuickJoinMenu {
     pub fn new() -> QuickJoinMenu {
         QuickJoinMenu {
+            errors: ErrorWindows::new(),
             username: DEFAULT_PLAYER_NAME.to_string(),
             next_state: None,
+        }
+    }
+
+    fn process_inputs(&mut self) -> bool {
+        match format!("{QUICK_JOIN_IP}:{PORT}").to_socket_addrs() {
+            Ok(mut s) => match s.next() {
+                Some(_) => true,
+                None => {
+                    self.errors
+                        .add_error(String::from("Failed to find domain IP"));
+                    false
+                }
+            },
+            Err(e) => {
+                self.errors.add_error(e.to_string());
+                false
+            }
         }
     }
 }
@@ -49,6 +71,8 @@ impl ProgramState for QuickJoinMenu {
     ) -> anyhow::Result<()> {
         let mut output = plugins.egui(|ctx| {
             egui::CentralPanel::default().show(ctx, |ui| {
+                self.errors.draw_errors(ctx);
+
                 ui.vertical_centered(|ui| {
                     ui.heading("Quick Join Server");
                     ui.add_space(10.0);
@@ -63,7 +87,7 @@ impl ProgramState for QuickJoinMenu {
                     ui.vertical_centered(|ui| {
                         ui.set_width(ui.available_width() / 4.0);
                         ui.horizontal(|ui| {
-                            if ui.button("Join").clicked() {
+                            if ui.button("Join").clicked() && self.process_inputs() {
                                 self.next_state = Some(NextState::Game)
                             }
                             if ui.button("Back").clicked() {
